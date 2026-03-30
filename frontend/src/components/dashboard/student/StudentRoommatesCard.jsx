@@ -1,6 +1,6 @@
 import { Avatar, Box, Button, Card, CardContent, Typography } from '@mui/material'
 import { PersonAdd } from '@mui/icons-material'
-import { roommates } from './data.js'
+import { roommates } from './data'
 
 function StudentRoommatesCard() {
   return (

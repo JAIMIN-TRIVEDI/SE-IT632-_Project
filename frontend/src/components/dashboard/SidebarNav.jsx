@@ -2,8 +2,8 @@ import { Box, Button, Divider, Drawer, List, ListItem, ListItemButton, ListItemI
 import { alpha } from '@mui/material/styles'
 import { Add } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
-import { DRAWER_WIDTH } from './constants.js'
-import { navItems } from './data.js'
+import { DRAWER_WIDTH } from '../../constants/constants'
+import { navItems } from '../../constants/data'
 
 function SidebarNav({ activeNav, onSelect }) {
   const navigate = useNavigate()
@@ -56,7 +56,7 @@ function SidebarNav({ activeNav, onSelect }) {
             Hostezy
           </Typography>
           <Typography fontSize={11} color="text.secondary">
-            Admin Portal
+            Hostel Admin
           </Typography>
         </Box>
       </Box>

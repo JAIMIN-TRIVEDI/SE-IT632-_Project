@@ -1,5 +1,5 @@
 import { Box } from '@mui/material'
-import { stats } from './data.js'
+import { stats } from '../../constants/data'
 import StatCard from './StatCard.jsx'
 
 function StatsGrid() {

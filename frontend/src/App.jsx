@@ -5,11 +5,13 @@ import RootLayout from './layouts/RootLayout.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
+
+import getTheme from './styles/theme.js'
+import './styles/app.css'
+
 import AdminDashboard from './pages/AdminDashboard.jsx'
 import WardenDashboard from './pages/WardenDashboard.jsx'
 import StudentDashboard from './pages/StudentDashboard.jsx'
-import getTheme from './theme.js'
-import '../styles/app.css'
 
 function App() {
   const [mode, setMode] = useState('light')
@@ -46,7 +48,7 @@ function App() {
           />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/dashboard/admin" element={<AdminDashboard />} />
+          <Route path="/dashboard/hostel-admin" element={<AdminDashboard />} />
           <Route path="/dashboard/warden" element={<WardenDashboard />} />
           <Route path="/dashboard/student" element={<StudentDashboard />} />
         </Routes>

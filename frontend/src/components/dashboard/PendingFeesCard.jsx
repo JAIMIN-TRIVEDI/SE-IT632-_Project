@@ -1,6 +1,6 @@
 import { Avatar, Box, Button, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material'
 import { alpha, useTheme } from '@mui/material/styles'
-import { pendingFees } from './data.js'
+import { pendingFees } from '../../constants/data'
 import DashboardCard from './DashboardCard.jsx'
 
 function PendingFeesCard() {

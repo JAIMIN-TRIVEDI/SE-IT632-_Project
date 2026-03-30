@@ -1,7 +1,7 @@
 import { Box, Chip, Typography } from '@mui/material'
 import { alpha, useTheme } from '@mui/material/styles'
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { revenueData } from './data.js'
+import { revenueData } from '../../constants/data'
 import DashboardCard from './DashboardCard.jsx'
 
 function RevenueChartCard() {

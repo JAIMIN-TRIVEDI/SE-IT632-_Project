@@ -1,6 +1,6 @@
 import { Box, Button, Card, CardContent, Chip, Typography } from '@mui/material'
 import { ChevronRight } from '@mui/icons-material'
-import { notices } from './data.js'
+import { notices } from './data'
 
 function StudentNoticesCard() {
   return (

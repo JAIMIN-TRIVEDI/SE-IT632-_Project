@@ -1,7 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import DashboardCard from '../DashboardCard.jsx'
-import { announcements } from './data.js'
+import { announcements } from './data'
 
 function WardenAnnouncementsCard() {
   return (

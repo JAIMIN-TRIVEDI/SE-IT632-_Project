@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@mui/material'
-import { CARD_SX } from './constants.js'
+import { CARD_SX } from '../../constants/constants'
 
 function DashboardCard({ children, sx, contentSx }) {
   return (

@@ -1,6 +1,6 @@
 import { Box, Button, Typography } from '@mui/material'
 import { alpha, useTheme } from '@mui/material/styles'
-import { recentActivities } from './data.js'
+import { recentActivities } from '../../constants/data'
 import DashboardCard from './DashboardCard.jsx'
 
 function RecentActivityCard() {
