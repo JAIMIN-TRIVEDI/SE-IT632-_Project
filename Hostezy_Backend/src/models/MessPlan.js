@@ -1,31 +1,23 @@
 import mongoose from "mongoose";
 
-const messPlanSchema = new mongoose.Schema({
-  name:{
-    type:String,
-    required:true
+const MessPlanSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
   },
-
-  duration:{
-    type:String,
-    enum:["weekly","monthly"],
-    required:true
+  price: {
+    type: Number,
+    required: true
   },
-
-  price:{
-    type:Number,
-    required:true
+  durationInDays: {
+    type: Number,
+    required: true
   },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
+  }
+}, { timestamps: true });
 
-  meals:[
-    {
-      type:String,
-      enum:["breakfast","lunch","dinner"]
-    }
-  ],
-
-  description:String
-
-},{timestamps:true});
-
-export default mongoose.model("MessPlan",messPlanSchema);
+export default mongoose.model("MessPlan", MessPlanSchema);
