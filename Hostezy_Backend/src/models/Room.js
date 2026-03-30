@@ -1,51 +1,34 @@
 import mongoose from "mongoose";
 
-const roomSchema = new mongoose.Schema({
-
-  roomNumber:{
-    type:String,
-    required:true
+const RoomSchema = new mongoose.Schema({
+  roomNumber: {
+    type: String,
+    required: true
   },
-
-  hostelId:{
-    type:mongoose.Schema.Types.ObjectId,
-    ref:"Hostel",
-    required:true
+  hostelId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Hostel",
+    required: true
   },
-
-  floor:{
-    type:Number,
-    required:true
+  blockId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Block",
+    required: true
   },
-
-  type:{
-    type:String,
-    enum:["single","double","triple","quad"],
-    required:true
+  capacity: {
+    type: Number,
+    required: true,
+    min: 1
   },
-
-  capacity:{
-    type:Number,
-    required:true
+  occupiedCount: {
+    type: Number,
+    default: 0
   },
-
-  occupied:{
-    type:Number,
-    default:0
-  },
-
-  occupants:[
-    {
-      type:mongoose.Schema.Types.ObjectId,
-      ref:"User"
-    }
-  ],
-
-  isAvailable:{
-    type:Boolean,
-    default:true
+  status: {
+    type: String,
+    enum: ["available", "full", "maintenance"],
+    default: "available"
   }
+}, { timestamps: true });
 
-},{timestamps:true});
-
-export default mongoose.model("Room",roomSchema);
+export default mongoose.model("Room", RoomSchema);
