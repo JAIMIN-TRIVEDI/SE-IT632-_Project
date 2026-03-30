@@ -22,6 +22,11 @@ const BlockSchema = new mongoose.Schema({
         min : 0,
         default : 0
     },
+    availableRooms : {
+        type : Number,
+        min : 0,
+        default : 0
+    }
 
 
 }, {timestamps : true});
