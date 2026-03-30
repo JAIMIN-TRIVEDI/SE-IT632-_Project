@@ -49,7 +49,7 @@ function TopBar() {
               Alex Johnson
             </Typography>
             <Typography fontSize={11} color="text.secondary">
-              Super Admin
+              Hostel Admin
             </Typography>
           </Box>
           <Avatar sx={{ width: 38, height: 38, bgcolor: 'action.hover' }} />

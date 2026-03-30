@@ -1,7 +1,7 @@
 import { Avatar, Badge, Box, Divider, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { useNavigate } from 'react-router-dom'
-import { navItems } from './data.js'
+import { navItems } from './data'
 
 const DRAWER_WIDTH = 240
 
@@ -101,7 +101,7 @@ function StudentSidebarNav({ activeNav, onSelect }) {
       </Box>
 
       {/* Nav */}
-      <List sx={{ px: 1.5, pt: 0.5, pt: 0.5, flexGrow: 1 }}>
+      <List sx={{ px: 1.5, pt: 0.5, flexGrow: 1 }}>
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = activeNav === item.label

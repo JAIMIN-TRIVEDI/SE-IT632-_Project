@@ -2,8 +2,8 @@ import { Box, Button, Divider, Drawer, List, ListItem, ListItemButton, ListItemI
 import { alpha } from '@mui/material/styles'
 import { Add } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
-import { DRAWER_WIDTH } from './constants.js'
-import { navItems } from './data.js'
+import { DRAWER_WIDTH } from '../../../constants/constants'
+import { navItems } from './data'
 
 function WardenSidebarNav({ activeNav, onSelect }) {
   const navigate = useNavigate()
@@ -56,7 +56,7 @@ function WardenSidebarNav({ activeNav, onSelect }) {
             Hostezy
           </Typography>
           <Typography fontSize={10} color="text.secondary" letterSpacing={1} textTransform="uppercase">
-            Management
+            Warden
           </Typography>
         </Box>
       </Box>

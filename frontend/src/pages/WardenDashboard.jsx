@@ -6,7 +6,7 @@ import WardenStatCard from '../components/dashboard/warden/WardenStatCard.jsx'
 import WardenActivityTableCard from '../components/dashboard/warden/WardenActivityTableCard.jsx'
 import WardenAnnouncementsCard from '../components/dashboard/warden/WardenAnnouncementsCard.jsx'
 import WardenAvailabilityCard from '../components/dashboard/warden/WardenAvailabilityCard.jsx'
-import { stats } from '../components/dashboard/warden/data.js'
+import { stats } from '../components/dashboard/warden/data'
 
 function WardenDashboard() {
   const [activeNav, setActiveNav] = useState('Dashboard')

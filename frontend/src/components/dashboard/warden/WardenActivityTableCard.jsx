@@ -3,7 +3,7 @@ import { Avatar, Box, Button, Chip, IconButton, Table, TableBody, TableCell, Tab
 import { alpha } from '@mui/material/styles'
 import { MoreVert } from '@mui/icons-material'
 import DashboardCard from '../DashboardCard.jsx'
-import { recentActivity } from './data.js'
+import { recentActivity } from './data'
 
 function WardenActivityTableCard() {
   const [activityFilter, setActivityFilter] = useState('All')

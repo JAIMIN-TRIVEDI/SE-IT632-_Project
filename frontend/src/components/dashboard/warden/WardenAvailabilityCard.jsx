@@ -2,7 +2,7 @@ import { Box, LinearProgress, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { Add } from '@mui/icons-material'
 import DashboardCard from '../DashboardCard.jsx'
-import { availability } from './data.js'
+import { availability } from './data'
 
 function WardenAvailabilityCard() {
   return (

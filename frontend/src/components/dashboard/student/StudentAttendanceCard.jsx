@@ -1,5 +1,5 @@
 import { Box, Card, CardContent, Typography } from '@mui/material'
-import { attendanceData } from './data.js'
+import { attendanceData } from './data'
 
 function StudentAttendanceCard() {
   return (

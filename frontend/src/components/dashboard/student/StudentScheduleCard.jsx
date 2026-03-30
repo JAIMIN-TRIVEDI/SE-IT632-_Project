@@ -1,6 +1,6 @@
 import { Box, Card, CardContent, Chip, Typography } from '@mui/material'
 import { CheckCircle, AccessTime } from '@mui/icons-material'
-import { todaySchedule } from './data.js'
+import { todaySchedule } from './data'
 
 function StudentScheduleCard() {
   return (

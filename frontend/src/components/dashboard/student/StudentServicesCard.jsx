@@ -1,5 +1,5 @@
 import { Box, Button, Card, CardContent, Typography } from '@mui/material'
-import { services } from './data.js'
+import { services } from './data'
 
 function StudentServicesCard() {
   return (
