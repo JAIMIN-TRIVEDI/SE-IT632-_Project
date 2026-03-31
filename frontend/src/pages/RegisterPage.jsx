@@ -1,9 +1,24 @@
 import { useState } from 'react'
-import { Box, Button, Checkbox, FormControlLabel, Typography, Link, Stack, Grid, MenuItem, TextField, InputAdornment } from '@mui/material'
+import {
+  Box,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  Typography,
+  Link,
+  Stack,
+  Grid,
+  MenuItem,
+  TextField,
+  InputAdornment,
+  Alert,
+  CircularProgress,
+} from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import AuthLayout from '../layouts/AuthLayout.jsx'
 import FormInput from '../components/FormInput.jsx'
+import api from '../api/api.js'
 
 function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -18,6 +33,8 @@ function RegisterPage() {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
   const handleChange = (e) => {
@@ -28,10 +45,51 @@ function RegisterPage() {
     }))
   }
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault()
-    // Handle registration logic here
-    console.log(formData)
+    setError('')
+
+    // Frontend validations
+    if (!formData.fullName || !formData.email || !formData.password || !formData.confirmPassword) {
+      return setError('Please fill in all required fields.')
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      return setError('Passwords do not match.')
+    }
+
+    if (formData.password.length < 6) {
+      return setError('Password must be at least 6 characters.')
+    }
+
+    if (!formData.agreedToTerms) {
+      return setError('Please agree to the Terms of Service and Privacy Policy.')
+    }
+
+    setLoading(true)
+
+    try {
+      const { data } = await api.post('/auth/register', {
+        name: formData.fullName,        // maps fullName → name (backend expects "name")
+        email: formData.email,
+        phone: formData.phone,
+        enrollmentNo: formData.studentId, // maps studentId → enrollmentNo (backend expects "enrollmentNo")
+        hostel: formData.hostel,
+        password: formData.password,
+        role: 'student',
+      })
+
+      // Save token and user to localStorage
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('user', JSON.stringify(data.user))
+
+      // Redirect to dashboard after successful registration
+      navigate('/login') // change this to your actual home/dashboard route
+    } catch (err) {
+      setError(err.response?.data?.message || 'Registration failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -55,6 +113,13 @@ function RegisterPage() {
         <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
           Join the Hostezy community and manage your stay with ease.
         </Typography>
+
+        {/* Error Alert */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+            {error}
+          </Alert>
+        )}
 
         <form onSubmit={handleRegister}>
           <Stack spacing={3}>
@@ -221,8 +286,9 @@ function RegisterPage() {
               variant="contained"
               color="primary"
               size="large"
-              endIcon={<ArrowForwardIcon />}
+              endIcon={loading ? <CircularProgress size={18} color="inherit" /> : <ArrowForwardIcon />}
               type="submit"
+              disabled={loading}
               sx={{
                 borderRadius: 2.5,
                 fontWeight: 700,
@@ -233,7 +299,7 @@ function RegisterPage() {
                 },
               }}
             >
-              Register Account
+              {loading ? 'Creating Account...' : 'Register Account'}
             </Button>
 
             {/* Login Link */}

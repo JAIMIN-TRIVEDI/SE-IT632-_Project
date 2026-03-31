@@ -16,7 +16,8 @@
     "@faker-js/faker": "^10.3.0",
     "crypto": "^1.0.1",
     "express-validator": "^7.3.1",
-    "mongodb": "^7.1.0"
+    "mongodb": "^7.1.0",
+    "nodemailer": "^8.0.4"
   },
   "devDependencies": {
     "bcryptjs": "^3.0.3",

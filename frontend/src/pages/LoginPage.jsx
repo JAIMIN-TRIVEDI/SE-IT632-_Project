@@ -1,44 +1,82 @@
-import { useState } from 'react'
-import { Box, Button, Checkbox, FormControlLabel, Typography, Link, Stack } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import AuthBranding from '../components/AuthBranding.jsx'
-import FormInput from '../components/FormInput.jsx'
-import SocialAuthButtons from '../components/SocialAuthButtons.jsx'
+import { useState } from "react";
+import {
+  Box,
+  Button,
+  Checkbox,
+  FormControlLabel,
+  Typography,
+  Link,
+  Stack,
+  Alert,
+} from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import AuthBranding from "../components/AuthBranding.jsx";
+import FormInput from "../components/FormInput.jsx";
+import SocialAuthButtons from "../components/SocialAuthButtons.jsx";
+import api from "../api/api.js";
 
 function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const navigate = useNavigate()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-    e.preventDefault()
-    // Handle login logic here
-    console.log({ email, password, rememberMe })
-  }
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
+    try {
+      const { data } = await api.post("/auth/login", { email, password });
+
+      // Save token & user
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      const roleRoutes = {
+        student: "/student/dashboard",
+        warden: "/warden/dashboard",
+        hostel_admin: "/hostel-admin/dashboard",
+        mess_admin: "/mess-admin/dashboard",
+      };
+
+      navigate(roleRoutes[data.user.role]);
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Login failed. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* Left Side - Branding with Background Image */}
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100vh",
+        bgcolor: "background.default",
+      }}
+    >
       <AuthBranding
         title="Your home away from home."
         description="Join thousands of students managing their stays effortlessly with our modern hostel management platform."
         backgroundImage="/src/assets/images/Image.png"
       />
 
-      {/* Right Side - Login Form */}
       <Box
         sx={{
           flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           p: { xs: 3, md: 6 },
-          bgcolor: 'background.paper',
+          bgcolor: "background.paper",
         }}
       >
-        <Box sx={{ width: '100%', maxWidth: 420 }}>
+        <Box sx={{ width: "100%", maxWidth: 420 }}>
           <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
             Welcome back
           </Typography>
@@ -46,9 +84,14 @@ function LoginPage() {
             Please enter your details to sign in.
           </Typography>
 
+          {error && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {error}
+            </Alert>
+          )}
+
           <form onSubmit={handleLogin}>
             <Stack spacing={3}>
-              {/* Email Field */}
               <FormInput
                 label="Email Address"
                 name="email"
@@ -59,7 +102,6 @@ function LoginPage() {
                 icon="📧"
               />
 
-              {/* Password Field */}
               <FormInput
                 label="Password"
                 name="password"
@@ -72,8 +114,13 @@ function LoginPage() {
                 onTogglePassword={() => setShowPassword(!showPassword)}
               />
 
-              {/* Remember Me & Forgot Password */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
                 <FormControlLabel
                   control={
                     <Checkbox
@@ -87,51 +134,47 @@ function LoginPage() {
                 <Link
                   component="button"
                   onClick={(e) => {
-                    e.preventDefault()
-                    // Handle forgot password
+                    e.preventDefault();
+                    navigate("/forgot-password");
                   }}
                   underline="none"
-                  sx={{ fontWeight: 600, color: 'primary.main', fontSize: 14 }}
+                  sx={{ fontWeight: 600, color: "primary.main", fontSize: 14 }}
                 >
                   Forgot password?
                 </Link>
               </Box>
 
-              {/* Sign In Button */}
               <Button
                 fullWidth
                 variant="contained"
                 color="primary"
                 size="large"
                 type="submit"
+                disabled={loading}
                 sx={{
                   borderRadius: 2.5,
                   fontWeight: 700,
                   py: 1.5,
-                  boxShadow: '0 4px 20px rgba(47, 97, 255, 0.3)',
-                  '&:hover': {
-                    boxShadow: '0 6px 28px rgba(47, 97, 255, 0.4)',
-                  },
+                  boxShadow: "0 4px 20px rgba(47, 97, 255, 0.3)",
+                  "&:hover": { boxShadow: "0 6px 28px rgba(47, 97, 255, 0.4)" },
                 }}
               >
-                Sign in to Account
+                {loading ? "Signing in..." : "Sign in to Account"}
               </Button>
 
-              {/* Social Auth Buttons */}
               <SocialAuthButtons />
 
-              {/* Register Link */}
-              <Box sx={{ textAlign: 'center' }}>
+              <Box sx={{ textAlign: "center" }}>
                 <Typography variant="body2" color="text.secondary">
-                  Don't have an account?{' '}
+                  Don't have an account?{" "}
                   <Link
                     component="button"
                     onClick={(e) => {
-                      e.preventDefault()
-                      navigate('/register')
+                      e.preventDefault();
+                      navigate("/register");
                     }}
                     underline="none"
-                    sx={{ fontWeight: 700, color: 'primary.main' }}
+                    sx={{ fontWeight: 700, color: "primary.main" }}
                   >
                     Register now
                   </Link>
@@ -142,7 +185,7 @@ function LoginPage() {
         </Box>
       </Box>
     </Box>
-  )
+  );
 }
 
-export default LoginPage
+export default LoginPage;

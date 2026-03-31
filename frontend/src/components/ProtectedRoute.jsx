@@ -1,20 +1,26 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom'
 
-const ProtectedRoute = ({ children, allowedRole }) => {
-  // TODO: Replace this mockup with actual authentication and context logic
-  const mockUserRole = localStorage.getItem('userRole'); 
-  
-  // If we don't even have a userRole mocked, redirect to login
-  if (!mockUserRole) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  // If a specific role is required and user lacks it, redirect them to their own dashboard
-  if (allowedRole && mockUserRole !== allowedRole) {
-    return <Navigate to={`/dashboard/${mockUserRole}`} replace />;
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const user = JSON.parse(localStorage.getItem('user'))
+
+  // ❌ Not logged in
+  if (!user) {
+    return <Navigate to="/login" replace />
   }
 
-  return children;
-};
+  // ❌ Wrong role
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    const roleRoutes = {
+      student: '/student/dashboard',
+      warden: '/warden/dashboard',
+      hostel_admin: '/hostel-admin/dashboard',
+      mess_admin: '/mess-admin/dashboard'
+    }
 
-export default ProtectedRoute;
+    return <Navigate to={roleRoutes[user.role]} replace />
+  }
+
+  return children
+}
+
+export default ProtectedRoute
