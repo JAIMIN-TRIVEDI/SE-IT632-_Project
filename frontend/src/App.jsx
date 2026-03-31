@@ -13,6 +13,7 @@ import StudentDashboard from "./pages/StudentDashboard.jsx";
 import ApplyRoom from "./pages/ApplyRoom.jsx";
 import MessAdminDashboard from "./pages/MessAdminDashboard.jsx";
 import MessMenu from "./pages/MessMenu.jsx";
+import ApplyMessPlan from "./pages/ApplyMessPlan.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -72,7 +73,7 @@ function App() {
           <Route
             path="/student/mess-menu"
             element={
-              <ProtectedRoute allowedRoles={["student"]}>
+              <ProtectedRoute allowedRoles={["student", "mess_admin"]}>
                 <MessMenu />
               </ProtectedRoute>
             }
@@ -82,6 +83,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["student"]}>
                 <ApplyRoom />
+              </ProtectedRoute>
+            }
+          />
+           <Route
+            path="/student/mess-plan"
+            element={
+              <ProtectedRoute allowedRoles={["student"]}>
+                <ApplyMessPlan />
               </ProtectedRoute>
             }
           />

@@ -19,6 +19,7 @@ export const navItems = [
   { label: 'My Room', icon: KingBed },
   { label: 'Payments', icon: ReceiptLong, badge: 1 },
   { label: 'Mess Menu', icon: Restaurant },
+  { label: 'Mess Plan', icon: EventAvailable },
   { label: 'Profile', icon: Person },
 ]
 

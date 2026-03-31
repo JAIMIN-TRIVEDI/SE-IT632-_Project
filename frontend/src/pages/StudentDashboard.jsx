@@ -8,6 +8,7 @@ import StudentQuickActions from '../components/dashboard/student/StudentQuickAct
 import MyRoom from './MyRoom.jsx'
 import Payments from './Payments.jsx'
 import MessMenu from './MessMenu.jsx'
+import ApplyMessPlan from './ApplyMessPlan.jsx'
 import api from '../api/api'
 
 function StudentDashboard() {
@@ -57,6 +58,8 @@ function StudentDashboard() {
         return <Payments payments={dashboardData?.payments || []} />
       case 'Mess Menu':
         return <MessMenu />
+      case 'Mess Plan':
+        return <ApplyMessPlan />
       case 'Dashboard':
       default:
         return (

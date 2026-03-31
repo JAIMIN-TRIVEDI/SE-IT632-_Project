@@ -9,8 +9,6 @@ import {
   cancelSubscription,
   getMenu,
   updateMenu,
-  markAttendance,
-  getMyAttendance,
 } from "../controllers/messController.js";
 
 import { protect } from "../middlewares/authMiddleware.js";
@@ -63,19 +61,6 @@ router.get("/mess/menu", protect, getMenu);
 
 router.put("/mess/menu", protect, authorizeRoles("mess_admin"), updateMenu);
 
-router.post(
-  "/mess/attendance",
-  protect,
-  authorizeRoles("warden"),
-  markAttendance,
-);
-
-router.get(
-  "/mess/attendance/me",
-  protect,
-  authorizeRoles("student"),
-  getMyAttendance,
-);
 
 router.post(
   "/mess/subscription/renew",
