@@ -1,6 +1,7 @@
 import { Box, IconButton, InputBase, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { LocationOn, Search, Tune } from '@mui/icons-material'
+import LogoutButton from '../../LogoutButton.jsx'
 
 function WardenTopBar() {
   return (
@@ -66,6 +67,7 @@ function WardenTopBar() {
         >
           <Tune sx={{ fontSize: 18, color: 'text.secondary' }} />
         </IconButton>
+        <LogoutButton />
       </Box>
     </Box>
   )

@@ -7,7 +7,28 @@ import {
   CreditCard,
   CheckCircle,
 } from '@mui/icons-material'
-import { quickActions } from './data'
+
+const quickActions = [
+  {
+    id: 'book-mess',
+    icon: 'Restaurant',
+    title: 'Mess Booking',
+    desc: 'View and manage your mess plan',
+  },
+  {
+    id: 'room-services',
+    icon: 'RoomService',
+    title: 'Room Services',
+    desc: 'Request maintenance or housekeeping',
+  },
+  {
+    id: 'pay-fees',
+    icon: 'CreditCard',
+    title: 'Pay Fees',
+    desc: 'Checkout pending payments',
+    highlight: true,
+  },
+]
 
 const iconMap = {
   RoomService: RoomService,

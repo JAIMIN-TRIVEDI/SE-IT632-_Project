@@ -20,6 +20,15 @@ const UserSchema = new mongoose.Schema({
     phone: {
         type: String
     },
+    enrollmentNo: {
+        type: String,
+        trim: true,
+    },
+    gender: {
+        type: String,
+        enum: ["male", "female"],
+        required: true,
+    },
     role: {
         type: String,
         enum: ["student", "warden", "hostel_admin", "mess_admin"],
@@ -41,7 +50,7 @@ UserSchema.pre("save", async function () {
 
 // 🔐 COMPARE PASSWORD METHOD
 UserSchema.methods.comparePassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
+    return await bcrypt.compare(enteredPassword, this.password);
 };
 
 export default mongoose.model("User", UserSchema);

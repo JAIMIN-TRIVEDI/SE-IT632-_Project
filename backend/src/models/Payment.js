@@ -8,15 +8,25 @@ const PaymentSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ["hostel", "mess"],
-    required: true
+    enum: ["hostel", "mess", "room_request", "other"],
+    default: "other"
   },
   amount: {
     type: Number,
     required: true
   },
+  orderId: {
+    type: String
+  },
   paymentId: {
     type: String
+  },
+  purpose: {
+    type: String
+  },
+  subscriptionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "RoomRequest"
   },
   status: {
     type: String,

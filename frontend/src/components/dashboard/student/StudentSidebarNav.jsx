@@ -5,8 +5,16 @@ import { navItems } from './data'
 
 const DRAWER_WIDTH = 240
 
-function StudentSidebarNav({ activeNav, onSelect }) {
+function StudentSidebarNav({ activeNav, onSelect, user }) {
   const navigate = useNavigate()
+
+  const userName = user?.name || 'Student'
+  const initials = userName
+    .split(' ')
+    .map((word) => word[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
 
   return (
     <Drawer
@@ -88,15 +96,17 @@ function StudentSidebarNav({ activeNav, onSelect }) {
             fontWeight: 700,
           }}
         >
-          RP
+          {initials}
         </Avatar>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography fontSize={13} fontWeight={700} color="text.primary" lineHeight={1.2}>
-            Riya Patel
+            {userName}
           </Typography>
-          <Typography fontSize={11} color="text.secondary" mt={0.3}>
-            STU-2024-042
-          </Typography>
+          {user?.studentId ? (
+            <Typography fontSize={11} color="text.secondary" mt={0.3}>
+              {user.studentId}
+            </Typography>
+          ) : null}
         </Box>
       </Box>
 

@@ -1,22 +1,43 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Box, Card, Typography } from '@mui/material'
-import { paymentSummary } from './data'
 
-export default function PaymentSummaryCards() {
+export default function PaymentSummaryCards({ payments = [] }) {
+  const summary = useMemo(() => {
+    const paidTotal = payments
+      .filter((payment) => payment.status === 'success')
+      .reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
+
+    const pendingTotal = payments
+      .filter((payment) => payment.status !== 'success')
+      .reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
+
+    const nextPending = payments
+      .filter((payment) => payment.status !== 'success')
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0]
+
+    return {
+      totalPaid: `₹${paidTotal.toFixed(2)}`,
+      pendingDues: `₹${pendingTotal.toFixed(2)}`,
+      nextDueDate: nextPending
+        ? new Date(nextPending.createdAt).toLocaleDateString()
+        : 'No dues',
+    }
+  }, [payments])
+
   const cards = [
     {
       label: 'Total Paid',
-      value: paymentSummary.totalPaid,
+      value: summary.totalPaid,
       color: 'text.primary',
     },
     {
       label: 'Pending Dues',
-      value: paymentSummary.pendingDues,
+      value: summary.pendingDues,
       color: 'warning.main',
     },
     {
       label: 'Next Due Date',
-      value: paymentSummary.nextDueDate,
+      value: summary.nextDueDate,
       color: 'text.primary',
     },
   ]

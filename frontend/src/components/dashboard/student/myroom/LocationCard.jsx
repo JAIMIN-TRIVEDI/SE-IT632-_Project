@@ -1,8 +1,7 @@
 import React from 'react'
 import { Box, Card, Typography } from '@mui/material'
-import { roomInfo } from './data'
 
-export default function LocationCard() {
+export default function LocationCard({ room }) {
   return (
     <Card
       sx={{
@@ -34,10 +33,10 @@ export default function LocationCard() {
 
       {/* Address */}
       <Typography variant="body2" fontWeight={600} sx={{ mt: 2 }}>
-        {roomInfo.location.address}
+        {room?.hostelName ? `${room.hostelName} (${room.roomNumber || 'Room'})` : 'No location available'}
       </Typography>
       <Typography variant="caption" color="text.secondary">
-        {roomInfo.location.nearby}
+        {room?.hostelType ? `${room.hostelType} hostel` : 'Room details are not available yet'}
       </Typography>
     </Card>
   )

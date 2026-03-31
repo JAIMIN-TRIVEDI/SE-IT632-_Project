@@ -8,8 +8,9 @@ import {
   Link,
   Stack,
   Grid,
-  MenuItem,
   TextField,
+  Radio,
+  RadioGroup,
   InputAdornment,
   Alert,
   CircularProgress,
@@ -26,7 +27,7 @@ function RegisterPage() {
     email: '',
     phone: '',
     studentId: '',
-    hostel: '',
+    gender: '',
     password: '',
     confirmPassword: '',
     agreedToTerms: false,
@@ -50,7 +51,7 @@ function RegisterPage() {
     setError('')
 
     // Frontend validations
-    if (!formData.fullName || !formData.email || !formData.password || !formData.confirmPassword) {
+    if (!formData.fullName || !formData.email || !formData.password || !formData.confirmPassword || !formData.gender) {
       return setError('Please fill in all required fields.')
     }
 
@@ -70,11 +71,11 @@ function RegisterPage() {
 
     try {
       const { data } = await api.post('/auth/register', {
-        name: formData.fullName,        // maps fullName → name (backend expects "name")
+        name: formData.fullName,
         email: formData.email,
         phone: formData.phone,
-        enrollmentNo: formData.studentId, // maps studentId → enrollmentNo (backend expects "enrollmentNo")
-        hostel: formData.hostel,
+        enrollmentNo: formData.studentId,
+        gender: formData.gender,
         password: formData.password,
         role: 'student',
       })
@@ -171,41 +172,28 @@ function RegisterPage() {
               </Grid>
             </Grid>
 
-            {/* Hostel Selection */}
+            {/* Gender Selection */}
             <Box>
               <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
-                Hostel Selection
+                Gender
               </Typography>
-              <TextField
-                fullWidth
-                name="hostel"
-                select
-                value={formData.hostel}
+              <RadioGroup
+                row
+                name="gender"
+                value={formData.gender}
                 onChange={handleChange}
-                displayEmpty
-                variant="outlined"
-                size="medium"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  },
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Box sx={{ color: 'action.disabled', display: 'flex', mr: 0.5 }}>🏨</Box>
-                    </InputAdornment>
-                  ),
-                }}
               >
-                <MenuItem disabled value="">
-                  Select your preferred hostel
-                </MenuItem>
-                <MenuItem value="north-wing">North Wing - Hostel A</MenuItem>
-                <MenuItem value="south-wing">South Wing - Hostel B</MenuItem>
-                <MenuItem value="east-wing">East Wing - Hostel C</MenuItem>
-                <MenuItem value="west-wing">West Wing - Hostel D</MenuItem>
-              </TextField>
+                <FormControlLabel
+                  value="male"
+                  control={<Radio />}
+                  label="Male"
+                />
+                <FormControlLabel
+                  value="female"
+                  control={<Radio />}
+                  label="Female"
+                />
+              </RadioGroup>
             </Box>
 
             {/* Password & Confirm Password */}

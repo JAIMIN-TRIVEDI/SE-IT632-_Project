@@ -12,9 +12,14 @@ const generateToken = (id) => {
 /* ================= REGISTER ================= */
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, enrollmentNo, phone, role } = req.body;
+    const { name, email, password, enrollmentNo, phone, gender, role } = req.body;
+    const normalizedEmail = email?.toLowerCase();
 
-    const exists = await User.findOne({ email });
+    if (!gender) {
+      return res.status(400).json({ message: "Gender is required for registration." });
+    }
+
+    const exists = await User.findOne({ email: normalizedEmail });
 
     if (exists) {
       return res.status(409).json({ message: "Email already exists" });
@@ -26,6 +31,7 @@ export const registerUser = async (req, res) => {
       password,
       enrollmentNo,
       phone,
+      gender,
       role: role || "student",
     });
 
@@ -45,8 +51,9 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = email?.toLowerCase();
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
@@ -69,6 +76,8 @@ export const loginUser = async (req, res) => {
         email: user.email,
         role: user.role,
         phone: user.phone,
+        gender: user.gender,
+        enrollmentNo: user.enrollmentNo,
       },
     });
   } catch (err) {

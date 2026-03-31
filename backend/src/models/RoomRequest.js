@@ -11,6 +11,18 @@ const RoomRequestSchema = new mongoose.Schema({
         ref: "Hostel",
         required: true
     },
+    roomId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Room",
+        required: true
+    },
+    roomType: {
+        type: String,
+    },
+    amount: {
+        type: Number,
+        default: 0
+    },
     status: {
         type: String,
         enum: ["pending", "approved", "rejected"],

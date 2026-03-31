@@ -15,6 +15,14 @@ const RoomSchema = new mongoose.Schema({
     ref: "Block",
     required: true
   },
+  roomType: {
+    type: String,
+    default: "General"
+  },
+  price: {
+    type: Number,
+    default: 0
+  },
   capacity: {
     type: Number,
     required: true,

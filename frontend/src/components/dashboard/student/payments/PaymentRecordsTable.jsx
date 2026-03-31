@@ -11,9 +11,8 @@ import {
   TableRow,
   Chip,
 } from '@mui/material'
-import { paymentRecords } from './data'
 
-export default function PaymentRecordsTable() {
+export default function PaymentRecordsTable({ payments = [] }) {
   return (
     <Card sx={{ border: '1px solid', borderColor: 'divider' }}>
       {/* Header */}
@@ -90,52 +89,60 @@ export default function PaymentRecordsTable() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {paymentRecords.map((payment) => (
-              <TableRow
-                key={payment.id}
-                sx={{
-                  '&:last-child td': { borderBottom: 0 },
-                }}
-              >
-                <TableCell>
-                  <Typography variant="body2" fontWeight={600}>
-                    {payment.id}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" color="text.secondary">
-                    {payment.date}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">{payment.description}</Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="body2" fontWeight={600}>
-                    {payment.amount}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Chip
-                    label={payment.status}
-                    size="small"
-                    sx={{
-                      bgcolor:
-                        payment.status === 'Paid'
-                          ? 'rgba(34, 197, 94, 0.1)'
-                          : 'rgba(234, 179, 8, 0.1)',
-                      color:
-                        payment.status === 'Paid'
-                          ? 'success.main'
-                          : 'warning.main',
-                      fontWeight: 600,
-                      fontSize: '0.75rem',
-                      borderRadius: 4,
-                    }}
-                  />
+            {payments.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography color="text.secondary">No payment records available.</Typography>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              payments.map((payment) => {
+                const displayStatus = payment.status === 'success' ? 'Paid' : payment.status || 'Pending'
+                return (
+                  <TableRow
+                    key={payment._id || payment.orderId}
+                    sx={{ '&:last-child td': { borderBottom: 0 } }}
+                  >
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={600}>
+                        {payment.orderId || payment._id}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : 'N/A'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {payment.purpose || payment.type || 'Room payment'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Typography variant="body2" fontWeight={600}>
+                        ₹{Number(payment.amount || 0).toFixed(2)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Chip
+                        label={displayStatus}
+                        size="small"
+                        sx={{
+                          bgcolor:
+                            displayStatus === 'Paid'
+                              ? 'rgba(34, 197, 94, 0.1)'
+                              : 'rgba(234, 179, 8, 0.1)',
+                          color: displayStatus === 'Paid' ? 'success.main' : 'warning.main',
+                          fontWeight: 600,
+                          fontSize: '0.75rem',
+                          borderRadius: 4,
+                        }}
+                      />
+                    </TableCell>
+                  </TableRow>
+                )
+              })
+            )}
           </TableBody>
         </Table>
       </TableContainer>

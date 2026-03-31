@@ -1,9 +1,8 @@
 import React from 'react'
 import { Box, Typography, Button, Card, Avatar, IconButton } from '@mui/material'
 import { ChatBubble } from '@mui/icons-material'
-import { roommates } from './data'
 
-export default function RoommatesSection() {
+export default function RoommatesSection({ roommates = [] }) {
   return (
     <Box>
       {/* Header */}
@@ -79,7 +78,7 @@ export default function RoommatesSection() {
                 {roommate.name}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Since {roommate.since} • {roommate.department}
+                {roommate.department || 'Roommate'}
               </Typography>
             </Box>
 

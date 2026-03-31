@@ -1,8 +1,11 @@
 import React from 'react'
 import { Box, Typography, Chip } from '@mui/material'
-import { roomInfo } from './data'
 
-export default function RoomCard() {
+export default function RoomCard({ room }) {
+  const roomNumber = room?.roomNumber || 'N/A'
+  const roomFloor = roomNumber?.split('-')?.[0] || 'N/A'
+  const status = room?.status ? `${room.status.charAt(0).toUpperCase() + room.status.slice(1)}` : 'Assigned'
+
   return (
     <Box
       sx={{
@@ -16,7 +19,6 @@ export default function RoomCard() {
         p: 3,
       }}
     >
-      {/* Room Number Section */}
       <Box sx={{ color: 'white', zIndex: 1 }}>
         <Typography
           variant="caption"
@@ -27,7 +29,7 @@ export default function RoomCard() {
             letterSpacing: '0.5px',
           }}
         >
-          📍 FLOOR {roomInfo.floor}
+          📍 FLOOR {roomFloor}
         </Typography>
         <Typography
           variant="h3"
@@ -37,13 +39,12 @@ export default function RoomCard() {
             mt: 0.5,
           }}
         >
-          Room {roomInfo.roomNumber}
+          Room {roomNumber}
         </Typography>
       </Box>
 
-      {/* Status Badge */}
       <Chip
-        label={`● ${roomInfo.status}`}
+        label={`● ${status}`}
         sx={{
           position: 'absolute',
           right: 16,

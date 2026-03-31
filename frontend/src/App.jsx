@@ -10,7 +10,9 @@ import RegisterPage from "./pages/RegisterPage.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import WardenDashboard from "./pages/WardenDashboard.jsx";
 import StudentDashboard from "./pages/StudentDashboard.jsx";
+import ApplyRoom from "./pages/ApplyRoom.jsx";
 import MessAdminDashboard from "./pages/MessAdminDashboard.jsx";
+import MessMenu from "./pages/MessMenu.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -64,6 +66,22 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["student"]}>
                 <StudentDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/mess-menu"
+            element={
+              <ProtectedRoute allowedRoles={["student"]}>
+                <MessMenu />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/apply-room"
+            element={
+              <ProtectedRoute allowedRoles={["student"]}>
+                <ApplyRoom />
               </ProtectedRoute>
             }
           />

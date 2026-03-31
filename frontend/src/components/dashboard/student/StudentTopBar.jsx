@@ -1,45 +1,55 @@
 import { Avatar, Badge, Box, IconButton, InputBase, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { Notifications, Search } from '@mui/icons-material'
+import LogoutButton from '../../LogoutButton.jsx'
 
-function StudentTopBar({ activeNav = 'Dashboard' }) {
-  // Get page-specific titles and descriptions
+function StudentTopBar({ activeNav = 'Dashboard', user, room }) {
+  const userName = user?.name || 'Student'
+  const initials = userName
+    .split(' ')
+    .map((word) => word[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+
   const getPageInfo = () => {
     switch (activeNav) {
       case 'My Room':
         return {
           title: 'My Room',
-          subtitle: 'Room A-204 · North Wing · Hostezy Residency'
+          subtitle: room?.roomNumber
+            ? `${room.roomNumber} · ${room.hostelName || 'Hostel'} · ${room.hostelType || ''}`
+            : 'Your assigned room details',
         }
       case 'Payments':
         return {
           title: 'Payments & Fees',
-          subtitle: 'Manage your payment history and upcoming dues'
+          subtitle: 'Manage your payment history and upcoming dues',
         }
       case 'Mess Menu':
         return {
           title: 'Mess Menu',
-          subtitle: 'Weekly meal schedule and dietary preferences'
+          subtitle: 'Weekly meal schedule and dietary preferences',
         }
       case 'Attendance':
         return {
           title: 'Attendance',
-          subtitle: 'Track your hostel attendance and leaves'
+          subtitle: 'Track your hostel attendance and leaves',
         }
       case 'Notices':
         return {
           title: 'Notices & Announcements',
-          subtitle: 'Stay updated with hostel notifications'
+          subtitle: 'Stay updated with hostel notifications',
         }
       case 'Profile':
         return {
           title: 'My Profile',
-          subtitle: 'Manage your personal information and settings'
+          subtitle: 'Manage your personal information and settings',
         }
       default:
         return {
           title: 'Student Dashboard',
-          subtitle: 'Welcome back, Riya'
+          subtitle: `Welcome back, ${userName}`,
         }
     }
   }
@@ -121,8 +131,9 @@ function StudentTopBar({ activeNav = 'Dashboard' }) {
             cursor: 'pointer',
           }}
         >
-          RP
+          {initials}
         </Avatar>
+        <LogoutButton />
       </Box>
     </Box>
   )

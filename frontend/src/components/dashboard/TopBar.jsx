@@ -1,7 +1,10 @@
 import { Avatar, Box, IconButton, InputBase, Typography } from '@mui/material'
 import { Help, Notifications, Search } from '@mui/icons-material'
+import LogoutButton from '../LogoutButton.jsx'
 
 function TopBar() {
+  const user = JSON.parse(localStorage.getItem('user'))
+
   return (
     <Box
       sx={{
@@ -46,14 +49,17 @@ function TopBar() {
         <Box display="flex" alignItems="center" gap={1}>
           <Box textAlign="right">
             <Typography fontSize={13} fontWeight={600} color="text.primary">
-              Alex Johnson
+              {user?.name || 'Admin User'}
             </Typography>
             <Typography fontSize={11} color="text.secondary">
-              Hostel Admin
+              {user?.role?.replace('_', ' ') || 'Hostel Admin'}
             </Typography>
           </Box>
-          <Avatar sx={{ width: 38, height: 38, bgcolor: 'action.hover' }} />
+          <Avatar sx={{ width: 38, height: 38, bgcolor: 'action.hover' }}>
+            {user?.name?.slice(0, 1) || 'A'}
+          </Avatar>
         </Box>
+        <LogoutButton />
       </Box>
     </Box>
   )

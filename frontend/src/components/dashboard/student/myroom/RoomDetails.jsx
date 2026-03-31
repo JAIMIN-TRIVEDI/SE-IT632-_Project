@@ -1,8 +1,8 @@
 import React from 'react'
 import { Box, Card, Typography } from '@mui/material'
-import { roomInfo, amenities, amenityIcons } from './data'
+import { amenities, amenityIcons } from './data'
 
-export default function RoomDetails() {
+export default function RoomDetails({ room }) {
   return (
     <Card
       sx={{
@@ -15,7 +15,6 @@ export default function RoomDetails() {
         borderRadius: 3,
       }}
     >
-      {/* Hostel */}
       <Box>
         <Typography
           variant="caption"
@@ -29,11 +28,10 @@ export default function RoomDetails() {
           HOSTEL
         </Typography>
         <Typography variant="body2" fontWeight="bold" sx={{ mt: 0.5 }}>
-          {roomInfo.hostel}
+          {room?.hostelName || '—'}
         </Typography>
       </Box>
 
-      {/* Room Type */}
       <Box>
         <Typography
           variant="caption"
@@ -47,11 +45,10 @@ export default function RoomDetails() {
           ROOM TYPE
         </Typography>
         <Typography variant="body2" fontWeight="bold" sx={{ mt: 0.5 }}>
-          {roomInfo.roomType}
+          {room?.roomType || 'Standard'}
         </Typography>
       </Box>
 
-      {/* Move-in Date */}
       <Box>
         <Typography
           variant="caption"
@@ -65,11 +62,10 @@ export default function RoomDetails() {
           MOVE-IN DATE
         </Typography>
         <Typography variant="body2" fontWeight="bold" sx={{ mt: 0.5 }}>
-          {roomInfo.moveInDate}
+          {room?.moveInDate ? new Date(room.moveInDate).toLocaleDateString() : 'Not available'}
         </Typography>
       </Box>
 
-      {/* Amenities */}
       <Box>
         <Typography
           variant="caption"

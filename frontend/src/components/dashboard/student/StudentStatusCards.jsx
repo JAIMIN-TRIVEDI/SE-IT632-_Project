@@ -6,7 +6,6 @@ import {
   CreditCard,
   CheckCircle,
 } from '@mui/icons-material'
-import { statusCards } from './data'
 
 const iconMap = {
   KingBed: KingBed,
@@ -15,10 +14,54 @@ const iconMap = {
   CheckCircle: CheckCircle,
 }
 
-export default function StudentStatusCards() {
+export default function StudentStatusCards({ dashboardData }) {
+  const room = dashboardData?.room
+  const payments = dashboardData?.payments || []
+  const openComplaints = dashboardData?.openComplaints ?? 0
+  const latestPayment = payments[0]
+
+  const cards = [
+    {
+      label: 'Room Number',
+      value: room?.roomNumber || 'Unassigned',
+      sub: room?.hostelName ? `${room.hostelName} · ${room.hostelType || ''}`.trim() : 'No room assigned',
+      tag: 'LOCATION',
+      icon: 'KingBed',
+      tagColor: '#2563eb',
+      tagBg: '#eff6ff',
+    },
+    {
+      label: 'Mess Status',
+      value: 'Regular',
+      sub: 'Monthly plan',
+      tag: 'ACTIVE',
+      icon: 'Restaurant',
+      tagColor: '#16a34a',
+      tagBg: '#f0fdf4',
+    },
+    {
+      label: 'Payment Status',
+      value: latestPayment ? (latestPayment.status === 'success' ? 'Paid' : 'Pending') : 'No payments',
+      sub: latestPayment ? `Last payment: ${new Date(latestPayment.createdAt).toLocaleDateString()}` : 'No records found',
+      tag: latestPayment?.status === 'success' ? 'PAID' : 'DUE',
+      icon: 'CreditCard',
+      tagColor: latestPayment?.status === 'success' ? '#059669' : '#b45309',
+      tagBg: latestPayment?.status === 'success' ? '#d1fae5' : '#fef3c7',
+    },
+    {
+      label: 'Open Complaints',
+      value: `${openComplaints}`,
+      sub: openComplaints > 0 ? 'Needs attention' : 'No pending issues',
+      tag: openComplaints > 0 ? 'OPEN' : 'CLEAR',
+      icon: 'CheckCircle',
+      tagColor: openComplaints > 0 ? '#9333ea' : '#16a34a',
+      tagBg: openComplaints > 0 ? '#faf5ff' : '#d1fae5',
+    },
+  ]
+
   return (
     <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2 }}>
-      {statusCards.map((card, idx) => {
+      {cards.map((card, idx) => {
         const IconComponent = iconMap[card.icon]
         return (
           <Card

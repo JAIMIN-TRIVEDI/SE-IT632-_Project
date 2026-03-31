@@ -20,6 +20,7 @@ const seedUsers = async () => {
         email: "student@test.com",
         password: "123456",
         phone: "9999999991",
+        gender: "male",
         role: "student",
         isActive: true
       },
@@ -28,14 +29,16 @@ const seedUsers = async () => {
         email: "warden@test.com",
         password: "123456",
         phone: "9999999992",
+        gender: "male",
         role: "warden",
         isActive: true
       },
-      {
+      {// create a new one for testing 
         name: "Hostel Admin",
         email: "admin@test.com",
         password: "123456",
         phone: "9999999993",
+        gender: "male",
         role: "hostel_admin",
         isActive: true
       },
@@ -44,6 +47,7 @@ const seedUsers = async () => {
         email: "mess@test.com",
         password: "123456",
         phone: "9999999994",
+        gender: "female",
         role: "mess_admin",
         isActive: true
       }

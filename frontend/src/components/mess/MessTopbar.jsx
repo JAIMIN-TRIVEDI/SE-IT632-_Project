@@ -1,4 +1,5 @@
 import { Box, InputBase, Avatar } from '@mui/material'
+import LogoutButton from '../LogoutButton.jsx'
 
 function MessTopbar() {
   return (
@@ -24,6 +25,7 @@ function MessTopbar() {
 
       <Box display="flex" alignItems="center" gap={2}>
         <Avatar />
+        <LogoutButton />
       </Box>
     </Box>
   )
