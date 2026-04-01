@@ -21,8 +21,13 @@ const MessSubscriptionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["active", "expired"],
+    enum: ["active", "expired", "cancelled", "refund_pending", "refund_approved"],
     default: "active"
+  },
+  refund: {
+    requested: { type: Boolean, default: false },
+    approved: { type: Boolean, default: false },
+    amount: { type: Number }
   }
 }, { timestamps: true });
 

@@ -9,64 +9,39 @@ import {
   cancelSubscription,
   getMenu,
   updateMenu,
+  renewSubscription,
+  createMessOrder,
+  verifyMessPayment,
+  approveRefund
 } from "../controllers/messController.js";
 
 import { protect } from "../middlewares/authMiddleware.js";
 import { authorizeRoles } from "../middlewares/roleMiddleware.js";
 
-import { renewSubscription } from "../controllers/messController.js";
-
 const router = express.Router();
 
+// ── Plans ──────────────────────────────────────────────────────────────────
 router.get("/mess/plans", protect, getPlans);
-
 router.post("/mess/plans", protect, authorizeRoles("mess_admin"), createPlan);
+router.put("/mess/plans/:id", protect, authorizeRoles("mess_admin"), updatePlan);
+router.delete("/mess/plans/:id", protect, authorizeRoles("mess_admin"), deletePlan);
 
-router.put(
-  "/mess/plans/:id",
-  protect,
-  authorizeRoles("mess_admin"),
-  updatePlan,
-);
+// ── Razorpay payment flow for mess subscription ────────────────────────────
+// POST /api/v1/mess/order  → creates Razorpay order
+router.post("/mess/order", protect, authorizeRoles("student"), createMessOrder);
+// POST /api/v1/mess/verify → verifies payment & creates MessSubscription
+router.post("/mess/verify", protect, authorizeRoles("student"), verifyMessPayment);
 
-router.delete(
-  "/mess/plans/:id",
-  protect,
-  authorizeRoles("mess_admin"),
-  deletePlan,
-);
+// ── Legacy direct-subscribe (kept for backward compat) ─────────────────────
+router.post("/mess/subscribe", protect, authorizeRoles("student"), subscribePlan);
 
-router.post(
-  "/mess/subscribe",
-  protect,
-  authorizeRoles("student"),
-  subscribePlan,
-);
-
-router.get(
-  "/mess/subscription/me",
-  protect,
-  authorizeRoles("student"),
-  getMySubscription,
-);
-
-router.post(
-  "/mess/subscription/cancel",
-  protect,
-  authorizeRoles("student"),
-  cancelSubscription,
-);
-
+// ── Subscription management ────────────────────────────────────────────────
+router.get("/mess/subscription/me", protect, authorizeRoles("student"), getMySubscription);
+router.post("/mess/subscription/cancel", protect, authorizeRoles("student"), cancelSubscription);
+router.post("/mess/subscription/renew", protect, authorizeRoles("student"), renewSubscription);
+router.post("/mess/subscription/refund/:id", protect, authorizeRoles("mess_admin"), approveRefund);
+// ── Menu ───────────────────────────────────────────────────────────────────
 router.get("/mess/menu", protect, getMenu);
-
 router.put("/mess/menu", protect, authorizeRoles("mess_admin"), updateMenu);
-
-
-router.post(
-  "/mess/subscription/renew",
-  protect,
-  authorizeRoles("student"),
-  renewSubscription,
-);
 
 export default router;
