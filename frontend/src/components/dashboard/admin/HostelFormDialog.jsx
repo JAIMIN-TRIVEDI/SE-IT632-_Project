@@ -17,7 +17,7 @@ import {
 } from '@mui/material'
 import { Close, Delete, Add } from '@mui/icons-material'
 
-function HostelFormDialog({ open, onClose, onSubmit, initialData = null }) {
+function HostelFormDialog({ open, onClose, onSubmit, initialData = null, loading = false }) {
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -28,7 +28,11 @@ function HostelFormDialog({ open, onClose, onSubmit, initialData = null }) {
   useEffect(() => {
     if (open) {
       if (initialData) {
-        setFormData(initialData)
+        setFormData({
+          name: initialData.name || '',
+          type: initialData.type || '',
+          blocks: Array.isArray(initialData.blocks) ? initialData.blocks : [],
+        })
       } else {
         setFormData({ name: '', type: '', blocks: [] })
       }
@@ -121,7 +125,7 @@ function HostelFormDialog({ open, onClose, onSubmit, initialData = null }) {
 
           {formData.blocks.map((block, index) => (
             <Box
-              key={block.id}
+              key={block._id || block.id || index}
               sx={{
                 display: 'flex',
                 gap: 2,
@@ -173,10 +177,11 @@ function HostelFormDialog({ open, onClose, onSubmit, initialData = null }) {
           <Button
             type="submit"
             variant="contained"
+            disabled={loading}
             disableElevation
             sx={{ fontWeight: 600, borderRadius: 2, px: 3 }}
           >
-            {initialData ? 'Save Changes' : 'Create Hostel'}
+            {loading ? 'Saving...' : initialData ? 'Save Changes' : 'Create Hostel'}
           </Button>
         </DialogActions>
       </form>

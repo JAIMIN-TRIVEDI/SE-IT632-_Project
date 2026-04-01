@@ -1,32 +1,39 @@
-import { useState } from 'react'
-import { Box, Button, Typography, Grid, IconButton, Chip } from '@mui/material'
-import { Add, HomeWork, Edit, DomainAdd } from '@mui/icons-material'
-import DashboardCard from '../DashboardCard.jsx'
+import { useEffect, useState } from 'react'
+import { Box, Button, Typography, Grid, CircularProgress, Alert } from '@mui/material'
+import { Add, DomainAdd } from '@mui/icons-material'
+import HostelCard from './HostelCard.jsx'
 import HostelFormDialog from './HostelFormDialog.jsx'
+import {
+  getHostels,
+  createHostel,
+  updateHostel,
+  deleteHostel,
+} from '../../../services/hostelService'
 
 function HostelsView() {
-  const [hostels, setHostels] = useState([
-    {
-      id: 1,
-      name: 'Sunset Boys Hostel',
-      type: 'boy',
-      blocks: [
-        { id: 101, name: 'Block A', totalRooms: '50' },
-        { id: 102, name: 'Block B', totalRooms: '40' },
-      ],
-    },
-    {
-      id: 2,
-      name: 'Sunrise Girls Hostel',
-      type: 'girl',
-      blocks: [
-        { id: 201, name: 'North Wing', totalRooms: '60' },
-      ],
-    },
-  ])
+  const [hostels, setHostels] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingHostel, setEditingHostel] = useState(null)
+
+  useEffect(() => {
+    const fetchHostels = async () => {
+      try {
+        setError('')
+        const data = await getHostels()
+        setHostels(data)
+      } catch (err) {
+        setError(err.response?.data?.message || err.message || 'Failed to load hostels.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchHostels()
+  }, [])
 
   const handleOpenNew = () => {
     setEditingHostel(null)
@@ -43,22 +50,53 @@ function HostelsView() {
     setEditingHostel(null)
   }
 
-  const handleSaveHostel = (formData) => {
-    if (editingHostel) {
-      // Update existing
-      const updatedHostels = hostels.map((h) =>
-        h.id === editingHostel.id ? { ...h, ...formData } : h
-      )
-      setHostels(updatedHostels)
-    } else {
-      // Create new
-      const newHostel = {
-        ...formData,
-        id: Date.now(),
-      }
-      setHostels((prev) => [...prev, newHostel])
+  const handleSaveHostel = async (formData) => {
+    const payload = {
+      name: formData.name,
+      type: formData.type,
+      blocks: Array.isArray(formData.blocks)
+        ? formData.blocks.map((block) => ({
+            _id: block._id,
+            name: block.name,
+            totalRooms: Number(block.totalRooms || 0),
+            rooms: Array.isArray(block.rooms) ? block.rooms : [],
+          }))
+        : [],
     }
-    handleCloseDialog()
+
+    try {
+      setSaving(true)
+      setError('')
+
+      if (editingHostel?._id) {
+        const updatedHostel = await updateHostel(editingHostel._id, payload)
+        setHostels((prev) =>
+          prev.map((hostel) => (hostel._id === editingHostel._id ? updatedHostel : hostel))
+        )
+      } else {
+        const newHostel = await createHostel(payload)
+        setHostels((prev) => [newHostel, ...prev])
+      }
+
+      handleCloseDialog()
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to save hostel.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteHostel = async (hostelId) => {
+    const confirmed = window.confirm('Are you sure you want to delete this hostel?')
+    if (!confirmed) return
+
+    try {
+      setError('')
+      await deleteHostel(hostelId)
+      setHostels((prev) => prev.filter((hostel) => hostel._id !== hostelId))
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to delete hostel.')
+    }
   }
 
   return (
@@ -78,117 +116,54 @@ function HostelsView() {
         </Button>
       </Box>
 
-      {hostels.length === 0 ? (
+      {error && (
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      )}
+
+      {!loading && hostels.length === 0 ? (
         <Box
           textAlign="center"
-          py={10}
-          bgcolor={(theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'white')}
+          py={12}
+          bgcolor={(theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(37, 99, 235, 0.02)')}
           borderRadius={3}
           border={(theme) => `1px dashed ${theme.palette.divider}`}
+          sx={{
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(37, 99, 235, 0.04)'),
+            },
+          }}
         >
-          <DomainAdd sx={{ fontSize: 64, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
-          <Typography variant="h6" color="text.secondary" fontWeight={600}>
+          <DomainAdd sx={{ fontSize: 72, color: 'text.secondary', mb: 2, opacity: 0.4 }} />
+          <Typography variant="h5" color="text.secondary" fontWeight={700} mb={1}>
             No Hostels Found
           </Typography>
-          <Typography color="text.secondary" variant="body2" mb={3}>
+          <Typography color="text.secondary" variant="body2" mb={4} sx={{ maxWidth: 400, mx: 'auto' }}>
             Start by creating a new hostel to manage rooms and students.
           </Typography>
-          <Button variant="outlined" startIcon={<Add />} onClick={handleOpenNew}>
-            Add Hostel
+          <Button variant="contained" startIcon={<Add />} onClick={handleOpenNew} sx={{ borderRadius: 2, px: 3, py: 1 }}>
+            Create First Hostel
           </Button>
         </Box>
       ) : (
         <Grid container spacing={3}>
-          {hostels.map((hostel) => {
-            const totalBlocks = hostel.blocks.length
-            const totalRooms = hostel.blocks.reduce(
-              (acc, block) => acc + parseInt(block.totalRooms || 0, 10),
-              0
-            )
-
-            return (
-              <Grid item xs={12} sm={6} md={4} key={hostel.id} sx={{ display: 'flex' }}>
-                <DashboardCard
-                  contentSx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}
-                  sx={(theme) => ({
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    position: 'relative',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: theme.palette.mode === 'dark' 
-                        ? '0 8px 24px rgba(0,0,0,0.6)' 
-                        : '0 8px 24px rgba(0,0,0,0.1)',
-                    },
-                  })}
-                >
-                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                    <Box
-                      sx={{
-                        p: 1.5,
-                        borderRadius: 2,
-                        bgcolor: hostel.type === 'girl' ? '#fdf2f8' : '#eff6ff',
-                        color: hostel.type === 'girl' ? '#db2777' : '#2563eb',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <HomeWork />
-                    </Box>
-                    <IconButton size="small" onClick={() => handleOpenEdit(hostel)} sx={{ color: 'text.secondary' }}>
-                      <Edit fontSize="small" />
-                    </IconButton>
-                  </Box>
-
-                  <Typography variant="h6" fontWeight={700} noWrap title={hostel.name}>
-                    {hostel.name}
-                  </Typography>
-
-                  <Box display="flex" gap={1} mt={1} mb={2}>
-                    <Chip
-                      label={hostel.type === 'boy' ? 'Boys' : 'Girls'}
-                      size="small"
-                      sx={{
-                        bgcolor: hostel.type === 'boy' ? '#eff6ff' : '#fdf2f8',
-                        color: hostel.type === 'boy' ? '#2563eb' : '#db2777',
-                        fontWeight: 600,
-                        fontSize: '0.75rem',
-                      }}
-                    />
-                    <Chip
-                      label={`${totalBlocks} Blocks`}
-                      size="small"
-                      variant="outlined"
-                      sx={{ fontSize: '0.75rem', fontWeight: 500 }}
-                    />
-                  </Box>
-
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      pt: 2,
-                      mt: 'auto',
-                      borderTop: (theme) => `1px solid ${theme.palette.divider}`,
-                    }}
-                  >
-                    <Box>
-                      <Typography fontSize="0.75rem" color="text.secondary">
-                        Total Capacity
-                      </Typography>
-                      <Typography fontWeight={700} color="text.primary">
-                        {totalRooms} Rooms
-                      </Typography>
-                    </Box>
-                  </Box>
-                </DashboardCard>
-              </Grid>
-            )
-          })}
+          {hostels.map((hostel) => (
+            <Grid item xs={12} sm={6} md={6} lg={5} key={hostel._id}>
+              <HostelCard
+                hostel={hostel}
+                onEdit={handleOpenEdit}
+                onDelete={handleDeleteHostel}
+              />
+            </Grid>
+          ))}
         </Grid>
       )}
 
@@ -198,6 +173,7 @@ function HostelsView() {
         onClose={handleCloseDialog}
         onSubmit={handleSaveHostel}
         initialData={editingHostel}
+        loading={saving}
       />
     </Box>
   )
