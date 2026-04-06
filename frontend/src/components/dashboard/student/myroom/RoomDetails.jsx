@@ -1,8 +1,9 @@
 import React from 'react'
 import { Box, Card, Typography } from '@mui/material'
 import { amenities, amenityIcons } from './data'
+import HighlightMatch from '../../../../HighlightMatch.jsx'
 
-export default function RoomDetails({ room }) {
+export default function RoomDetails({ room, searchQuery = '' }) {
   return (
     <Card
       sx={{
@@ -28,7 +29,7 @@ export default function RoomDetails({ room }) {
           HOSTEL
         </Typography>
         <Typography variant="body2" fontWeight="bold" sx={{ mt: 0.5 }}>
-          {room?.hostelName || '—'}
+          <HighlightMatch text={room?.hostelName || '—'} query={searchQuery} />
         </Typography>
       </Box>
 
@@ -45,7 +46,7 @@ export default function RoomDetails({ room }) {
           ROOM TYPE
         </Typography>
         <Typography variant="body2" fontWeight="bold" sx={{ mt: 0.5 }}>
-          {room?.roomType || 'Standard'}
+          <HighlightMatch text={room?.roomType || 'Standard'} query={searchQuery} />
         </Typography>
       </Box>
 
@@ -62,7 +63,10 @@ export default function RoomDetails({ room }) {
           MOVE-IN DATE
         </Typography>
         <Typography variant="body2" fontWeight="bold" sx={{ mt: 0.5 }}>
-          {room?.moveInDate ? new Date(room.moveInDate).toLocaleDateString() : 'Not available'}
+          <HighlightMatch
+            text={room?.moveInDate ? new Date(room.moveInDate).toLocaleDateString() : 'Not available'}
+            query={searchQuery}
+          />
         </Typography>
       </Box>
 

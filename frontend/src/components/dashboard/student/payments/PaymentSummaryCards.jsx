@@ -3,15 +3,19 @@ import { Box, Card, Typography } from '@mui/material'
 
 export default function PaymentSummaryCards({ payments = [] }) {
   const summary = useMemo(() => {
-    const paidTotal = payments
+    const hostelPayments = payments.filter(
+      (payment) => payment.type === 'hostel' || payment.type === 'room_request'
+    )
+
+    const paidTotal = hostelPayments
       .filter((payment) => payment.status === 'success')
       .reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
 
-    const pendingTotal = payments
+    const pendingTotal = hostelPayments
       .filter((payment) => payment.status !== 'success')
       .reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
 
-    const nextPending = payments
+    const nextPending = hostelPayments
       .filter((payment) => payment.status !== 'success')
       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0]
 

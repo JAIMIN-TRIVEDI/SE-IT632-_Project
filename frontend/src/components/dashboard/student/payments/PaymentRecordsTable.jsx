@@ -11,8 +11,9 @@ import {
   TableRow,
   Chip,
 } from '@mui/material'
+import HighlightMatch from '../../../HighlightMatch.jsx'
 
-export default function PaymentRecordsTable({ payments = [] }) {
+export default function PaymentRecordsTable({ payments = [], searchQuery = '' }) {
   return (
     <Card sx={{ border: '1px solid', borderColor: 'divider' }}>
       {/* Header */}
@@ -97,7 +98,12 @@ export default function PaymentRecordsTable({ payments = [] }) {
               </TableRow>
             ) : (
               payments.map((payment) => {
-                const displayStatus = payment.status === 'success' ? 'Paid' : payment.status || 'Pending'
+                const isHostelPayment = payment.type === 'hostel' || payment.type === 'room_request'
+                const displayStatus = isHostelPayment
+                  ? payment.status === 'success'
+                    ? 'Paid'
+                    : payment.status || 'Pending'
+                  : 'N/A'
                 return (
                   <TableRow
                     key={payment._id || payment.orderId}
@@ -105,22 +111,25 @@ export default function PaymentRecordsTable({ payments = [] }) {
                   >
                     <TableCell>
                       <Typography variant="body2" fontWeight={600}>
-                        {payment.orderId || payment._id}
+                        <HighlightMatch text={payment.orderId || payment._id} query={searchQuery} />
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
-                        {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : 'N/A'}
+                        <HighlightMatch
+                          text={payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : 'N/A'}
+                          query={searchQuery}
+                        />
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {payment.purpose || payment.type || 'Room payment'}
+                        <HighlightMatch text={payment.purpose || payment.type || 'Room payment'} query={searchQuery} />
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2" fontWeight={600}>
-                        ₹{Number(payment.amount || 0).toFixed(2)}
+                        <HighlightMatch text={`₹${Number(payment.amount || 0).toFixed(2)}`} query={searchQuery} />
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
@@ -131,8 +140,15 @@ export default function PaymentRecordsTable({ payments = [] }) {
                           bgcolor:
                             displayStatus === 'Paid'
                               ? 'rgba(34, 197, 94, 0.1)'
+                              : displayStatus === 'N/A'
+                              ? 'rgba(107, 114, 128, 0.12)'
                               : 'rgba(234, 179, 8, 0.1)',
-                          color: displayStatus === 'Paid' ? 'success.main' : 'warning.main',
+                          color:
+                            displayStatus === 'Paid'
+                              ? 'success.main'
+                              : displayStatus === 'N/A'
+                              ? 'text.secondary'
+                              : 'warning.main',
                           fontWeight: 600,
                           fontSize: '0.75rem',
                           borderRadius: 4,

@@ -5,6 +5,32 @@ import Payment from "../models/Payment.js";
 import razorpay from "../config/razorpay.js";
 import crypto from "crypto";
 
+const getSubscriptionCurrentStatus = (subscription) => {
+  if (!subscription) return "none";
+
+  if (subscription.refund?.requested && !subscription.refund?.approved) {
+    return "cancellation_requested";
+  }
+
+  if (subscription.status === "cancelled" || subscription.status === "refund_approved") {
+    return "cancelled";
+  }
+
+  if (subscription.status === "expired") {
+    return "expired";
+  }
+
+  if (subscription.status === "active" && subscription.endDate && new Date(subscription.endDate) < new Date()) {
+    return "expired";
+  }
+
+  if (subscription.status === "active") {
+    return "active";
+  }
+
+  return subscription.status;
+};
+
 export const getPlans = async (req, res) => {
   const plans = await MessPlan.find();
   res.json({ success: true, data: plans });
@@ -98,15 +124,17 @@ export const verifyMessPayment = async (req, res) => {
       return res.status(404).json({ message: "Payment record not found." });
     }
 
-    payment.status = "success";
-    payment.paymentId = razorpay_payment_id;
-    await payment.save();
-
     // Fetch plan to calculate dates
     const plan = await MessPlan.findById(planId);
     if (!plan) {
       return res.status(404).json({ message: "Mess plan not found." });
     }
+
+    payment.status = "success";
+    payment.paymentId = razorpay_payment_id;
+    payment.type = "mess";
+    payment.purpose = `Mess plan: ${plan.name}`;
+    await payment.save();
 
     const startDate = new Date();
     const endDate = new Date(startDate);
@@ -157,8 +185,15 @@ export const subscribePlan = async (req, res) => {
 export const getMySubscription = async (req, res) => {
   const subscription = await MessSubscription.findOne({
     studentId: req.user._id,
-  }).populate("planId");
-  res.json({ success: true, data: subscription });
+  })
+    .sort({ createdAt: -1 })
+    .populate("planId");
+
+  res.json({
+    success: true,
+    data: subscription,
+    currentStatus: getSubscriptionCurrentStatus(subscription),
+  });
 };
 
 export const cancelSubscription = async (req, res) => {
@@ -170,6 +205,10 @@ export const cancelSubscription = async (req, res) => {
 
     if (!subscription) {
       return res.status(404).json({ message: "No active subscription found." });
+    }
+
+    if (subscription.refund?.requested && !subscription.refund?.approved) {
+      return res.status(400).json({ message: "Cancellation is already requested." });
     }
 
     const today = new Date();
@@ -185,8 +224,8 @@ export const cancelSubscription = async (req, res) => {
     const refundAmount =
       subscription.planId.price - usedDays * perDay;
 
-    // Update subscription
-    subscription.status = "refund_pending";
+    // Keep the subscription active until the mess admin approves the refund
+    subscription.status = "active";
     subscription.refund = {
       requested: true,
       approved: false,
@@ -194,11 +233,14 @@ export const cancelSubscription = async (req, res) => {
     };
 
     await subscription.save();
+    const updatedSubscription = await MessSubscription.findById(subscription._id).populate("planId");
 
     res.json({
       success: true,
-      message: "Refund request submitted",
+      message: "Cancellation request submitted",
       refundAmount: subscription.refund.amount,
+      subscription: updatedSubscription,
+      currentStatus: getSubscriptionCurrentStatus(updatedSubscription),
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -241,7 +283,7 @@ export const approveRefund = async (req, res) => {
       return res.status(400).json({ message: "Invalid request" });
     }
 
-    subscription.status = "refund_approved";
+    subscription.status = "cancelled";
     subscription.refund.approved = true;
 
     await subscription.save();

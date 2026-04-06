@@ -17,8 +17,21 @@ const iconMap = {
 export default function StudentStatusCards({ dashboardData }) {
   const room = dashboardData?.room
   const payments = dashboardData?.payments || []
+  const messCurrentStatus = dashboardData?.messCurrentStatus || 'none'
+  const messSubscription = dashboardData?.messSubscription
   const openComplaints = dashboardData?.openComplaints ?? 0
-  const latestPayment = payments[0]
+  const hostelPayments = payments.filter((payment) => payment.type === 'hostel' || payment.type === 'room_request')
+  const latestHostelPayment = hostelPayments[0]
+
+  const messStatusMap = {
+    active: { value: 'Active', sub: messSubscription?.planId?.name ? `${messSubscription.planId.name} plan` : 'Subscription is active', tag: 'ACTIVE', tagColor: '#16a34a', tagBg: '#f0fdf4' },
+    cancellation_requested: { value: 'Cancelling', sub: 'Pending mess admin approval', tag: 'REQUESTED', tagColor: '#b45309', tagBg: '#fef3c7' },
+    cancelled: { value: 'Cancelled', sub: 'You can purchase a new plan', tag: 'CANCELLED', tagColor: '#dc2626', tagBg: '#fee2e2' },
+    expired: { value: 'Expired', sub: 'Please renew your mess plan', tag: 'EXPIRED', tagColor: '#6b7280', tagBg: '#f3f4f6' },
+    none: { value: 'Not Enrolled', sub: 'No active mess plan', tag: 'NONE', tagColor: '#6b7280', tagBg: '#f3f4f6' },
+  }
+
+  const messStatus = messStatusMap[messCurrentStatus] || messStatusMap.none
 
   const cards = [
     {
@@ -32,21 +45,29 @@ export default function StudentStatusCards({ dashboardData }) {
     },
     {
       label: 'Mess Status',
-      value: 'Regular',
-      sub: 'Monthly plan',
-      tag: 'ACTIVE',
+      value: messStatus.value,
+      sub: messStatus.sub,
+      tag: messStatus.tag,
       icon: 'Restaurant',
-      tagColor: '#16a34a',
-      tagBg: '#f0fdf4',
+      tagColor: messStatus.tagColor,
+      tagBg: messStatus.tagBg,
     },
     {
-      label: 'Payment Status',
-      value: latestPayment ? (latestPayment.status === 'success' ? 'Paid' : 'Pending') : 'No payments',
-      sub: latestPayment ? `Last payment: ${new Date(latestPayment.createdAt).toLocaleDateString()}` : 'No records found',
-      tag: latestPayment?.status === 'success' ? 'PAID' : 'DUE',
+      label: 'Room Payment Status',
+      value: latestHostelPayment ? (latestHostelPayment.status === 'success' ? 'Paid' : 'Pending') : 'No hostel payment',
+      sub: latestHostelPayment
+        ? `Last hostel payment: ${new Date(latestHostelPayment.createdAt).toLocaleDateString()}`
+        : 'No hostel payment records found',
+      tag: latestHostelPayment
+        ? (latestHostelPayment.status === 'success' ? 'PAID' : 'DUE')
+        : 'NONE',
       icon: 'CreditCard',
-      tagColor: latestPayment?.status === 'success' ? '#059669' : '#b45309',
-      tagBg: latestPayment?.status === 'success' ? '#d1fae5' : '#fef3c7',
+      tagColor: latestHostelPayment
+        ? (latestHostelPayment.status === 'success' ? '#059669' : '#b45309')
+        : '#6b7280',
+      tagBg: latestHostelPayment
+        ? (latestHostelPayment.status === 'success' ? '#d1fae5' : '#fef3c7')
+        : '#f3f4f6',
     },
     {
       label: 'Open Complaints',

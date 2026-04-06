@@ -5,14 +5,23 @@ import RoomCard from '../components/dashboard/student/myroom/RoomCard'
 import RoomDetails from '../components/dashboard/student/myroom/RoomDetails'
 import RoommatesSection from '../components/dashboard/student/myroom/RoommatesSection'
 import RoomPoliciesCard from '../components/dashboard/student/myroom/RoomPoliciesCard'
-import LocationCard from '../components/dashboard/student/myroom/LocationCard'
 import VacateRequestCard from '../components/dashboard/student/myroom/VacateRequestCard'
 
-function MyRoom({ dashboardData }) {
+function MyRoom({ dashboardData, searchQuery = '', onVacateRequested }) {
   const navigate = useNavigate()
   const room = dashboardData?.room
   const request = dashboardData?.roomRequest
+  const vacateRequest = dashboardData?.vacateRequest
   const roommates = dashboardData?.roommates || []
+
+  const filteredRoommates = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return roommates
+    }
+
+    const q = searchQuery.toLowerCase()
+    return roommates.filter((mate) => [mate.name, mate.initials].some((field) => String(field || '').toLowerCase().includes(q)))
+  }, [roommates, searchQuery])
 
   const roomAssigned = Boolean(room)
 
@@ -62,14 +71,16 @@ function MyRoom({ dashboardData }) {
       </Card>
       <Box sx={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 3 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <RoomDetails room={room} />
-          <RoommatesSection roommates={roommates} />
+          <RoomDetails room={room} searchQuery={searchQuery} />
+          <RoommatesSection roommates={filteredRoommates} searchQuery={searchQuery} />
         </Box>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <RoomPoliciesCard />
-          <LocationCard room={room} />
-          <VacateRequestCard />
+          <VacateRequestCard
+            vacateRequest={vacateRequest}
+            onRequestSubmitted={onVacateRequested}
+          />
         </Box>
       </Box>
     </Box>

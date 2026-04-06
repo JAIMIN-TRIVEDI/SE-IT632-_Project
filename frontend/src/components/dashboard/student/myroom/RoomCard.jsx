@@ -1,6 +1,6 @@
 import React from 'react'
 import { Box, Typography, Chip } from '@mui/material'
-
+import RoomImage from '../../../../assets/images/room_image.jpg'
 export default function RoomCard({ room }) {
   const roomNumber = room?.roomNumber || 'N/A'
   const roomFloor = roomNumber?.split('-')?.[0] || 'N/A'
@@ -12,8 +12,10 @@ export default function RoomCard({ room }) {
         position: 'relative',
         overflow: 'hidden',
         borderRadius: 3,
-        background: 'linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.95) 100%)',
-        height: 224,
+        backgroundImage: `linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.3) 100%), url(${RoomImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        height: 350,
         display: 'flex',
         alignItems: 'flex-end',
         p: 3,
