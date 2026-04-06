@@ -66,7 +66,7 @@ function App() {
             path="/student/dashboard"
             element={
               <ProtectedRoute allowedRoles={["student"]}>
-                <StudentDashboard />
+                <StudentDashboard mode={mode} onToggleTheme={handleToggleTheme} />
               </ProtectedRoute>
             }
           />
