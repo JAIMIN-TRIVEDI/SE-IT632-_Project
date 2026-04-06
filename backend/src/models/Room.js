@@ -18,7 +18,7 @@ const RoomSchema = new mongoose.Schema({
   roomType: {
     type: String,
     enum: ["double", "triple", "quad"],
-    default: "Triple"
+    default: "triple"
   },
   price: {
     type: Number,

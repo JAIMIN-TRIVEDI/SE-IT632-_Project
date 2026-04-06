@@ -1,7 +1,10 @@
 import React from 'react'
-import { Box, Typography, Chip } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
+import { Box, Typography, Chip, Button, Stack } from '@mui/material'
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded'
 import RoomImage from '../../../../assets/images/room_image.jpg'
 export default function RoomCard({ room }) {
+  const navigate = useNavigate()
   const roomNumber = room?.roomNumber || 'N/A'
   const roomFloor = roomNumber?.split('-')?.[0] || 'N/A'
   const status = room?.status ? `${room.status.charAt(0).toUpperCase() + room.status.slice(1)}` : 'Assigned'
@@ -21,7 +24,7 @@ export default function RoomCard({ room }) {
         p: 3,
       }}
     >
-      <Box sx={{ color: 'white', zIndex: 1 }}>
+      <Box sx={{ color: 'white', zIndex: 1, width: '100%' }}>
         <Typography
           variant="caption"
           sx={{
@@ -43,6 +46,39 @@ export default function RoomCard({ room }) {
         >
           Room {roomNumber}
         </Typography>
+
+        <Button
+          variant="contained"
+          onClick={() => navigate('/student/apply-room')}
+          endIcon={<ArrowForwardRoundedIcon />}
+          sx={{
+            mt: 2.5,
+            alignSelf: 'flex-start',
+            bgcolor: 'rgba(255,255,255,0.14)',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.25)',
+            backdropFilter: 'blur(10px)',
+            fontWeight: 800,
+            textTransform: 'none',
+            borderRadius: 999,
+            px: 2.25,
+            py: 1,
+            boxShadow: 'none',
+            '&:hover': {
+              bgcolor: 'rgba(37, 99, 235, 0.92)',
+              borderColor: 'rgba(255,255,255,0.18)',
+              boxShadow: 'none',
+            },
+          }}
+        >
+          Apply for Room
+        </Button>
+
+        <Stack direction="row" spacing={1} sx={{ mt: 1.5, opacity: 0.9 }}>
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.82)' }}>
+            Opens room request flow
+          </Typography>
+        </Stack>
       </Box>
 
       <Chip

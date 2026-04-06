@@ -1,14 +1,43 @@
-import { Box, IconButton, Typography, Chip } from '@mui/material'
+import { Box, IconButton, Typography, Chip, Stack } from '@mui/material'
 import { HomeWork, Edit, Delete } from '@mui/icons-material'
 import DashboardCard from '../DashboardCard.jsx'
 
+const formatDate = (value) => {
+  if (!value) return '—'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString()
+}
+
 function HostelCard({ hostel, onEdit, onDelete }) {
-  const blocks = hostel.blocks || []
-  const totalBlocks = blocks.length
-  const totalRooms = blocks.reduce(
-    (acc, block) => acc + parseInt(block.totalRooms || 0, 10),
-    0
-  )
+  const blocks = Array.isArray(hostel.blocks) ? hostel.blocks : []
+  const rooms = Array.isArray(hostel.rooms) ? hostel.rooms : []
+  const totalBlocks = hostel.totalBlocks ?? blocks.length
+  const totalRooms = hostel.totalRooms ?? blocks.reduce((acc, block) => acc + Number(block.totalRooms || 0), 0)
+  const availableRooms = hostel.availableRooms ?? rooms.filter((room) => room.status === 'available').length
+  const wardenName = hostel.wardenId?.name || 'Unassigned'
+  const wardenEmail = hostel.wardenId?.email || ''
+  const creatorName = hostel.createdBy?.name || 'Unknown'
+  const creatorEmail = hostel.createdBy?.email || ''
+  const createdAt = formatDate(hostel.createdAt)
+  const updatedAt = formatDate(hostel.updatedAt)
+
+  const roomTypeSummary = [
+    {
+      key: 'double',
+      label: 'Double',
+      value: rooms.filter((room) => room.roomType === 'double').length,
+    },
+    {
+      key: 'triple',
+      label: 'Triple',
+      value: rooms.filter((room) => room.roomType === 'triple').length,
+    },
+    {
+      key: 'quad',
+      label: 'Quad',
+      value: rooms.filter((room) => room.roomType === 'quad').length,
+    },
+  ].filter((item) => item.value > 0)
 
   return (
     <DashboardCard
@@ -67,13 +96,11 @@ function HostelCard({ hostel, onEdit, onDelete }) {
         </Box>
       </Box>
 
-      {/* Hostel Name */}
       <Typography variant="h6" fontWeight={700} noWrap title={hostel.name} sx={{ mb: 0.5, lineHeight: 1.3 }}>
         {hostel.name}
       </Typography>
 
-      {/* Type and Blocks Chips */}
-      <Box display="flex" gap={1} mb={2.5} sx={{ flexWrap: 'wrap' }}>
+      <Box display="flex" gap={1} mb={2} sx={{ flexWrap: 'wrap' }}>
         <Chip
           label={hostel.type === 'boy' ? 'Boys' : 'Girls'}
           size="small"
@@ -95,27 +122,45 @@ function HostelCard({ hostel, onEdit, onDelete }) {
             height: 24,
           }}
         />
+        {roomTypeSummary.map((item) => (
+          <Chip
+            key={item.key}
+            label={`${item.label}: ${item.value}`}
+            size="small"
+            variant="outlined"
+            sx={{
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              height: 24,
+            }}
+          />
+        ))}
       </Box>
 
-      {/* Stats Section */}
+      <Stack spacing={1} sx={{ mb: 2.5 }}>
+        <Box>
+          <Typography fontSize="0.8rem" color="text.secondary" fontWeight={500} sx={{ mb: 0.25 }}>
+            Warden
+          </Typography>
+          <Typography fontWeight={700} color="text.primary">
+            {wardenName}
+          </Typography>
+          {wardenEmail && (
+            <Typography fontSize="0.8rem" color="text.secondary">
+              {wardenEmail}
+            </Typography>
+          )}
+        </Box>
+      </Stack>
+
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 2,
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 1.5,
           pt: 2,
-          mt: 'auto',
-          borderTop: (theme) => `1px solid ${theme.palette.divider}`,
         }}
       >
-        <Box>
-          <Typography fontSize="0.8rem" color="text.secondary" fontWeight={500} sx={{ mb: 0.5 }}>
-            Total Rooms
-          </Typography>
-          <Typography fontWeight={700} color="text.primary" sx={{ fontSize: '1.2rem' }}>
-            {totalRooms}
-          </Typography>
-        </Box>
         <Box>
           <Typography fontSize="0.8rem" color="text.secondary" fontWeight={500} sx={{ mb: 0.5 }}>
             Blocks
@@ -124,16 +169,25 @@ function HostelCard({ hostel, onEdit, onDelete }) {
             {totalBlocks}
           </Typography>
         </Box>
-      </Box>
-
-      {/* Empty State */}
-      {totalBlocks === 0 && (
-        <Box sx={{ pt: 2, mt: 2, borderTop: (theme) => `1px solid ${theme.palette.divider}` }}>
-          <Typography fontSize="0.8rem" color="text.secondary" textAlign="center">
-            No blocks configured
+        <Box>
+          <Typography fontSize="0.8rem" color="text.secondary" fontWeight={500} sx={{ mb: 0.5 }}>
+            Available Rooms
+          </Typography>
+          <Typography fontWeight={700} color="text.primary" sx={{ fontSize: '1.2rem' }}>
+            {availableRooms}
           </Typography>
         </Box>
-      )}
+        <Box>
+          <Typography fontSize="0.8rem" color="text.secondary" fontWeight={500} sx={{ mb: 0.5 }}>
+            Total Rooms
+          </Typography>
+          <Typography fontWeight={700} color="text.primary" sx={{ fontSize: '1.2rem' }}>
+            {totalRooms}
+          </Typography>
+        </Box>
+      </Box>
+
+    
     </DashboardCard>
   )
 }

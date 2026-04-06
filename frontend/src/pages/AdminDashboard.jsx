@@ -8,6 +8,7 @@ import RevenueChartCard from '../components/dashboard/RevenueChartCard.jsx'
 import RecentActivityCard from '../components/dashboard/RecentActivityCard.jsx'
 import PendingFeesCard from '../components/dashboard/PendingFeesCard.jsx'
 import HostelsView from '../components/dashboard/admin/HostelsView.jsx'
+import StudentsView from '../components/dashboard/admin/StudentsView.jsx'
 import api from '../api/api'
 
 function AdminDashboard() {
@@ -37,6 +38,9 @@ function AdminDashboard() {
     switch (activeNav) {
       case 'Hostels':
         return <HostelsView />
+
+      case 'Students':
+        return <StudentsView />
 
       case 'Dashboard':
       default:

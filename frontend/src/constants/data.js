@@ -18,11 +18,11 @@ export const navItems = [
   { label: 'Hostels', icon: Apartment },
   { label: 'Rooms', icon: KingBed },
   { label: 'Students', icon: People },
-  { label: 'Mess Plans', icon: Restaurant },
+  // { label: 'Mess Plans', icon: Restaurant },
   { label: 'Payments', icon: Payment },
   { label: 'Reports', icon: BarChart },
   { label: 'Notifications', icon: Notifications },
-  { label: 'Settings', icon: Settings },
+  // { label: 'Settings', icon: Settings },
 ]
 
 export const stats = [

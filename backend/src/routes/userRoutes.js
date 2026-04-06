@@ -26,7 +26,7 @@ router.get("/student/dashboard", protect, async (req, res) => {
     const user = req.user;
 
     const allocation = await RoomAllocation.findOne({ studentId: user._id, status: 'active' })
-      .populate({ path: 'roomId', select: 'roomNumber capacity status' })
+      .populate({ path: 'roomId', select: 'roomNumber roomType capacity status' })
       .populate({ path: 'hostelId', select: 'name type' });
 
     const payments = await Payment.find({ userId: user._id }).sort({ createdAt: -1 }).lean();
@@ -60,7 +60,8 @@ router.get("/student/dashboard", protect, async (req, res) => {
 
     let roommates = [];
     if (allocation) {
-      const roomAllocations = await RoomAllocation.find({ roomId: allocation.roomId, status: 'active' }).populate({ path: 'studentId', select: 'name email' }).lean();
+      const roomId = allocation.roomId?._id || allocation.roomId;
+      const roomAllocations = await RoomAllocation.find({ roomId, status: 'active' }).populate({ path: 'studentId', select: 'name email' }).lean();
       roommates = roomAllocations
         .filter((item) => item.studentId._id.toString() !== user._id.toString())
         .map((item) => ({
@@ -77,6 +78,7 @@ router.get("/student/dashboard", protect, async (req, res) => {
     const room = allocation
       ? {
         roomNumber: allocation.roomId?.roomNumber || null,
+        roomType: allocation.roomId?.roomType || null,
         capacity: allocation.roomId?.capacity || null,
         status: allocation.roomId?.status || null,
         hostelName: allocation.hostelId?.name || null,

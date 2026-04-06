@@ -1,7 +1,8 @@
 import React from 'react'
 import { Box, Card, Typography } from '@mui/material'
 import { amenities, amenityIcons } from './data'
-import HighlightMatch from '../../../../HighlightMatch.jsx'
+import HighlightMatch from  '../../../../components/HighlightMatch'
+
 
 export default function RoomDetails({ room, searchQuery = '' }) {
   return (

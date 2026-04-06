@@ -6,6 +6,7 @@ import {
   paymentReport,
   complaintReport,
   messReport,
+  hostelStudentsReport,
 } from "../controllers/reportController.js";
 
 import { protect } from "../middlewares/authMiddleware.js";
@@ -39,6 +40,13 @@ router.get(
   protect,
   authorizeRoles("hostel_admin"),
   paymentReport,
+);
+
+router.get(
+  "/students-by-hostel",
+  protect,
+  authorizeRoles("hostel_admin"),
+  hostelStudentsReport,
 );
 
 router.get(

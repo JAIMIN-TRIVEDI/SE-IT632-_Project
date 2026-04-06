@@ -1,7 +1,7 @@
 import React from 'react'
 import { Box, Typography, Button, Card, Avatar, IconButton } from '@mui/material'
 import { ChatBubble } from '@mui/icons-material'
-import HighlightMatch from '../../../../HighlightMatch.jsx'
+import HighlightMatch from  '../../../../components/HighlightMatch'
 
 export default function RoommatesSection({ roommates = [], searchQuery = '' }) {
   return (
