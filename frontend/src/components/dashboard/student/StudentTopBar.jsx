@@ -1,9 +1,21 @@
-import { Avatar, Badge, Box, IconButton, InputBase, Typography } from '@mui/material'
+import { Avatar, Box, IconButton, InputBase, Tooltip, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { Notifications, Search } from '@mui/icons-material'
+import Brightness4RoundedIcon from '@mui/icons-material/Brightness4Rounded'
+import Brightness7RoundedIcon from '@mui/icons-material/Brightness7Rounded'
 import LogoutButton from '../../LogoutButton.jsx'
 
-function StudentTopBar({ activeNav = 'Dashboard', user, room }) {
+function StudentTopBar({
+  activeNav = 'Dashboard',
+  user,
+  room,
+  mode = 'light',
+  onToggleTheme,
+  searchQuery = '',
+  searchPlaceholder = 'Search... ',
+  onSearchChange,
+  onProfileClick,
+}) {
   const userName = user?.name || 'Student'
   const initials = userName
     .split(' ')
@@ -96,7 +108,9 @@ function StudentTopBar({ activeNav = 'Dashboard', user, room }) {
         >
           <Search sx={{ color: 'text.secondary', fontSize: 18 }} />
           <InputBase
-            placeholder="Search notices, services..."
+            placeholder={searchPlaceholder}
+            value={searchQuery}
+            onChange={(event) => onSearchChange?.(event.target.value)}
             sx={{ fontSize: 13, color: 'text.secondary', flex: 1 }}
           />
         </Box>
@@ -113,26 +127,50 @@ function StudentTopBar({ activeNav = 'Dashboard', user, room }) {
             height: 40,
           }}
         >
-          <Badge
-            badgeContent={3}
+          {/* <Badge
+            badgeContent={1}
             color="error"
             sx={{ '& .MuiBadge-badge': { fontSize: 10 } }}
-          >
+          > */}
             <Notifications sx={{ fontSize: 18, color: 'text.secondary' }} />
-          </Badge>
+          {/* </Badge> */}
         </IconButton>
-        <Avatar
-          sx={{
-            width: 38,
-            height: 38,
-            bgcolor: 'primary.main',
-            fontSize: 14,
-            fontWeight: 800,
-            cursor: 'pointer',
-          }}
-        >
-          {initials}
-        </Avatar>
+        <Tooltip title={mode === 'dark' ? 'Switch to light' : 'Switch to dark'}>
+          <IconButton
+            onClick={onToggleTheme}
+            sx={{
+              bgcolor: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? alpha(theme.palette.common.white, 0.08)
+                  : theme.palette.common.white,
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 2,
+              width: 40,
+              height: 40,
+            }}
+          >
+            {mode === 'dark'
+              ? <Brightness7RoundedIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+              : <Brightness4RoundedIcon sx={{ fontSize: 18, color: 'text.secondary' }} />}
+          </IconButton>
+        </Tooltip>
+        <Tooltip title='My Profile'>
+          <IconButton onClick={onProfileClick} sx={{ p: 0 }}>
+            <Avatar
+              sx={{
+                width: 38,
+                height: 38,
+                bgcolor: 'primary.main',
+                fontSize: 14,
+                fontWeight: 800,
+                cursor: 'pointer',
+              }}
+            >
+              {initials}
+            </Avatar>
+          </IconButton>
+        </Tooltip>
         <LogoutButton />
       </Box>
     </Box>

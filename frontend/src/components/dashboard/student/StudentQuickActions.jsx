@@ -7,6 +7,7 @@ import {
   CreditCard,
   CheckCircle,
 } from '@mui/icons-material'
+import HighlightMatch from '../../HighlightMatch.jsx'
 
 const quickActions = [
   {
@@ -36,15 +37,29 @@ const iconMap = {
   CreditCard: CreditCard,
 }
 
-export default function StudentQuickActions() {
+export default function StudentQuickActions({ searchQuery = '', onActionSelect }) {
+  const actionTargets = {
+    'book-mess': 'Mess Subscription',
+    'room-services': 'Complaints',
+    'pay-fees': 'Payments',
+  }
+
+  const filteredActions = searchQuery.trim()
+    ? quickActions.filter((action) => {
+      const q = searchQuery.toLowerCase()
+      return action.title.toLowerCase().includes(q) || action.desc.toLowerCase().includes(q)
+    })
+    : quickActions
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
       {/* Quick Action Buttons */}
-      {quickActions.map((action) => {
+      {filteredActions.map((action) => {
         const IconComponent = iconMap[action.icon]
         return (
           <Button
             key={action.id}
+            onClick={() => onActionSelect?.(actionTargets[action.id])}
             sx={{
               width: '100%',
               display: 'flex',
@@ -91,7 +106,7 @@ export default function StudentQuickActions() {
             {/* Content */}
             <Box sx={{ flex: 1, textAlign: 'left' }}>
               <Typography variant="body2" fontWeight={600}>
-                {action.title}
+                <HighlightMatch text={action.title} query={searchQuery} />
               </Typography>
               <Typography
                 variant="caption"
@@ -99,7 +114,7 @@ export default function StudentQuickActions() {
                   color: action.highlight ? 'rgba(255,255,255,0.8)' : 'text.secondary',
                 }}
               >
-                {action.desc}
+                <HighlightMatch text={action.desc} query={searchQuery} />
               </Typography>
             </Box>
 

@@ -9,17 +9,20 @@ import {
   LocalLaundryService,
   FitnessCenter,
   LocalLibrary,
-  RestaurantMenu,
   CreditCard,
   Warning,
+  ReportProblem,
+  History,
 } from '@mui/icons-material'
 
 export const navItems = [
   { label: 'Dashboard', icon: DashboardIcon },
   { label: 'My Room', icon: KingBed },
-  { label: 'Payments', icon: ReceiptLong, badge: 1 },
+  { label: 'Mess Subscription', icon: EventAvailable },
   { label: 'Mess Menu', icon: Restaurant },
-  { label: 'Mess Plan', icon: EventAvailable },
+  { label: 'Payments', icon: CreditCard },
+  { label: 'Complaints', icon: ReportProblem },
+  { label: 'Notifications', icon: Notifications },
   { label: 'Profile', icon: Person },
 ]
 
@@ -107,94 +110,4 @@ export const attendanceData = [
   { day: 'Fri', val: 100 },
   { day: 'Sat', val: 50 },
   { day: 'Sun', val: 0 },
-]
-
-export const statusCards = [
-  {
-    label: 'Room Number',
-    value: '302',
-    sub: 'Wing B',
-    tag: 'LOCATION',
-    icon: 'KingBed',
-    tagColor: '#2563eb',
-    tagBg: '#eff6ff',
-  },
-  {
-    label: 'Mess Status',
-    value: 'Regular',
-    sub: 'Monthly Plan',
-    tag: 'ACTIVE',
-    icon: 'Restaurant',
-    tagColor: '#16a34a',
-    tagBg: '#f0fdf4',
-  },
-  {
-    label: 'Payment Status',
-    value: 'Up-to-date',
-    sub: 'Next due: Dec 15',
-    tag: 'PAID',
-    icon: 'CreditCard',
-    tagColor: '#059669',
-    tagBg: '#d1fae5',
-  },
-  {
-    label: 'Open Complaints',
-    value: '0',
-    sub: 'No pending items',
-    tag: 'RESOLVED',
-    icon: 'CheckCircle',
-    tagColor: '#9333ea',
-    tagBg: '#faf5ff',
-  },
-]
-
-export const recentNotifications = [
-  {
-    id: 1,
-    title: 'Mess Menu Updated',
-    desc: 'Check the new weekly menu for next week',
-    time: '2 hours ago',
-    icon: 'Restaurant',
-    color: '#ea580c',
-  },
-  {
-    id: 2,
-    title: 'Laundry Service Available',
-    desc: 'Your clothes are ready for pickup',
-    time: '5 hours ago',
-    icon: 'Checkroom',
-    color: '#2563eb',
-  },
-  {
-    id: 3,
-    title: 'Fee Payment Reminder',
-    desc: 'Reminder: Next fee payment due on Dec 15',
-    time: '1 day ago',
-    icon: 'Warning',
-    color: '#dc2626',
-  },
-]
-
-export const quickActions = [
-  {
-    id: 1,
-    title: 'Raise Complaint',
-    desc: 'Report an issue or concern',
-    icon: 'RoomService',
-    highlight: true,
-  },
-  {
-    id: 2,
-    title: 'View Menu',
-    desc: 'Check weekly mess menu',
-    icon: 'Restaurant',
-    highlight: false,
-  },
-  {
-    id: 3,
-    title: 'Fee Breakdown',
-    desc: 'View payment details',
-    icon: 'CreditCard',
-    highlight: false,
-  },
 ]

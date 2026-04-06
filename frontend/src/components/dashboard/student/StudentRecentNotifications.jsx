@@ -7,6 +7,7 @@ import {
   Checkroom,
   Warning,
 } from '@mui/icons-material'
+import HighlightMatch from '../../HighlightMatch.jsx'
 
 const iconMap = {
   Restaurant: Restaurant,
@@ -14,7 +15,7 @@ const iconMap = {
   Warning: Warning,
 }
 
-export default function StudentRecentNotifications({ notifications = [] }) {
+export default function StudentRecentNotifications({ notifications = [], searchQuery = '', onViewAllNotifications }) {
   const displayNotifications = notifications.map((notif) => ({
     id: notif._id || notif.id,
     title: notif.type ? notif.type.replace(/_/g, ' ') : 'Notification',
@@ -23,6 +24,13 @@ export default function StudentRecentNotifications({ notifications = [] }) {
     icon: notif.type === 'warning' ? 'Warning' : notif.type === 'mess' ? 'Restaurant' : 'Checkroom',
     color: notif.type === 'warning' ? '#dc2626' : '#2563eb',
   }))
+
+  const filteredNotifications = searchQuery.trim()
+    ? displayNotifications.filter((notif) => {
+      const q = searchQuery.toLowerCase()
+      return notif.title.toLowerCase().includes(q) || notif.desc.toLowerCase().includes(q)
+    })
+    : displayNotifications
 
   return (
     <Card sx={{ p: 3, border: '1px solid', borderColor: 'divider' }}>
@@ -50,10 +58,10 @@ export default function StudentRecentNotifications({ notifications = [] }) {
 
       {/* Notifications List */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {displayNotifications.length === 0 ? (
+        {filteredNotifications.length === 0 ? (
           <Typography color="text.secondary">No recent notifications.</Typography>
         ) : (
-          displayNotifications.map((notif, idx) => {
+          filteredNotifications.map((notif, idx) => {
             const IconComponent = iconMap[notif.icon]
             return (
               <Box
@@ -62,7 +70,7 @@ export default function StudentRecentNotifications({ notifications = [] }) {
                   display: 'flex',
                   gap: 2,
                   pb: 2,
-                  borderBottom: idx < displayNotifications.length - 1 ? '1px solid' : 'none',
+                  borderBottom: idx < filteredNotifications.length - 1 ? '1px solid' : 'none',
                   borderColor: 'divider',
                   px: 1,
                   py: 1,
@@ -79,10 +87,10 @@ export default function StudentRecentNotifications({ notifications = [] }) {
                 {/* Content */}
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography variant="body2" fontWeight={600}>
-                    {notif.title}
+                    <HighlightMatch text={notif.title} query={searchQuery} />
                   </Typography>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-                    {notif.desc}
+                    <HighlightMatch text={notif.desc} query={searchQuery} />
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
                     {notif.time}
@@ -101,6 +109,7 @@ export default function StudentRecentNotifications({ notifications = [] }) {
       <Button
         fullWidth
         variant="outlined"
+        onClick={onViewAllNotifications}
         sx={{
           mt: 3,
           py: 1,
@@ -108,6 +117,7 @@ export default function StudentRecentNotifications({ notifications = [] }) {
           fontWeight: 600,
           textTransform: 'none',
         }}
+       
       >
         View All Notifications
       </Button>
