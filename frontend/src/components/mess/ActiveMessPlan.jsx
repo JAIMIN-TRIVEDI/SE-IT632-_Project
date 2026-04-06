@@ -4,17 +4,18 @@ import api from "../api/api";
 
 export default function ActiveMessPlan() {
   const [subscription, setSubscription] = useState(null);
+  const [currentStatus, setCurrentStatus] = useState("none");
   const [loading, setLoading] = useState(true);
   const [canceling, setCanceling] = useState(false);
 
-  useEffect(() => {
-    fetchSub();
-  }, []);
+  const cancellationRequested = currentStatus === "cancellation_requested";
+  const hasActiveAccess = currentStatus === "active" || currentStatus === "cancellation_requested";
 
   const fetchSub = async () => {
     try {
       const res = await api.get("/mess/subscription/me");
-      setSubscription(res.data.data);
+      setSubscription(res.data.data || null);
+      setCurrentStatus(res.data.currentStatus || "none");
     } catch (err) {
       console.error(err);
     } finally {
@@ -22,16 +23,20 @@ export default function ActiveMessPlan() {
     }
   };
 
+  useEffect(() => {
+    fetchSub();
+  }, []);
+
   const handleCancel = async () => {
     if (!window.confirm("Cancel mess plan? Refund will be processed.")) return;
 
     setCanceling(true);
     try {
       const res = await api.post("/mess/subscription/cancel");
-      alert(`Refund Requested: ₹${res.data.refundAmount}`);
-      fetchSub();
+      alert(`Cancellation requested. Refund amount: ₹${res.data.refundAmount}`);
+      await fetchSub();
     } catch (err) {
-      alert("Error cancelling");
+      alert(err?.response?.data?.message || "Error cancelling");
     } finally {
       setCanceling(false);
     }
@@ -39,7 +44,7 @@ export default function ActiveMessPlan() {
 
   if (loading) return <CircularProgress />;
 
-  if (!subscription) return <Typography>No active plan</Typography>;
+  if (!subscription) return <Typography>No plan found.</Typography>;
 
   return (
     <Card sx={{ p: 3 }}>
@@ -51,11 +56,11 @@ export default function ActiveMessPlan() {
         Ends on: {new Date(subscription.endDate).toDateString()}
       </Typography>
 
-      <Typography color="success.main">
-        Status: {subscription.status}
+      <Typography color={cancellationRequested ? "warning.main" : "success.main"}>
+        Status: {String(currentStatus || "unknown").replace(/_/g, " ")}
       </Typography>
 
-      {subscription.status === "active" && (
+      {hasActiveAccess && !cancellationRequested && (
         <Button
           color="error"
           variant="contained"
@@ -66,9 +71,9 @@ export default function ActiveMessPlan() {
         </Button>
       )}
 
-      {subscription.status === "refund_pending" && (
+      {cancellationRequested && (
         <Typography color="warning.main">
-          Refund Pending (₹{subscription.refund?.amount})
+          Requested for cancellation (Refund: ₹{subscription.refund?.amount})
         </Typography>
       )}
     </Card>
