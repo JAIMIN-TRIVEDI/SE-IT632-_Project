@@ -1,8 +1,9 @@
 import React from 'react'
 import { Box, Typography, Button, Card, Avatar, IconButton } from '@mui/material'
 import { ChatBubble } from '@mui/icons-material'
+import HighlightMatch from '../../../../HighlightMatch.jsx'
 
-export default function RoommatesSection({ roommates = [] }) {
+export default function RoommatesSection({ roommates = [], searchQuery = '' }) {
   return (
     <Box>
       {/* Header */}
@@ -75,10 +76,10 @@ export default function RoommatesSection({ roommates = [] }) {
             {/* Info */}
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography variant="body2" fontWeight={600} noWrap>
-                {roommate.name}
+                <HighlightMatch text={roommate.name} query={searchQuery} />
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {roommate.department || 'Roommate'}
+                <HighlightMatch text={roommate.department || 'Roommate'} query={searchQuery} />
               </Typography>
             </Box>
 
