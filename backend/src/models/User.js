@@ -34,6 +34,12 @@ const UserSchema = new mongoose.Schema({
         enum: ["student", "warden", "hostel_admin", "mess_admin"],
         required: true
     },
+    resetPasswordOTP: {
+        type: String
+    },
+    resetPasswordExpire: {
+        type: Date
+    },
     isActive: {
         type: Boolean,
         default: true
