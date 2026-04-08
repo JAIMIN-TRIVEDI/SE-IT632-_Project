@@ -1,4 +1,5 @@
 import Room from "../models/Room.js";
+import Hostel from "../models/Hostel.js";
 import User from "../models/User.js";
 
 export const createRoom = async(req,res)=>{
@@ -28,10 +29,21 @@ export const getRoom = async(req,res)=>{
   try{
 
     const room = await Room.findById(req.params.id)
-    .populate("occupants","name email enrollmentNo");
+      .populate("occupants","name email enrollmentNo");
 
     if(!room){
       return res.status(404).json({message:"Room not found"});
+    }
+
+    if (req.user?.role === "warden") {
+      const isAssigned = await Hostel.exists({
+        _id: room.hostelId,
+        wardenId: req.user._id,
+      });
+
+      if (!isAssigned) {
+        return res.status(403).json({message:"Not authorized to view this room"});
+      }
     }
 
     res.json({

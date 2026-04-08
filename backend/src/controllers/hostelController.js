@@ -141,6 +141,13 @@ const attachBlocksAndRooms = async (hostelDocs) => {
   });
 };
 
+const applyWardenHostelFilter = (query, user) => {
+  if (user?.role === "warden") {
+    return query.where("wardenId").equals(user._id);
+  }
+  return query;
+};
+
 const normalizeBlocksInput = (blocksInput) => {
   if (!Array.isArray(blocksInput)) return [];
 
@@ -490,7 +497,8 @@ export const getHostels = async(req,res)=>{
 
   try{
 
-    const hostels = await populateHostelRelations(Hostel.find());
+    const hostelQuery = applyWardenHostelFilter(Hostel.find(), req.user);
+    const hostels = await populateHostelRelations(hostelQuery);
     const hostelsWithDetails = await attachBlocksAndRooms(hostels);
 
     res.json({
@@ -510,7 +518,9 @@ export const getHostelById = async(req,res)=>{
 
   try{
 
-    const hostel = await populateHostelRelations(Hostel.findById(req.params.id));
+    let query = Hostel.findById(req.params.id);
+    query = applyWardenHostelFilter(query, req.user);
+    const hostel = await populateHostelRelations(query);
 
     if(!hostel){
       return res.status(404).json({message:"Hostel not found"});

@@ -45,7 +45,7 @@ router.get(
 router.get(
   "/students-by-hostel",
   protect,
-  authorizeRoles("hostel_admin"),
+  authorizeRoles("hostel_admin", "warden"),
   hostelStudentsReport,
 );
 

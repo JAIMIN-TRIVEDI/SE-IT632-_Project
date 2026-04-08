@@ -27,7 +27,7 @@ function WardenSidebarNav({ activeNav, onSelect }) {
       <Box
         sx={{
           px: 2.5,
-          py: 2.5,
+          py: 3,
           display: 'flex',
           alignItems: 'center',
           gap: 1.5,
@@ -55,8 +55,8 @@ function WardenSidebarNav({ activeNav, onSelect }) {
           <Typography fontWeight={800} fontSize={15} color="text.primary" lineHeight={1}>
             Hostezy
           </Typography>
-          <Typography fontSize={10} color="text.secondary" letterSpacing={1} textTransform="uppercase">
-            Warden
+          <Typography fontSize={10} color="text.secondary" letterSpacing={1} textTransform="uppercase" sx={{ fontWeight: 700 }}>
+            MANAGEMENT
           </Typography>
         </Box>
       </Box>
@@ -72,6 +72,11 @@ function WardenSidebarNav({ activeNav, onSelect }) {
                   borderRadius: 2,
                   px: 1.5,
                   py: 1,
+                  pl: 2,
+                  borderLeft: (theme) =>
+                    activeNav === item.label
+                      ? `4px solid ${theme.palette.primary.main}`
+                      : '4px solid transparent',
                   bgcolor: (theme) =>
                     activeNav === item.label
                       ? alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.24 : 0.12)
@@ -116,7 +121,7 @@ function WardenSidebarNav({ activeNav, onSelect }) {
           )
         })}
       </List>
-      <Box sx={{ px: 2, pb: 3 }}>
+      {/* <Box sx={{ px: 2, pb: 3 }}>
         <Button
           variant="contained"
           fullWidth
@@ -134,7 +139,7 @@ function WardenSidebarNav({ activeNav, onSelect }) {
         >
           Quick Check-in
         </Button>
-      </Box>
+      </Box> */}
     </Drawer>
   )
 }
