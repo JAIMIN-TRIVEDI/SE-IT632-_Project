@@ -1,0 +1,166 @@
+import { useEffect, useState } from 'react'
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+  Paper,
+  Alert,
+} from '@mui/material'
+import { getSubscriptions, approveRefund } from '../services/messService'
+
+function MessSubscriptions() {
+  const [subscriptions, setSubscriptions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [actionLoading, setActionLoading] = useState(false)
+
+  const fetchSubscriptions = async () => {
+    try {
+      setError('')
+      setLoading(true)
+      const data = await getSubscriptions()
+      setSubscriptions(data)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Unable to load subscriptions.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleApproveRefund = async (id) => {
+    try {
+      setActionLoading(true)
+      await approveRefund(id)
+      await fetchSubscriptions()
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to approve refund.')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchSubscriptions()
+  }, [])
+
+  return (
+    <Box sx={{ minHeight: '100%' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+        <Box>
+          <Typography variant="h5" fontWeight={800} mb={0.5}>
+            Mess Subscriptions
+          </Typography>
+          <Typography color="text.secondary">
+            Review active subscriptions and process refund requests.
+          </Typography>
+        </Box>
+        <Card sx={{ minWidth: 240, p: 2, bgcolor: '#fff' }}>
+          <CardContent>
+            <Typography fontSize={12} color="text.secondary" gutterBottom>
+              Pending refund requests
+            </Typography>
+            <Typography variant="h4" fontWeight={700}>
+              {subscriptions.filter((sub) => sub.refund?.requested && !sub.refund?.approved).length}
+            </Typography>
+          </CardContent>
+        </Card>
+      </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Student</TableCell>
+                <TableCell>Plan</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Start</TableCell>
+                <TableCell>End</TableCell>
+                <TableCell>Refund</TableCell>
+                <TableCell align="right">Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {subscriptions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                    No subscriptions found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                subscriptions.map((sub) => (
+                  <TableRow key={sub._id} hover>
+                    <TableCell>
+                      <Typography fontWeight={600}>{sub.studentId?.name || 'Unknown'}</Typography>
+                      <Typography fontSize={12} color="text.secondary">{sub.studentId?.email}</Typography>
+                    </TableCell>
+                    <TableCell>{sub.planId?.name || 'Plan not found'}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={sub.status || 'unknown'}
+                        color={sub.status === 'active' ? 'success' : sub.status === 'cancelled' ? 'error' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>{sub.startDate ? new Date(sub.startDate).toLocaleDateString() : '—'}</TableCell>
+                    <TableCell>{sub.endDate ? new Date(sub.endDate).toLocaleDateString() : '—'}</TableCell>
+                    <TableCell>
+                      {sub.refund?.requested ? (
+                        <Typography fontSize={12} color="text.secondary">
+                          ₹{sub.refund?.amount ?? 0} requested
+                        </Typography>
+                      ) : (
+                        <Typography fontSize={12} color="text.secondary">
+                          None
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell align="right">
+                      {sub.refund?.requested && !sub.refund?.approved ? (
+                        <Button
+                          variant="contained"
+                          size="small"
+                          disabled={actionLoading}
+                          onClick={() => handleApproveRefund(sub._id)}
+                          sx={{ textTransform: 'none' }}
+                        >
+                          Approve refund
+                        </Button>
+                      ) : (
+                        <Typography color="text.secondary" fontSize={12}>
+                          No action
+                        </Typography>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+    </Box>
+  )
+}
+
+export default MessSubscriptions

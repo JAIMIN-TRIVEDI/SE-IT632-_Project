@@ -1,25 +1,29 @@
 import { Box, Typography } from '@mui/material'
 import DashboardIcon from '@mui/icons-material/Dashboard'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 const menu = [
-  "Dashboard",
-  "Mess Plans",
-  "Subscriptions",
-  "Students",
-  "Payments",
-  "Attendance",
-  "Menu Management",
-  "Notifications",
-  "Reports",
-  "Settings"
+  { label: 'Dashboard', route: '/mess-admin/dashboard' },
+  { label: 'Mess Plans', route: '/mess-admin/plans' },
+  { label: 'Subscriptions', route: '/mess-admin/subscriptions' },
+  { label: 'Students', route: '/mess-admin/students' },
+  { label: 'Payments', route: '/mess-admin/payments' },
+  { label: 'Menu Management', route: '/mess-admin/menu' },
+  { label: 'Notifications', route: '/mess-admin/notifications' },
+  { label: 'Reports', route: '/mess-admin/reports' },
+  { label: 'Profile', route: '/mess-admin/profile' },
 ]
 
 function MessSidebar() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
   return (
     <Box sx={{
       width: 260,
-      bgcolor: '#fff',
-      borderRight: '1px solid #e5e7eb',
+      bgcolor: 'background.paper',
+      borderRight: '1px solid',
+      borderColor: 'divider',
       p: 2,
       display: 'flex',
       flexDirection: 'column'
@@ -32,33 +36,47 @@ function MessSidebar() {
       </Box>
 
       {/* Menu */}
-      {menu.map((item, index) => (
-        <Box
-          key={index}
-          sx={{
-            p: 1.3,
-            borderRadius: 2,
-            cursor: 'pointer',
-            bgcolor: item === "Dashboard" ? '#e0ecff' : 'transparent',
-            color: item === "Dashboard" ? '#2563eb' : '#334155',
-            '&:hover': { bgcolor: '#f1f5f9' }
-          }}
-        >
-          {item}
-        </Box>
-      ))}
+      {menu.map((item) => {
+        const isActive =
+          location.pathname === item.route ||
+          (item.route === '/mess-admin/dashboard' && location.pathname === '/mess-admin')
+        return (
+          <Box
+            key={item.route}
+            onClick={() => navigate(item.route)}
+            sx={{
+              p: 1.3,
+              borderRadius: 2,
+              cursor: 'pointer',
+              bgcolor: isActive ? 'primary.main' : 'transparent',
+              color: isActive ? 'primary.contrastText' : 'text.primary',
+              '&:hover': { bgcolor: isActive ? 'primary.dark' : 'action.hover' }
+            }}
+          >
+            {item.label}
+          </Box>
+        )
+      })}
 
       {/* Button */}
       <Box mt="auto">
-        <Box sx={{
-          mt: 2,
-          bgcolor: '#2563eb',
-          color: 'white',
-          textAlign: 'center',
-          py: 1.5,
-          borderRadius: 3,
-          cursor: 'pointer'
-        }}>
+        <Box
+          onClick={() => navigate('/mess-admin/plans')}
+          sx={{
+            mt: 2,
+            bgcolor: 'primary.main',
+            color: 'primary.contrastText',
+            textAlign: 'center',
+            py: 1.5,
+            borderRadius: 3,
+            cursor: 'pointer',
+            transition: 'transform 0.2s ease',
+            '&:hover': {
+              transform: 'translateY(-1px)',
+              bgcolor: 'primary.dark',
+            },
+          }}
+        >
           + Add Mess Plan
         </Box>
       </Box>

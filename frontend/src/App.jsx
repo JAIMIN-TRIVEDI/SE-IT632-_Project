@@ -12,8 +12,18 @@ import WardenDashboard from "./pages/WardenDashboard.jsx";
 import StudentDashboard from "./pages/StudentDashboard.jsx";
 import ApplyRoom from "./pages/ApplyRoom.jsx";
 import MessAdminDashboard from "./pages/MessAdminDashboard.jsx";
+import MessPlans from "./pages/MessPlans.jsx";
+import MessComingSoon from "./pages/MessComingSoon.jsx";
 import MessMenu from "./pages/MessMenu.jsx";
 import ApplyMessPlan from "./pages/ApplyMessPlan.jsx";
+import MessAdminLayout from "./layouts/MessAdminLayout.jsx";
+import MessPayments from "./pages/MessPayments.jsx";
+import MessSubscriptions from "./pages/MessSubscriptions.jsx";
+import MessStudents from "./pages/MessStudents.jsx";
+import MessMenuManagement from "./pages/MessMenuManagement.jsx";
+import MessAdminProfile from "./pages/MessAdminProfile.jsx";
+import MessNotifications from "./pages/MessNotifications.jsx";
+import MessReports from "./pages/MessReports.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -115,15 +125,26 @@ function App() {
             }
           />
 
-          ✅ MESS ADMIN
+          {/* ✅ MESS ADMIN */}
           <Route
-            path="/mess-admin/dashboard"
+            path="/mess-admin"
             element={
               <ProtectedRoute allowedRoles={["mess_admin"]}>
-                <MessAdminDashboard />
+                <MessAdminLayout mode={mode} onToggleTheme={handleToggleTheme} />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<MessAdminDashboard />} />
+            <Route path="dashboard" element={<MessAdminDashboard />} />
+            <Route path="plans" element={<MessPlans />} />
+            <Route path="subscriptions" element={<MessSubscriptions />} />
+            <Route path="students" element={<MessStudents />} />
+            <Route path="payments" element={<MessPayments />} />
+            <Route path="menu" element={<MessMenuManagement />} />
+            <Route path="notifications" element={<MessNotifications />} />
+            <Route path="reports" element={<MessReports />} />
+            <Route path="profile" element={<MessAdminProfile />} />
+          </Route>
 
           <Route path="/forgot-password" element={<ForgotPassword />} />
         </Routes>

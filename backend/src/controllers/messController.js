@@ -37,7 +37,10 @@ export const getPlans = async (req, res) => {
 };
 
 export const createPlan = async (req, res) => {
-  const plan = await MessPlan.create(req.body);
+  const plan = await MessPlan.create({
+    ...req.body,
+    createdBy: req.user._id,
+  });
   res.status(201).json({ success: true, data: plan });
 };
 
@@ -194,6 +197,85 @@ export const getMySubscription = async (req, res) => {
     data: subscription,
     currentStatus: getSubscriptionCurrentStatus(subscription),
   });
+};
+
+export const getSubscriptions = async (req, res) => {
+  const subscriptions = await MessSubscription.find()
+    .sort({ createdAt: -1 })
+    .populate("studentId", "name email enrollmentNo phone")
+    .populate("planId", "name price durationInDays");
+
+  res.json({ success: true, data: subscriptions });
+};
+
+export const getStudents = async (req, res) => {
+  const subscriptions = await MessSubscription.find()
+    .populate("studentId", "name email enrollmentNo phone")
+    .populate("planId", "name price durationInDays")
+    .sort({ createdAt: -1 });
+
+  const studentMap = new Map();
+  subscriptions.forEach((sub) => {
+    const student = sub.studentId;
+    if (student) {
+      const key = student._id.toString();
+      if (!studentMap.has(key)) {
+        studentMap.set(key, {
+          _id: student._id,
+          name: student.name,
+          email: student.email,
+          phone: student.phone,
+          enrollmentNo: student.enrollmentNo,
+          currentPlan: sub.planId?.name || 'N/A',
+          status: sub.status,
+          lastSubscriptionDate: sub.createdAt,
+        });
+      }
+    }
+  });
+
+  res.json({ success: true, data: Array.from(studentMap.values()) });
+};
+
+export const getPayments = async (req, res) => {
+  const payments = await Payment.find({ type: "mess" })
+    .sort({ createdAt: -1 })
+    .populate("userId", "name email");
+
+  const totalRevenue = payments.reduce((sum, payment) => sum + payment.amount, 0);
+
+  res.json({ success: true, data: payments, totalRevenue });
+};
+
+export const getStudentsByPlan = async (req, res) => {
+  const { planId } = req.params;
+  const subscriptions = await MessSubscription.find({ planId })
+    .populate("studentId", "name email enrollmentNo phone")
+    .sort({ createdAt: -1 });
+
+  const students = subscriptions.map(sub => ({
+    _id: sub.studentId._id,
+    name: sub.studentId.name,
+    email: sub.studentId.email,
+    enrollmentNo: sub.studentId.enrollmentNo,
+    phone: sub.studentId.phone,
+    status: sub.status,
+    startDate: sub.startDate,
+    endDate: sub.endDate,
+  }));
+
+  res.json({ success: true, data: students });
+};
+
+export const getPaymentsByPlan = async (req, res) => {
+  const { planId } = req.params;
+  const payments = await Payment.find({ type: "mess", subscriptionId: planId })
+    .populate("userId", "name email")
+    .sort({ createdAt: -1 });
+
+  const totalRevenue = payments.reduce((sum, payment) => sum + payment.amount, 0);
+
+  res.json({ success: true, data: payments, totalRevenue });
 };
 
 export const cancelSubscription = async (req, res) => {

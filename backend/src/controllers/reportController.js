@@ -90,17 +90,41 @@ export const complaintReport = async(req,res)=>{
 
 };
 
-export const messReport = async(req,res)=>{
+export const messReport = async (req, res) => {
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const subs = await MessSubscription.countDocuments({
-    status:"active"
-  });
+  const [activeSubscriptions, totalPlans, pendingRefundRequests, revenueResult] = await Promise.all([
+    MessSubscription.countDocuments({ status: "active" }),
+    MessPlan.countDocuments(),
+    MessSubscription.countDocuments({ "refund.requested": true, "refund.approved": false }),
+    Payment.aggregate([
+      {
+        $match: {
+          type: "mess",
+          status: "success",
+          createdAt: { $gte: thirtyDaysAgo },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$amount" },
+        },
+      },
+    ]),
+  ]);
+
+  const monthlyRevenue = revenueResult[0]?.total ?? 0;
 
   res.json({
-    success:true,
-    activeSubscriptions:subs
+    success: true,
+    data: {
+      activeSubscriptions,
+      totalPlans,
+      pendingRefundRequests,
+      monthlyRevenue,
+    },
   });
-
 };
 
 export const hostelStudentsReport = async (req, res) => {

@@ -7,6 +7,11 @@ import {
   subscribePlan,
   getMySubscription,
   cancelSubscription,
+  getSubscriptions,
+  getStudents,
+  getPayments,
+  getStudentsByPlan,
+  getPaymentsByPlan,
   getMenu,
   updateMenu,
   renewSubscription,
@@ -39,6 +44,11 @@ router.post("/mess/subscribe", protect, authorizeRoles("student"), subscribePlan
 router.get("/mess/subscription/me", protect, authorizeRoles("student"), getMySubscription);
 router.post("/mess/subscription/cancel", protect, authorizeRoles("student"), cancelSubscription);
 router.post("/mess/subscription/renew", protect, authorizeRoles("student"), renewSubscription);
+router.get("/mess/subscriptions", protect, authorizeRoles("mess_admin"), getSubscriptions);
+router.get("/mess/students", protect, authorizeRoles("mess_admin"), getStudents);
+router.get("/mess/payments", protect, authorizeRoles("mess_admin"), getPayments);
+router.get("/mess/plans/:planId/students", protect, authorizeRoles("mess_admin"), getStudentsByPlan);
+router.get("/mess/plans/:planId/payments", protect, authorizeRoles("mess_admin"), getPaymentsByPlan);
 router.post("/mess/subscription/refund/:id", protect, authorizeRoles("mess_admin"), approveRefund);
 // ── Menu ───────────────────────────────────────────────────────────────────
 router.get("/mess/menu", protect, getMenu);
