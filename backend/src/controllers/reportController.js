@@ -6,12 +6,70 @@ import MessSubscription from "../models/MessSubscription.js";
 import Hostel from "../models/Hostel.js";
 import RoomAllocation from "../models/RoomAllocation.js";
 
-export const adminDashboard = async(req,res)=>{
+const getMonthRange = (date = new Date()) => {
+  const start = new Date(date.getFullYear(), date.getMonth(), 1);
+  const end = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+  return { start, end };
+};
 
-  const totalStudents = await User.countDocuments({role:"student"});
-  const totalRooms = await Room.countDocuments();
-  const complaints = await Complaint.countDocuments();
-  const payments = await Payment.countDocuments();
+const calculateTrend = (currentValue, previousValue) => {
+  if (previousValue === 0) {
+    return {
+      value: currentValue > 0 ? 100 : 0,
+      trend: currentValue > 0 ? "up" : "down",
+    };
+  }
+
+  const change = ((currentValue - previousValue) / previousValue) * 100;
+  return {
+    value: Number(Math.abs(change).toFixed(1)),
+    trend: change >= 0 ? "up" : "down",
+  };
+};
+
+export const adminDashboard = async(req,res)=>{
+  const now = new Date();
+  const currentMonth = getMonthRange(now);
+  const previousMonth = getMonthRange(
+    new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  );
+
+  const [
+    totalStudents,
+    totalRooms,
+    complaints,
+    resolvedComplaints,
+    payments,
+    currentMonthStudents,
+    previousMonthStudents,
+    currentMonthPayments,
+    previousMonthPayments,
+  ] = await Promise.all([
+    User.countDocuments({ role: "student" }),
+    Room.countDocuments(),
+    Complaint.countDocuments(),
+    Complaint.countDocuments({ status: "resolved" }),
+    Payment.countDocuments(),
+    User.countDocuments({
+      role: "student",
+      createdAt: { $gte: currentMonth.start, $lt: currentMonth.end },
+    }),
+    User.countDocuments({
+      role: "student",
+      createdAt: { $gte: previousMonth.start, $lt: previousMonth.end },
+    }),
+    Payment.countDocuments({
+      createdAt: { $gte: currentMonth.start, $lt: currentMonth.end },
+    }),
+    Payment.countDocuments({
+      createdAt: { $gte: previousMonth.start, $lt: previousMonth.end },
+    }),
+  ]);
+
+  const studentTrend = calculateTrend(currentMonthStudents, previousMonthStudents);
+  const paymentTrend = calculateTrend(currentMonthPayments, previousMonthPayments);
+  const complaintResolutionRate =
+    complaints > 0 ? Number(((resolvedComplaints / complaints) * 100).toFixed(1)) : 0;
 
   res.json({
     success:true,
@@ -19,7 +77,10 @@ export const adminDashboard = async(req,res)=>{
       totalStudents,
       totalRooms,
       complaints,
-      payments
+      payments,
+      complaintResolutionRate,
+      studentTrend,
+      paymentTrend,
     }
   });
 

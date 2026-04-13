@@ -15,6 +15,11 @@ const RoomSchema = new mongoose.Schema({
     ref: "Block",
     required: true
   },
+  floor: {
+    type: Number,
+    required: true,
+    default: 0
+  },
   roomType: {
     type: String,
     enum: ["double", "triple", "quad"],

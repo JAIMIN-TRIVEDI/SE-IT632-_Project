@@ -10,6 +10,14 @@ import StatCard from './StatCard.jsx'
 function StatsGrid({ data, loading }) {
   if (loading || !data) return null
 
+  const studentBadge = data.studentTrend?.value ?? null
+  const studentBadgeTrend = data.studentTrend?.trend ?? null
+  const paymentBadge = data.paymentTrend?.value ?? null
+  const paymentBadgeTrend = data.paymentTrend?.trend ?? null
+  const complaintProgress = typeof data.complaintResolutionRate === 'number'
+    ? data.complaintResolutionRate
+    : null
+
   const stats = [
     {
       label: "Total Students",
@@ -17,8 +25,8 @@ function StatsGrid({ data, loading }) {
       icon: People,
       iconColor: '#2563eb',
       iconBg: 'rgba(37, 99, 235, 0.1)',
-      badge: '5.2%',
-      badgeTrend: 'up',
+      badge: studentBadge !== null ? `${studentBadge}%` : null,
+      badgeTrend: studentBadgeTrend,
     },
     {
       label: "Total Rooms",
@@ -33,7 +41,7 @@ function StatsGrid({ data, loading }) {
       icon: Apartment,
       iconColor: '#ea580c',
       iconBg: 'rgba(234, 88, 12, 0.1)',
-      progress: 70,
+      progress: complaintProgress,
     },
     {
       label: "Payments",
@@ -41,8 +49,8 @@ function StatsGrid({ data, loading }) {
       icon: Payments,
       iconColor: '#16a34a',
       iconBg: 'rgba(22, 163, 74, 0.1)',
-      badge: '12%',
-      badgeTrend: 'up',
+      badge: paymentBadge !== null ? `${paymentBadge}%` : null,
+      badgeTrend: paymentBadgeTrend,
     },
   ]
 

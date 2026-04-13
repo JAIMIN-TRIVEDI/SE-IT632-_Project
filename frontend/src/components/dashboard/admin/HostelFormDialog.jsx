@@ -415,7 +415,7 @@ function HostelFormDialog({ open, onClose, onSubmit, initialData = null, loading
   }
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
         <Typography variant="h6" fontWeight={700}>
           {initialData ? 'Edit Hostel' : 'Create New Hostel'}
@@ -444,6 +444,7 @@ function HostelFormDialog({ open, onClose, onSubmit, initialData = null, loading
             <Select
               label="Hostel Type"
               value={formData.type}
+              disabled
               onChange={(e) => handleChange('type', e.target.value)}
             >
               <MenuItem value="boy">Boys</MenuItem>
@@ -695,7 +696,7 @@ function HostelFormDialog({ open, onClose, onSubmit, initialData = null, loading
                       key={range.id}
                       sx={{
                         display: 'grid',
-                        gridTemplateColumns: { xs: '1fr 1fr', md: '1fr 1fr 1fr 1fr 1fr auto' },
+                        gridTemplateColumns: { xs: '2fr 10fr', md: '1fr 1fr 1fr 1fr 1fr auto' },
                         gap: 1,
                         alignItems: 'start',
                         mb: 1.5,
