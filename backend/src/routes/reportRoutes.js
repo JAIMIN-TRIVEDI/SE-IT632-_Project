@@ -7,6 +7,7 @@ import {
   complaintReport,
   messReport,
   hostelStudentsReport,
+  hostelAdminAnalytics,
 } from "../controllers/reportController.js";
 
 import { protect } from "../middlewares/authMiddleware.js";
@@ -40,6 +41,13 @@ router.get(
   protect,
   authorizeRoles("hostel_admin"),
   paymentReport,
+);
+
+router.get(
+  "/analytics/hostel-admin",
+  protect,
+  authorizeRoles("hostel_admin"),
+  hostelAdminAnalytics,
 );
 
 router.get(

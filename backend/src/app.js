@@ -11,7 +11,7 @@ import complaintRoutes from "./routes/complaintRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import vacateRoutes from "./routes/vacateRoutes.js";
-import complaintRoutes from "./routes/complaintRoutes.js";
+
 
 const app = express();
 

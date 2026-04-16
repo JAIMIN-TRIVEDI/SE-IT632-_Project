@@ -5,6 +5,8 @@ import RoomRequest from "../models/RoomRequest.js";
 import Room from "../models/Room.js";
 import RoomAllocation from "../models/RoomAllocation.js";
 
+const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 export const createOrder = async (req, res) => {
 
   const { amount, purpose, subscriptionId, type } = req.body;
@@ -126,19 +128,224 @@ export const getPaymentById = async (req, res) => {
 };
 
 export const getAllPayments = async (req, res) => {
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const limit = Math.max(1, Number(req.query.limit) || 10);
+  const skip = (page - 1) * limit;
 
-  const page = Number(req.query.page) || 1;
-  const limit = 10;
+  const {
+    search = "",
+    status = "all",
+    type = "all",
+    fromDate,
+    toDate,
+  } = req.query;
 
-  const payments = await Payment.find()
-    .skip((page - 1) * limit)
-    .limit(limit)
-    .populate("studentId", "name email");
+  const baseMatch = {};
+
+  if (status !== "all") {
+    baseMatch.status = status;
+  }
+
+  if (type !== "all") {
+    baseMatch.type = type;
+  }
+
+  if (fromDate || toDate) {
+    baseMatch.createdAt = {};
+    if (fromDate) {
+      baseMatch.createdAt.$gte = new Date(fromDate);
+    }
+    if (toDate) {
+      const end = new Date(toDate);
+      end.setHours(23, 59, 59, 999);
+      baseMatch.createdAt.$lte = end;
+    }
+  }
+
+  const normalizedSearch = String(search).trim();
+  const searchRegex = normalizedSearch ? new RegExp(escapeRegex(normalizedSearch), "i") : null;
+
+  const searchMatch = searchRegex
+    ? {
+      $or: [
+        { purpose: searchRegex },
+        { orderId: searchRegex },
+        { paymentId: searchRegex },
+        { tenantName: searchRegex },
+        { tenantEmail: searchRegex },
+        { hostelName: searchRegex },
+      ],
+    }
+    : null;
+
+  const pipeline = [
+    { $match: baseMatch },
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    {
+      $unwind: {
+        path: "$user",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $lookup: {
+        from: "roomrequests",
+        localField: "subscriptionId",
+        foreignField: "_id",
+        as: "subscription",
+      },
+    },
+    {
+      $unwind: {
+        path: "$subscription",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $lookup: {
+        from: "hostels",
+        localField: "subscription.hostelId",
+        foreignField: "_id",
+        as: "hostel",
+      },
+    },
+    {
+      $unwind: {
+        path: "$hostel",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $lookup: {
+        from: "rooms",
+        localField: "subscription.roomId",
+        foreignField: "_id",
+        as: "room",
+      },
+    },
+    {
+      $unwind: {
+        path: "$room",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $addFields: {
+        tenantName: { $ifNull: ["$user.name", "Unknown tenant"] },
+        tenantEmail: { $ifNull: ["$user.email", "--"] },
+        hostelName: { $ifNull: ["$hostel.name", "--"] },
+        roomNumber: {
+          $ifNull: [{ $toString: "$room.roomNumber" }, "--"],
+        },
+        transactionId: {
+          $ifNull: [
+            "$paymentId",
+            {
+              $ifNull: [
+                "$orderId",
+                {
+                  $concat: ["TXN-", { $toUpper: { $substrBytes: [{ $toString: "$_id" }, 18, 6] } }],
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+  ];
+
+  if (searchMatch) {
+    pipeline.push({ $match: searchMatch });
+  }
+
+  pipeline.push({
+    $facet: {
+      data: [
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $project: {
+            _id: 1,
+            transactionId: 1,
+            tenantName: 1,
+            tenantEmail: 1,
+            hostelName: 1,
+            roomNumber: 1,
+            date: "$createdAt",
+            amount: 1,
+            status: 1,
+            type: 1,
+            purpose: { $ifNull: ["$purpose", "--"] },
+            paymentMethod: {
+              $cond: [{ $ifNull: ["$paymentId", false] }, "Razorpay", "--"],
+            },
+          },
+        },
+      ],
+      count: [{ $count: "total" }],
+      metrics: [
+        {
+          $group: {
+            _id: null,
+            totalRevenue: {
+              $sum: {
+                $cond: [{ $eq: ["$status", "success"] }, "$amount", 0],
+              },
+            },
+            pendingDues: {
+              $sum: {
+                $cond: [{ $eq: ["$status", "pending"] }, "$amount", 0],
+              },
+            },
+            activeSubscriptions: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $eq: ["$status", "success"] },
+                      { $in: ["$type", ["hostel", "room_request"]] },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+          },
+        },
+      ],
+    },
+  });
+
+  const [result] = await Payment.aggregate(pipeline);
+  const total = result?.count?.[0]?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const metrics = result?.metrics?.[0] || {
+    totalRevenue: 0,
+    pendingDues: 0,
+    activeSubscriptions: 0,
+  };
 
   res.json({
     success: true,
     page,
-    data: payments
+    limit,
+    total,
+    totalPages,
+    metrics: {
+      totalRevenue: metrics.totalRevenue || 0,
+      pendingDues: metrics.pendingDues || 0,
+      activeSubscriptions: metrics.activeSubscriptions || 0,
+    },
+    data: result?.data || [],
   });
 
 };

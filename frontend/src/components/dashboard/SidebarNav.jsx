@@ -110,25 +110,6 @@ function SidebarNav({ activeNav, onSelect }) {
           )
         })}
       </List>
-      <Box sx={{ px: 2, pb: 3 }}>
-        <Button
-          variant="contained"
-          fullWidth
-          startIcon={<Add />}
-          sx={{
-            bgcolor: 'primary.main',
-            borderRadius: 3,
-            py: 1.2,
-            textTransform: 'none',
-            fontWeight: 700,
-            fontSize: 14,
-            boxShadow: 'none',
-            '&:hover': { bgcolor: 'primary.dark', boxShadow: 'none' },
-          }}
-        >
-          Add Student
-        </Button>
-      </Box>
     </Drawer>
   )
 }

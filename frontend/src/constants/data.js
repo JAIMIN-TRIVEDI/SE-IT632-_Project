@@ -14,9 +14,9 @@ import {
 } from '@mui/icons-material'
 
 export const navItems = [
-  { label: 'Dashboard', icon: DashboardIcon },
+  // { label: 'Dashboard', icon: DashboardIcon },
   { label: 'Hostels', icon: Apartment },
-  { label: 'Rooms', icon: KingBed },
+  // { label: 'Rooms', icon: KingBed },
   { label: 'Students', icon: People },
   // { label: 'Mess Plans', icon: Restaurant },
   { label: 'Payments', icon: Payment },

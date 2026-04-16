@@ -9,10 +9,13 @@ import RecentActivityCard from '../components/dashboard/RecentActivityCard.jsx'
 import PendingFeesCard from '../components/dashboard/PendingFeesCard.jsx'
 import HostelsView from '../components/dashboard/admin/HostelsView.jsx'
 import StudentsView from '../components/dashboard/admin/StudentsView.jsx'
+import PaymentsView from '../components/dashboard/admin/payments/PaymentsView.jsx'
+import ReportsView from '../components/dashboard/admin/ReportsView.jsx'
+import NotificationsView from '../components/dashboard/admin/NotificationsView.jsx'
 import api from '../api/api'
 
 function AdminDashboard() {
-  const [activeNav, setActiveNav] = useState('Dashboard')
+  const [activeNav, setActiveNav] = useState('Hostels')
 
   // ✅ REAL DATA STATE
   const [dashboardData, setDashboardData] = useState(null)
@@ -51,7 +54,17 @@ function AdminDashboard() {
       case 'Students':
         return <StudentsView />
 
+      case 'Payments':
+        return <PaymentsView />
+
+      case 'Reports':
+        return <ReportsView />
+
+      case 'Notifications':
+        return <NotificationsView />
+
       case 'Dashboard':
+        // return <HostelsView />
       default:
         if (loading) {
           return (
@@ -65,21 +78,7 @@ function AdminDashboard() {
           return <Alert severity="error">{error}</Alert>
         }
 
-        return (
-          <>
-            <DashboardHeader />
-
-            {/* ✅ REAL DATA */}
-            <StatsGrid data={dashboardData} loading={loading} />
-
-            <Box display="flex" gap={2} mb={3}>
-              <RevenueChartCard />
-              <RecentActivityCard />
-            </Box>
-
-            <PendingFeesCard />
-          </>
-        )
+       return <HostelsView />
     }
   }
 
