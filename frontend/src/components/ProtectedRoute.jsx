@@ -1,23 +1,27 @@
 import { Navigate } from 'react-router-dom'
+import { Box, CircularProgress } from '@mui/material'
+import { useAuth } from '../context/AuthContext.jsx'
+import { getDefaultRouteForRole } from '../utils/roleRoutes.js'
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const user = JSON.parse(localStorage.getItem('user'))
+  const { user, isAuthenticated, isInitializing } = useAuth()
+
+  if (isInitializing) {
+    return (
+      <Box sx={{ minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
 
   // ❌ Not logged in
-  if (!user) {
+  if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />
   }
 
   // ❌ Wrong role
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    const roleRoutes = {
-      student: '/student/dashboard',
-      warden: '/warden/dashboard',
-      hostel_admin: '/hostel-admin/dashboard',
-      mess_admin: '/mess-admin/dashboard'
-    }
-
-    return <Navigate to={roleRoutes[user.role]} replace />
+    return <Navigate to={getDefaultRouteForRole(user.role)} replace />
   }
 
   return children

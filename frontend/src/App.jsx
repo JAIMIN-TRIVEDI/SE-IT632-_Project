@@ -1,6 +1,6 @@
-import { CssBaseline, ThemeProvider } from "@mui/material";
+import { Box, CircularProgress, CssBaseline, ThemeProvider } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Navigate, Routes, Route } from "react-router-dom";
 
 import RootLayout from "./layouts/RootLayout.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
@@ -27,9 +27,34 @@ import MessReports from "./pages/MessReports.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import { AuthProvider } from "./context/AuthContext.jsx";
+import { useAuth } from "./context/AuthContext.jsx";
+import { getDefaultRouteForRole } from "./utils/roleRoutes.js";
 
 import getTheme from "./styles/theme.js";
 import "./styles/app.css";
+
+function HomeEntry({ mode, onToggleTheme }) {
+  const { isInitializing, isAuthenticated, user } = useAuth();
+
+  if (isInitializing) {
+    return (
+      <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (isAuthenticated && user?.role) {
+    return <Navigate to={getDefaultRouteForRole(user.role)} replace />;
+  }
+
+  return (
+    <RootLayout>
+      <LandingPage mode={mode} onToggleTheme={onToggleTheme} />
+    </RootLayout>
+  );
+}
 
 function App() {
   const [mode, setMode] = useState("light");
@@ -56,15 +81,12 @@ function App() {
       <CssBaseline />
 
       <Router>
-        <Routes>
+        <AuthProvider>
+          <Routes>
           {/* Landing */}
           <Route
             path="/"
-            element={
-              <RootLayout>
-                <LandingPage mode={mode} onToggleTheme={handleToggleTheme} />
-              </RootLayout>
-            }
+            element={<HomeEntry mode={mode} onToggleTheme={handleToggleTheme} />}
           />
 
           {/* Auth */}
@@ -146,8 +168,9 @@ function App() {
             <Route path="profile" element={<MessAdminProfile />} />
           </Route>
 
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-        </Routes>
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+          </Routes>
+        </AuthProvider>
       </Router>
     </ThemeProvider>
   );

@@ -1,9 +1,10 @@
 import { Avatar, Box, IconButton, InputBase, Typography } from '@mui/material'
 import { Help, Notifications, Search } from '@mui/icons-material'
 import LogoutButton from '../LogoutButton.jsx'
+import { useAuth } from '../../context/AuthContext.jsx'
 
 function TopBar() {
-  const user = JSON.parse(localStorage.getItem('user'))
+  const { user } = useAuth()
 
   return (
     <Box

@@ -1,19 +1,13 @@
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@mui/material'
-import api from '../api/api'
+import { useAuth } from '../context/AuthContext.jsx'
 
 function LogoutButton() {
   const navigate = useNavigate()
+  const { logout } = useAuth()
 
   const handleLogout = async () => {
-    try {
-      await api.post('/auth/logout')
-    } catch (error) {
-      // ignore backend logout errors; still clear session
-    }
-
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    await logout()
     navigate('/login', { replace: true })
   }
 

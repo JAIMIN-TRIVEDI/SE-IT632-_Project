@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -13,7 +13,8 @@ import { useNavigate } from "react-router-dom";
 import AuthBranding from "../components/AuthBranding.jsx";
 import FormInput from "../components/FormInput.jsx";
 import SocialAuthButtons from "../components/SocialAuthButtons.jsx";
-import api from "../api/api.js";
+import { useAuth } from "../context/AuthContext.jsx";
+import { getDefaultRouteForRole } from "../utils/roleRoutes.js";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
@@ -23,6 +24,13 @@ function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login, isAuthenticated, user, isInitializing } = useAuth();
+
+  useEffect(() => {
+    if (!isInitializing && isAuthenticated && user?.role) {
+      navigate(getDefaultRouteForRole(user.role), { replace: true });
+    }
+  }, [isInitializing, isAuthenticated, user, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -30,20 +38,8 @@ function LoginPage() {
     setLoading(true);
 
     try {
-      const { data } = await api.post("/auth/login", { email, password });
-
-      // Save token & user
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      const roleRoutes = {
-        student: "/student/dashboard",
-        warden: "/warden/dashboard",
-        hostel_admin: "/hostel-admin/dashboard",
-        mess_admin: "/mess-admin/dashboard",
-      };
-
-      navigate(roleRoutes[data.user.role]);
+      const data = await login(email, password);
+      navigate(getDefaultRouteForRole(data?.user?.role), { replace: true });
     } catch (err) {
       setError(
         err.response?.data?.message || "Login failed. Please try again.",

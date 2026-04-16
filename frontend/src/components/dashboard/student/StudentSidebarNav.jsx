@@ -6,12 +6,13 @@ import { alpha } from '@mui/material/styles'
 import { LogoutOutlined } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import { navItems } from './data'
-import api from '../../../api/api'
+import { useAuth } from '../../../context/AuthContext.jsx'
 
 const DRAWER_WIDTH = 240
 
 function StudentSidebarNav({ activeNav, onSelect, user }) {
   const navigate = useNavigate()
+  const { logout } = useAuth()
 
   const userName = user?.name || 'Student'
   const userRole = user?.role ? String(user.role).replace(/_/g, ' ') : 'Student'
@@ -23,9 +24,7 @@ function StudentSidebarNav({ activeNav, onSelect, user }) {
     .toUpperCase()
 
   const handleLogout = async () => {
-    try { await api.post('/auth/logout') } catch (_) {}
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    await logout()
     navigate('/login', { replace: true })
   }
 
