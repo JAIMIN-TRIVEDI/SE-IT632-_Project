@@ -1,7 +1,12 @@
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
-import crypto from "crypto";
-import sendEmail from "../utils/sendEmail.js";
+import asyncHandler from "../utils/asyncHandler.js";
+import { sendSuccess } from "../utils/apiResponse.js";
+import {
+  forgotPasswordService,
+  resetPasswordService,
+  updateProfileService,
+} from "../services/authService.js";
 
 const ACCESS_TOKEN_EXPIRY = process.env.JWT_ACCESS_EXPIRES_IN || "1m";
 const REFRESH_TOKEN_EXPIRY = process.env.JWT_REFRESH_EXPIRES_IN || "2m";
@@ -140,74 +145,31 @@ export const refreshToken = async (req, res) => {
 };
 
 /* ── FORGOT PASSWORD ──────────────────────────────────────────────────────── */
-export const forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const hashedOTP = crypto.createHash("sha256").update(otp).digest("hex");
-    user.resetPasswordOTP = hashedOTP;
-    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
-    await user.save();
-
-    await sendEmail(user.email, "Hostezy Password Reset OTP", `Your OTP is ${otp}. It will expire in 10 minutes.`);
-    res.json({ success: true, message: "OTP sent to email" });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  await forgotPasswordService(email);
+  return sendSuccess(res, 200, "OTP sent to email", null);
+});
 
 /* ── RESET PASSWORD ───────────────────────────────────────────────────────── */
-export const resetPassword = async (req, res) => {
-  try {
-    const { email, otp, password } = req.body;
-    const hashedOTP = crypto.createHash("sha256").update(otp).digest("hex");
-    const user = await User.findOne({ email, resetPasswordOTP: hashedOTP, resetPasswordExpire: { $gt: Date.now() } });
-    if (!user) return res.status(400).json({ message: "Invalid or expired OTP" });
-    user.password = password;
-    user.resetPasswordOTP = undefined;
-    user.resetPasswordExpire = undefined;
-    await user.save();
-    res.json({ success: true, message: "Password reset successful" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: err.message });
-  }
-};
+export const resetPassword = asyncHandler(async (req, res) => {
+  await resetPasswordService(req.body);
+  return sendSuccess(res, 200, "Password reset successful", null);
+});
 
 /* ── GET ME ───────────────────────────────────────────────────────────────── */
-export const getMe = async (req, res) => {
-  res.json(req.user);
-};
+export const getMe = asyncHandler(async (req, res) => {
+  return sendSuccess(res, 200, "User fetched successfully", req.user);
+});
 
 /* ── LOGOUT ───────────────────────────────────────────────────────────────── */
 export const logout = async (req, res) => {
   clearAuthCookies(res);
-  res.json({ success: true, message: "Logged out" });
+  return sendSuccess(res, 200, "Logged out", null);
 };
 
 /* ── UPDATE PROFILE (supports emergency contact fields) ───────────────────── */
-export const updateProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    // Basic fields
-    if (req.body.name !== undefined) user.name = req.body.name;
-    if (req.body.phone !== undefined) user.phone = req.body.phone;
-    if (req.body.enrollmentNo !== undefined) user.enrollmentNo = req.body.enrollmentNo;
-
-    // Emergency contact fields — stored on User model
-    if (req.body.emergencyName !== undefined) user.emergencyName = req.body.emergencyName;
-    if (req.body.emergencyRelationship !== undefined) user.emergencyRelationship = req.body.emergencyRelationship;
-    if (req.body.emergencyPhone !== undefined) user.emergencyPhone = req.body.emergencyPhone;
-    if (req.body.emergencyAddress !== undefined) user.emergencyAddress = req.body.emergencyAddress;
-
-    await user.save();
-    res.json({ success: true, data: user });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
+export const updateProfile = asyncHandler(async (req, res) => {
+  const user = await updateProfileService(req.user._id, req.body);
+  return sendSuccess(res, 200, "Profile updated successfully", user);
+});

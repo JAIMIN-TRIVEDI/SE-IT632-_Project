@@ -30,12 +30,24 @@ router.get(
 );
 
 router.get(
+  "/occupancy",
+  protect,
+  authorizeRoles("hostel_admin"),
+  occupancyReport,
+);
+router.get(
   "/reports/occupancy",
   protect,
   authorizeRoles("hostel_admin"),
   occupancyReport,
 );
 
+router.get(
+  "/payments",
+  protect,
+  authorizeRoles("hostel_admin"),
+  paymentReport,
+);
 router.get(
   "/reports/payments",
   protect,
@@ -58,12 +70,19 @@ router.get(
 );
 
 router.get(
+  "/complaints",
+  protect,
+  authorizeRoles("hostel_admin"),
+  complaintReport,
+);
+router.get(
   "/reports/complaints",
   protect,
   authorizeRoles("hostel_admin"),
   complaintReport,
 );
 
+router.get("/mess", protect, authorizeRoles("mess_admin"), messReport);
 router.get("/reports/mess", protect, authorizeRoles("mess_admin"), messReport);
 
 export default router;

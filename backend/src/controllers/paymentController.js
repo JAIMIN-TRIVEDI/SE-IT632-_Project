@@ -4,6 +4,7 @@ import Payment from "../models/Payment.js";
 import RoomRequest from "../models/RoomRequest.js";
 import Room from "../models/Room.js";
 import RoomAllocation from "../models/RoomAllocation.js";
+import { sendPaymentSuccessNotification } from "../services/notificationService.js";
 
 const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -63,6 +64,12 @@ export const verifyPayment = async (req, res) => {
   payment.status = "success";
   payment.paymentId = razorpay_payment_id;
   await payment.save();
+
+  await sendPaymentSuccessNotification({
+    userId: payment.userId,
+    amount: payment.amount,
+    purpose: payment.purpose,
+  });
 
   if (payment.subscriptionId) {
     const roomRequest = await RoomRequest.findById(payment.subscriptionId);

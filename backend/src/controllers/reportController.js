@@ -7,6 +7,7 @@ import Hostel from "../models/Hostel.js";
 import RoomAllocation from "../models/RoomAllocation.js";
 import RoomRequest from "../models/RoomRequest.js";
 import Block from "../models/Block.js";
+import { expireSubscriptionsAndNotify } from "../services/notificationService.js";
 
 const toObjectId = (value) => {
   if (!value) return null;
@@ -234,18 +235,104 @@ export const complaintReport = async(req,res)=>{
 };
 
 export const messReport = async (req, res) => {
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  await expireSubscriptionsAndNotify();
 
-  const [activeSubscriptions, totalPlans, pendingRefundRequests, revenueResult] = await Promise.all([
-    MessSubscription.countDocuments({ status: "active" }),
-    MessPlan.countDocuments(),
-    MessSubscription.countDocuments({ "refund.requested": true, "refund.approved": false }),
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const trendStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const trendEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  const [
+    totalStudentsAgg,
+    totalRevenueAgg,
+    subscriptionStatsAgg,
+    monthlyRevenueTrendAgg,
+    pendingRefundsAgg,
+    currentMonthRevenueAgg,
+  ] = await Promise.all([
+    User.aggregate([
+      { $match: { role: "student" } },
+      { $count: "total" },
+    ]),
     Payment.aggregate([
       {
         $match: {
           type: "mess",
           status: "success",
-          createdAt: { $gte: thirtyDaysAgo },
+          purpose: { $ne: "Mess Refund" },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$amount" },
+        },
+      },
+    ]),
+    MessSubscription.aggregate([
+      {
+        $group: {
+          _id: null,
+          active: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "active"] }, 1, 0],
+            },
+          },
+          expired: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "expired"] }, 1, 0],
+            },
+          },
+        },
+      },
+    ]),
+    Payment.aggregate([
+      {
+        $match: {
+          type: "mess",
+          status: "success",
+          purpose: { $ne: "Mess Refund" },
+          createdAt: {
+            $gte: trendStart,
+            $lt: trendEnd,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+          },
+          revenue: { $sum: "$amount" },
+        },
+      },
+      {
+        $sort: {
+          "_id.year": 1,
+          "_id.month": 1,
+        },
+      },
+    ]),
+    MessSubscription.aggregate([
+      {
+        $match: {
+          "refund.requested": true,
+          "refund.approved": false,
+        },
+      },
+      { $count: "total" },
+    ]),
+    Payment.aggregate([
+      {
+        $match: {
+          type: "mess",
+          status: "success",
+          purpose: { $ne: "Mess Refund" },
+          createdAt: {
+            $gte: startOfMonth,
+          },
         },
       },
       {
@@ -257,13 +344,34 @@ export const messReport = async (req, res) => {
     ]),
   ]);
 
-  const monthlyRevenue = revenueResult[0]?.total ?? 0;
+  const totalStudents = totalStudentsAgg[0]?.total || 0;
+  const totalRevenue = totalRevenueAgg[0]?.total || 0;
+  const activeSubscriptions = subscriptionStatsAgg[0]?.active || 0;
+  const expiredSubscriptions = subscriptionStatsAgg[0]?.expired || 0;
+  const pendingRefundRequests = pendingRefundsAgg[0]?.total || 0;
+  const monthlyRevenue = currentMonthRevenueAgg[0]?.total || 0;
+
+  const monthlyRevenueTrend = monthlyRevenueTrendAgg.map((item) => {
+    const month = String(item._id.month).padStart(2, "0");
+    return {
+      month: `${item._id.year}-${month}`,
+      revenue: item.revenue,
+    };
+  });
 
   res.json({
     success: true,
     data: {
+      totalStudents,
+      totalRevenue,
       activeSubscriptions,
-      totalPlans,
+      expiredSubscriptions,
+      subscriptions: {
+        active: activeSubscriptions,
+        expired: expiredSubscriptions,
+      },
+      monthlyRevenueTrend,
+      // Legacy fields kept for current frontend compatibility.
       pendingRefundRequests,
       monthlyRevenue,
     },

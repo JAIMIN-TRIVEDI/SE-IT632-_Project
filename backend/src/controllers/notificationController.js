@@ -1,5 +1,8 @@
 import Notification from "../models/Notification.js";
 import User from "../models/User.js";
+import { sendSuccess } from "../utils/apiResponse.js";
+
+const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const AUDIENCE_ROLE_MAP = {
   student: ["student"],
@@ -33,9 +36,20 @@ const toDisplayType = (rawType = "") => {
 
 export const getNotifications = async(req,res)=>{
 
-  const notifications = await Notification.find({
+  const search = (req.query.search || "").trim();
+  const query = {
     userId:req.user._id
-  }).sort({createdAt:-1}).lean();
+  };
+
+  if (search) {
+    const safeSearch = escapeRegex(search);
+    query.$or = [
+      { message: { $regex: safeSearch, $options: "i" } },
+      { type: { $regex: safeSearch, $options: "i" } },
+    ];
+  }
+
+  const notifications = await Notification.find(query).sort({createdAt:-1}).lean();
 
   const formattedNotifications = notifications.map((notification) => ({
     ...notification,
@@ -215,4 +229,12 @@ export const getAllNotifications = async(req,res)=>{
     },
   });
 
+};
+
+export const getNotificationsByUserId = async (req, res) => {
+  const notifications = await Notification.find({
+    userId: req.params.userId,
+  }).sort({ createdAt: -1 });
+
+  return sendSuccess(res, 200, "User notifications fetched successfully", notifications);
 };

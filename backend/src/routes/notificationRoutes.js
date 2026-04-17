@@ -6,7 +6,9 @@ import {
   deleteNotification,
   broadcastNotification,
   getAllNotifications,
+  getNotificationsByUserId,
 } from "../controllers/notificationController.js";
+import { triggerSubscriptionExpiryNotifications } from "../controllers/messController.js";
 
 import { protect } from "../middlewares/authMiddleware.js";
 import { authorizeRoles } from "../middlewares/roleMiddleware.js";
@@ -33,6 +35,20 @@ router.get(
   protect,
   authorizeRoles("hostel_admin"),
   getAllNotifications,
+);
+
+router.get(
+  "/admin/notifications/user/:userId",
+  protect,
+  authorizeRoles("hostel_admin", "mess_admin"),
+  getNotificationsByUserId,
+);
+
+router.post(
+  "/admin/notifications/subscription-expiry/trigger",
+  protect,
+  authorizeRoles("hostel_admin", "mess_admin"),
+  triggerSubscriptionExpiryNotifications,
 );
 
 export default router;
