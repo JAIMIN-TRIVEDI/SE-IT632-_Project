@@ -9,7 +9,7 @@ import {
   Stack,
   Alert,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import AuthBranding from "../components/AuthBranding.jsx";
 import FormInput from "../components/FormInput.jsx";
 import SocialAuthButtons from "../components/SocialAuthButtons.jsx";
@@ -25,6 +25,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login, isAuthenticated, user, isInitializing } = useAuth();
+  const location = useLocation();
 
   useEffect(() => {
     if (!isInitializing && isAuthenticated && user?.role) {
@@ -39,7 +40,8 @@ function LoginPage() {
 
     try {
       const data = await login(email, password);
-      navigate(getDefaultRouteForRole(data?.user?.role), { replace: true });
+      const requestedPath = location.state?.from;
+      navigate(requestedPath || getDefaultRouteForRole(data?.user?.role), { replace: true });
     } catch (err) {
       setError(
         err.response?.data?.message || "Login failed. Please try again.",

@@ -154,9 +154,11 @@ export function AuthProvider({ children }) {
     user,
     isAuthenticated,
     isInitializing,
+    authLoading: isInitializing,
     login,
     logout,
     refreshMe,
+    refreshAuth: refreshMe,
     setUser: (nextUser) => applyAuthState(nextUser),
   }), [user, isAuthenticated, isInitializing, login, logout, refreshMe, applyAuthState])
 

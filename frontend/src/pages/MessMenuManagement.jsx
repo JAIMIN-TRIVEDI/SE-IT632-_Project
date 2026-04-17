@@ -5,6 +5,7 @@ import {
   CircularProgress,
   Grid,
   Paper,
+  Snackbar,
   TextField,
   Typography,
   Alert,
@@ -19,23 +20,61 @@ const MEAL_TYPES = [
   { key: 'dinner', label: 'Dinner' },
 ]
 
+const getInputDateString = (date) => {
+  const parsed = new Date(date)
+  if (Number.isNaN(parsed.getTime())) return ''
+
+  const year = parsed.getFullYear()
+  const month = String(parsed.getMonth() + 1).padStart(2, '0')
+  const day = String(parsed.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+const buildEmptyMenu = () => {
+  return DAYS.reduce((acc, day) => {
+    acc[day] = {
+      breakfast: '',
+      lunch: '',
+      snacks: '',
+      dinner: '',
+    }
+    return acc
+  }, {})
+}
+
+const mergeWithDefaultMenu = (menu = {}) => {
+  const base = buildEmptyMenu()
+
+  DAYS.forEach((day) => {
+    MEAL_TYPES.forEach((meal) => {
+      if (menu?.[day]?.[meal.key] !== undefined) {
+        base[day][meal.key] = menu[day][meal.key]
+      }
+    })
+  })
+
+  return base
+}
+
 function MessMenuManagement() {
-  const [menu, setMenu] = useState(null)
+  const [menu, setMenu] = useState(buildEmptyMenu())
   const [weekStart, setWeekStart] = useState('')
+  const [selectedDate, setSelectedDate] = useState(getInputDateString(new Date()))
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastOpen, setToastOpen] = useState(false)
 
-  const fetchMenu = async () => {
+  const fetchMenu = async (date) => {
     try {
       setError('')
       setLoading(true)
-      const data = await getMessMenu()
-      if (data) {
-        setMenu(data.menu || {})
-        setWeekStart(data.weekStart || '')
-      }
+      const data = await getMessMenu(date)
+
+      setMenu(mergeWithDefaultMenu(data?.menu || {}))
+      setWeekStart(data?.weekStart ? getInputDateString(data.weekStart) : '')
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to load menu.')
     } finally {
@@ -44,8 +83,8 @@ function MessMenuManagement() {
   }
 
   useEffect(() => {
-    fetchMenu()
-  }, [])
+    fetchMenu(selectedDate)
+  }, [selectedDate])
 
   const handleFieldChange = (day, type, value) => {
     setMenu((prev) => ({
@@ -68,9 +107,10 @@ function MessMenuManagement() {
     try {
       setSaving(true)
       setError('')
-      setSuccess('')
-      await updateMessMenu({ weekStart, menu })
-      setSuccess('Menu updated successfully.')
+      await updateMessMenu({ date: selectedDate, menu })
+      setToastMessage('Menu saved successfully.')
+      setToastOpen(true)
+      await fetchMenu(selectedDate)
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to save menu.')
     } finally {
@@ -99,14 +139,29 @@ function MessMenuManagement() {
         </Button>
       </Box>
 
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+        <TextField
+          type="date"
+          label="View Menu By Date"
+          value={selectedDate}
+          onChange={(event) => setSelectedDate(event.target.value)}
+          size="small"
+          sx={{ minWidth: 240 }}
+          InputLabelProps={{ shrink: true }}
+        />
+        <TextField
+          label="Week Start"
+          value={weekStart}
+          size="small"
+          sx={{ minWidth: 180 }}
+          InputProps={{ readOnly: true }}
+          InputLabelProps={{ shrink: true }}
+        />
+      </Box>
+
       {error && (
         <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
           {error}
-        </Alert>
-      )}
-      {success && (
-        <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
-          {success}
         </Alert>
       )}
 
@@ -145,6 +200,17 @@ function MessMenuManagement() {
           </Grid>
         </Paper>
       )}
+
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={2500}
+        onClose={() => setToastOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={() => setToastOpen(false)} severity="success" variant="filled" sx={{ width: '100%' }}>
+          {toastMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

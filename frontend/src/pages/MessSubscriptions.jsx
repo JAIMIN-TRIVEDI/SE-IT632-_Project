@@ -4,8 +4,9 @@ import {
   Button,
   Card,
   CardContent,
-  CircularProgress,
   Chip,
+  Snackbar,
+  Skeleton,
   Table,
   TableBody,
   TableCell,
@@ -15,23 +16,28 @@ import {
   Typography,
   Paper,
   Alert,
+  TextField,
 } from '@mui/material'
 import { getSubscriptions, approveRefund } from '../services/messService'
+import { useSearch } from '../hooks/useSearch'
 
 function MessSubscriptions() {
   const [subscriptions, setSubscriptions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
+  const [snack, setSnack] = useState({ open: false, message: '', severity: 'success' })
+  const { search, setSearch, isDebouncing, buildSearchParams } = useSearch('', 400)
 
   const fetchSubscriptions = async () => {
     try {
       setError('')
       setLoading(true)
-      const data = await getSubscriptions()
+      const data = await getSubscriptions(buildSearchParams())
       setSubscriptions(data)
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Unable to load subscriptions.')
+      setSnack({ open: true, message: 'Unable to load subscriptions.', severity: 'error' })
     } finally {
       setLoading(false)
     }
@@ -42,8 +48,10 @@ function MessSubscriptions() {
       setActionLoading(true)
       await approveRefund(id)
       await fetchSubscriptions()
+      setSnack({ open: true, message: 'Refund approved successfully.', severity: 'success' })
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to approve refund.')
+      setSnack({ open: true, message: 'Failed to approve refund.', severity: 'error' })
     } finally {
       setActionLoading(false)
     }
@@ -51,7 +59,7 @@ function MessSubscriptions() {
 
   useEffect(() => {
     fetchSubscriptions()
-  }, [])
+  }, [buildSearchParams])
 
   return (
     <Box sx={{ minHeight: '100%' }}>
@@ -74,18 +82,50 @@ function MessSubscriptions() {
             </Typography>
           </CardContent>
         </Card>
+        <Button variant="outlined" onClick={fetchSubscriptions} disabled={loading || actionLoading} sx={{ textTransform: 'none' }}>
+          Refresh
+        </Button>
+      </Box>
+
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search by student, plan, or status"
+          fullWidth
+          size="small"
+        />
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} action={<Button color="inherit" size="small" onClick={fetchSubscriptions}>Retry</Button>}>
           {error}
         </Alert>
       )}
 
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress />
-        </Box>
+      {loading || isDebouncing ? (
+        <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Student</TableCell>
+                <TableCell>Plan</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Start</TableCell>
+                <TableCell>End</TableCell>
+                <TableCell>Refund</TableCell>
+                <TableCell align="right">Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <TableRow key={index}>
+                  <TableCell colSpan={7}><Skeleton variant="text" height={34} /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       ) : (
         <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
           <Table>
@@ -104,7 +144,7 @@ function MessSubscriptions() {
               {subscriptions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
-                    No subscriptions found.
+                    {search.trim() ? 'No results found.' : 'No subscriptions found.'}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -159,6 +199,21 @@ function MessSubscriptions() {
           </Table>
         </TableContainer>
       )}
+
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={3200}
+        onClose={() => setSnack((prev) => ({ ...prev, open: false }))}
+      >
+        <Alert
+          severity={snack.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+          onClose={() => setSnack((prev) => ({ ...prev, open: false }))}
+        >
+          {snack.message}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

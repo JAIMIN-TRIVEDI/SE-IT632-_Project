@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Alert, Box, CircularProgress } from '@mui/material'
+// import { Alert, Box, CircularProgress } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, Skeleton, Typography } from '@mui/material'
 import SidebarNav from '../components/dashboard/SidebarNav.jsx'
 import TopBar from '../components/dashboard/TopBar.jsx'
 import DashboardHeader from '../components/dashboard/DashboardHeader.jsx'
@@ -22,27 +23,27 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const fetchDashboard = async () => {
+    try {
+      setError('')
+      setLoading(true)
+      const res = await api.get('/reports/dashboard/admin')
+      setDashboardData(res.data?.data || null)
+    } catch (err) {
+      const message = err.response?.data?.message || 'Failed to load admin dashboard data.'
+      setError(message)
+      console.error('Dashboard fetch error:', {
+        message,
+        status: err.response?.status,
+        endpoint: '/reports/dashboard/admin',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // ✅ FETCH ADMIN DASHBOARD DATA
   useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        setError('')
-        const endpoint = '/reports/dashboard/admin'
-        const res = await api.get(endpoint)
-        setDashboardData(res.data.data)
-      } catch (err) {
-        const message = err.response?.data?.message || 'Failed to load admin dashboard data.'
-        setError(message)
-        console.error('Dashboard fetch error:', {
-          message,
-          status: err.response?.status,
-          endpoint: '/reports/dashboard/admin',
-        })
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchDashboard()
   }, [])
 
@@ -68,14 +69,38 @@ function AdminDashboard() {
       default:
         if (loading) {
           return (
-            <Box display="flex" justifyContent="center" alignItems="center" height="60vh">
-              <CircularProgress />
+            <Box>
+              <Skeleton variant="text" width={220} height={44} sx={{ mb: 2 }} />
+              <Box display="grid" gridTemplateColumns="repeat(4, 1fr)" gap={2} mb={3}>
+                <Skeleton variant="rounded" height={120} />
+                <Skeleton variant="rounded" height={120} />
+                <Skeleton variant="rounded" height={120} />
+                <Skeleton variant="rounded" height={120} />
+              </Box>
+              <Box display="grid" gridTemplateColumns="2fr 1fr" gap={2}>
+                <Skeleton variant="rounded" height={280} />
+                <Skeleton variant="rounded" height={280} />
+              </Box>
             </Box>
           )
         }
 
         if (error) {
-          return <Alert severity="error">{error}</Alert>
+          return (
+            <Alert severity="error" sx={{ borderRadius: 2 }} action={<Button color="inherit" size="small" onClick={fetchDashboard}>Retry</Button>}>
+              {error}
+            </Alert>
+          )
+        }
+
+        if (!dashboardData) {
+          return (
+            <Box sx={{ py: 8, textAlign: 'center' }}>
+              <Typography variant="h6" mb={1}>No dashboard data available</Typography>
+              <Typography color="text.secondary" mb={2}>Please refresh to fetch admin dashboard metrics.</Typography>
+              <Button variant="outlined" onClick={fetchDashboard} sx={{ textTransform: 'none' }}>Reload</Button>
+            </Box>
+          )
         }
 
        return <HostelsView />

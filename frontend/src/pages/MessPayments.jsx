@@ -4,7 +4,8 @@ import {
   Button,
   Card,
   CardContent,
-  CircularProgress,
+  Snackbar,
+  Skeleton,
   Table,
   TableBody,
   TableCell,
@@ -14,24 +15,29 @@ import {
   Typography,
   Paper,
   Alert,
+  TextField,
 } from '@mui/material'
 import { getPayments } from '../services/messService'
+import { useSearch } from '../hooks/useSearch'
 
 function MessPayments() {
   const [payments, setPayments] = useState([])
   const [totalRevenue, setTotalRevenue] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [snack, setSnack] = useState({ open: false, message: '', severity: 'error' })
+  const { search, setSearch, isDebouncing, buildSearchParams } = useSearch('', 400)
 
   const fetchPayments = async () => {
     try {
       setError('')
       setLoading(true)
-      const response = await getPayments()
+      const response = await getPayments(buildSearchParams())
       setPayments(response.data || [])
       setTotalRevenue(response.totalRevenue || 0)
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Unable to load payments.')
+      setSnack({ open: true, message: 'Unable to load payments.', severity: 'error' })
     } finally {
       setLoading(false)
     }
@@ -39,7 +45,7 @@ function MessPayments() {
 
   useEffect(() => {
     fetchPayments()
-  }, [])
+  }, [buildSearchParams])
 
   return (
     <Box sx={{ minHeight: '100%' }}>
@@ -62,18 +68,48 @@ function MessPayments() {
             </Typography>
           </CardContent>
         </Card>
+        <Button variant="outlined" onClick={fetchPayments} disabled={loading} sx={{ textTransform: 'none' }}>
+          Refresh
+        </Button>
+      </Box>
+
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search by student, transaction id, or status"
+          fullWidth
+          size="small"
+        />
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} action={<Button color="inherit" size="small" onClick={fetchPayments}>Retry</Button>}>
           {error}
         </Alert>
       )}
 
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress />
-        </Box>
+      {loading || isDebouncing ? (
+        <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Student</TableCell>
+                <TableCell>Amount</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Purpose</TableCell>
+                <TableCell>Date</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <TableRow key={index}>
+                  <TableCell colSpan={5}><Skeleton variant="text" height={34} /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       ) : (
         <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
           <Table>
@@ -90,7 +126,7 @@ function MessPayments() {
               {payments.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
-                    No payment records found.
+                    {search.trim() ? 'No results found.' : 'No payment records found.'}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -108,6 +144,21 @@ function MessPayments() {
           </Table>
         </TableContainer>
       )}
+
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={3200}
+        onClose={() => setSnack((prev) => ({ ...prev, open: false }))}
+      >
+        <Alert
+          severity={snack.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+          onClose={() => setSnack((prev) => ({ ...prev, open: false }))}
+        >
+          {snack.message}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

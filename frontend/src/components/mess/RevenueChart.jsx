@@ -3,11 +3,16 @@ import { Box, Typography } from '@mui/material'
 function RevenueChart() {
   return (
     <Box sx={{
-      bgcolor: '#fff',
+      bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(15, 23, 42, 0.88)' : 'rgba(248, 250, 252, 0.95)',
       p: 2,
       borderRadius: 3,
       height: 260,
-      boxShadow: '0 4px 20px rgba(0,0,0,0.04)'
+      border: '1px solid',
+      borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.18)' : 'rgba(15, 23, 42, 0.08)',
+      boxShadow: (theme) =>
+        theme.palette.mode === 'dark'
+          ? '0 10px 30px rgba(2, 6, 23, 0.38)'
+          : '0 10px 25px rgba(15, 23, 42, 0.08)'
     }}>
       <Typography fontWeight={600}>
         Revenue Overview
@@ -20,7 +25,7 @@ function RevenueChart() {
       {/* Fake chart */}
       <Box sx={{
         height: '70%',
-        bgcolor: '#e2e8f0',
+        bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.22)' : '#e2e8f0',
         borderRadius: 2
       }} />
     </Box>

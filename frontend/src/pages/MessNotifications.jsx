@@ -1,38 +1,34 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Box, Button, Card, CircularProgress, Typography, Alert,
+  Box, Button, Card, CircularProgress, Typography, Alert, Skeleton,
   InputBase, InputAdornment,
 } from '@mui/material'
 import { Search, NotificationsActive } from '@mui/icons-material'
 import api from '../api/api'
+import { useSearch } from '../hooks/useSearch'
 
 function MessNotifications() {
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [searchQuery, setSearchQuery] = useState('')
+  const { search, setSearch, isDebouncing, buildSearchParams } = useSearch('', 400)
 
   const fetchNotifications = useCallback(async () => {
     try {
       setError('')
       setLoading(true)
-      const response = await api.get('/notifications') // Assume endpoint exists
+      const response = await api.get('/notifications', { params: buildSearchParams() })
       setNotifications(response.data?.data || [])
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Unable to load notifications.')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [buildSearchParams])
 
   useEffect(() => {
     fetchNotifications()
   }, [fetchNotifications])
-
-  const filteredNotifications = notifications.filter(notif =>
-    notif.message?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    notif.type?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
 
   return (
     <Box sx={{ minHeight: '100%' }}>
@@ -53,13 +49,16 @@ function MessNotifications() {
             {notifications.length}
           </Typography>
         </Card>
+        <Button variant="outlined" onClick={fetchNotifications} disabled={loading} sx={{ textTransform: 'none' }}>
+          Refresh
+        </Button>
       </Box>
 
       <Box sx={{ mb: 3 }}>
         <InputBase
           placeholder="Search notifications..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
           startAdornment={
             <InputAdornment position="start">
               <Search />
@@ -78,29 +77,31 @@ function MessNotifications() {
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} action={<Button color="inherit" size="small" onClick={fetchNotifications}>Retry</Button>}>
           {error}
         </Alert>
       )}
 
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress />
+      {loading || isDebouncing ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton key={index} variant="rounded" height={100} />
+          ))}
         </Box>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {filteredNotifications.length === 0 ? (
+          {notifications.length === 0 ? (
             <Card sx={{ p: 4, textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
               <NotificationsActive sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" color="text.secondary">
                 No notifications found
               </Typography>
               <Typography color="text.secondary">
-                {searchQuery ? 'Try adjusting your search.' : 'You\'re all caught up!'}
+                {search.trim() ? 'Try adjusting your search.' : 'You\'re all caught up!'}
               </Typography>
             </Card>
           ) : (
-            filteredNotifications.map((notif) => (
+            notifications.map((notif) => (
               <Card key={notif._id} sx={{ p: 2, boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
                 <Typography fontWeight={600} mb={1}>
                   {notif.type || 'Notification'}

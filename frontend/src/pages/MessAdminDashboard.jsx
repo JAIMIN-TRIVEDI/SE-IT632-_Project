@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Box, Typography, CircularProgress, Button } from '@mui/material'
+import { Box, Typography, CircularProgress, Button, Alert, Skeleton, Snackbar } from '@mui/material'
 import { AddTask, RestaurantMenu } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/api'
@@ -10,27 +10,33 @@ import RecentActivity from '../components/mess/RecentActivity'
 function MessAdminDashboard() {
   const [dashboardData, setDashboardData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [toastOpen, setToastOpen] = useState(false)
   const navigate = useNavigate()
 
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        const response = await api.get('/reports/mess')
-        setDashboardData(response.data.data)
-      } catch (err) {
-        console.error('Mess dashboard fetch error:', err)
-      } finally {
-        setLoading(false)
-      }
+  const fetchDashboard = async () => {
+    try {
+      setError('')
+      setLoading(true)
+      const response = await api.get('/mess/dashboard/stats')
+      setDashboardData(response.data?.data || null)
+    } catch (err) {
+      const message = err.response?.data?.message || err.message || 'Failed to load dashboard data.'
+      setError(message)
+      setToastOpen(true)
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchDashboard()
   }, [])
 
   const stats = [
     {
       title: 'Active Subscriptions',
-      value: dashboardData?.activeSubscriptions ?? '-',
+      value: dashboardData?.totalActiveSubscriptions ?? '-',
       change: '+12%',
     },
     {
@@ -45,7 +51,7 @@ function MessAdminDashboard() {
     },
     {
       title: 'Pending Refunds',
-      value: dashboardData?.pendingRefundRequests ?? 0,
+      value: dashboardData?.pendingRefundsCount ?? 0,
       change: 'Review',
       warning: true,
     },
@@ -68,6 +74,7 @@ function MessAdminDashboard() {
             variant="contained"
             startIcon={<AddTask />}
             onClick={() => navigate('/mess-admin/plans')}
+            disabled={loading}
             sx={{ textTransform: 'none' }}
           >
             Create Plan
@@ -76,6 +83,7 @@ function MessAdminDashboard() {
             variant="outlined"
             startIcon={<RestaurantMenu />}
             onClick={() => navigate('/mess-admin/menu')}
+            disabled={loading}
             sx={{ textTransform: 'none' }}
           >
             Update Menu
@@ -83,9 +91,34 @@ function MessAdminDashboard() {
         </Box>
       </Box>
 
+      {error && (
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} action={<Button color="inherit" size="small" onClick={fetchDashboard}>Retry</Button>}>
+          {error}
+        </Alert>
+      )}
+
       {loading ? (
-        <Box display="flex" justifyContent="center" alignItems="center" height="55vh">
-          <CircularProgress />
+        <>
+          <Box display="flex" gap={2} mb={3} flexWrap="wrap">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Box key={index} sx={{ flex: 1, minWidth: 220 }}>
+                <Skeleton variant="rounded" height={124} />
+              </Box>
+            ))}
+          </Box>
+          <Box display="flex" gap={2} flexWrap="wrap">
+            <Box flex={2} minWidth={300}>
+              <Skeleton variant="rounded" height={280} />
+            </Box>
+            <Box flex={1} minWidth={260}>
+              <Skeleton variant="rounded" height={280} />
+            </Box>
+          </Box>
+        </>
+      ) : !dashboardData ? (
+        <Box sx={{ py: 8, textAlign: 'center' }}>
+          <Typography color="text.secondary" mb={2}>No dashboard data available.</Typography>
+          <Button variant="outlined" onClick={fetchDashboard} sx={{ textTransform: 'none' }}>Reload</Button>
         </Box>
       ) : (
         <>
@@ -111,6 +144,16 @@ function MessAdminDashboard() {
           </Box>
         </>
       )}
+
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={3500}
+        onClose={() => setToastOpen(false)}
+      >
+        <Alert severity="error" variant="filled" sx={{ width: '100%' }} onClose={() => setToastOpen(false)}>
+          {error}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { clearAuthStorage, getStoredToken, setStoredSessionExpiresAt, setStoredToken } from '../utils/authStorage.js'
+import { emitToast } from '../utils/toastBus.js'
 
 const api = axios.create({
   baseURL: 'http://localhost:5000/api/v1', // ✅ correct backend
@@ -66,6 +67,8 @@ api.interceptors.response.use(
     const status = error.response?.status
 
     if (!originalRequest || status !== 401 || originalRequest._retry || isRefreshRequest(originalRequest.url)) {
+      const message = error?.response?.data?.message || error?.message || 'Request failed. Please try again.'
+      emitToast({ severity: 'error', message })
       return Promise.reject(error)
     }
 
@@ -84,6 +87,8 @@ api.interceptors.response.use(
       if (typeof unauthorizedHandler === 'function') {
         unauthorizedHandler(refreshErr)
       }
+      const message = refreshErr?.response?.data?.message || 'Your session has expired. Please sign in again.'
+      emitToast({ severity: 'error', message })
       return Promise.reject(refreshErr)
     }
   },

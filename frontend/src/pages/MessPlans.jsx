@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Box,
   Button,
@@ -15,6 +15,7 @@ import {
   IconButton,
   Alert,
   Chip,
+  MenuItem,
   Table,
   TableBody,
   TableCell,
@@ -24,6 +25,8 @@ import {
   Paper,
   Tabs,
   Tab,
+  Snackbar,
+  Skeleton,
 } from '@mui/material'
 import { Add, Edit, Delete, People, Payment } from '@mui/icons-material'
 import {
@@ -33,20 +36,24 @@ import {
   deletePlan,
 } from '../services/messService'
 import api from '../api/api'
+import { useSearch } from '../hooks/useSearch'
 
 function MessPlans() {
   const [plans, setPlans] = useState([])
-  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
+  const [snack, setSnack] = useState({ open: false, message: '', severity: 'success' })
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingPlan, setEditingPlan] = useState(null)
+  const [deletingPlan, setDeletingPlan] = useState(null)
   const [formValues, setFormValues] = useState({
     name: '',
     price: '',
     durationInDays: '',
+    status: 'active',
   })
 
   const [selectedPlan, setSelectedPlan] = useState(null)
@@ -54,21 +61,24 @@ function MessPlans() {
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [detailsTab, setDetailsTab] = useState(0)
 
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        setError('')
-        const data = await getPlans()
-        setPlans(data)
-      } catch (err) {
-        setError(err.response?.data?.message || err.message || 'Failed to load mess plans.')
-      } finally {
-        setLoading(false)
-      }
-    }
+  const { search, setSearch, isDebouncing, buildSearchParams } = useSearch('', 400)
 
+  const fetchPlans = useCallback(async () => {
+    try {
+      setError('')
+      setLoading(true)
+      const data = await getPlans(buildSearchParams())
+      setPlans(data)
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to load mess plans.')
+    } finally {
+      setLoading(false)
+    }
+  }, [buildSearchParams])
+
+  useEffect(() => {
     fetchPlans()
-  }, [])
+  }, [fetchPlans])
 
   const fetchPlanDetails = async (planId) => {
     setDetailsLoading(true)
@@ -82,7 +92,8 @@ function MessPlans() {
         payments: paymentsRes.data?.data || [],
       })
     } catch (err) {
-      console.error('Failed to load plan details:', err)
+      const message = err.response?.data?.message || 'Failed to load plan details.'
+      setSnack({ open: true, message, severity: 'error' })
     } finally {
       setDetailsLoading(false)
     }
@@ -95,7 +106,7 @@ function MessPlans() {
 
   const openCreateDialog = () => {
     setEditingPlan(null)
-    setFormValues({ name: '', price: '', durationInDays: '' })
+    setFormValues({ name: '', price: '', durationInDays: '', status: 'active' })
     setIsDialogOpen(true)
   }
 
@@ -104,7 +115,8 @@ function MessPlans() {
     setFormValues({
       name: plan.name,
       price: plan.price?.toString() ?? '',
-      durationInDays: plan.durationInDays?.toString() ?? '',
+      durationInDays: (plan.duration ?? plan.durationInDays)?.toString() ?? '',
+      status: plan.status || 'active',
     })
     setIsDialogOpen(true)
   }
@@ -124,10 +136,11 @@ function MessPlans() {
     const payload = {
       name: formValues.name.trim(),
       price: Number(formValues.price),
-      durationInDays: Number(formValues.durationInDays),
+      duration: Number(formValues.durationInDays),
+      status: formValues.status,
     }
 
-    if (!payload.name || !payload.price || !payload.durationInDays) {
+    if (!payload.name || !payload.price || !payload.duration || !payload.status) {
       setError('Please fill in all fields with valid values.')
       return
     }
@@ -137,31 +150,48 @@ function MessPlans() {
       setError('')
 
       if (editingPlan?._id) {
-        const updatedPlan = await updatePlan(editingPlan._id, payload)
-        setPlans((prev) => prev.map((plan) => (plan._id === updatedPlan._id ? updatedPlan : plan)))
+        await updatePlan(editingPlan._id, payload)
+        await fetchPlans()
+        setSnack({ open: true, message: 'Plan updated successfully.', severity: 'success' })
       } else {
-        const createdPlan = await createPlan(payload)
-        setPlans((prev) => [createdPlan, ...prev])
+        await createPlan(payload)
+        await fetchPlans()
+        setSnack({ open: true, message: 'Plan created successfully.', severity: 'success' })
       }
 
       handleCloseDialog()
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to save mess plan.')
+      setSnack({ open: true, message: 'Failed to save mess plan.', severity: 'error' })
     } finally {
       setSaving(false)
     }
   }
 
-  const handleDeletePlan = async (planId) => {
-    const confirmed = window.confirm('Delete this mess plan?')
-    if (!confirmed) return
+  const openDeleteDialog = (plan) => {
+    setDeletingPlan(plan)
+  }
+
+  const closeDeleteDialog = () => {
+    if (deleting) return
+    setDeletingPlan(null)
+  }
+
+  const handleDeletePlan = async () => {
+    if (!deletingPlan?._id) return
 
     try {
+      setDeleting(true)
       setError('')
-      await deletePlan(planId)
-      setPlans((prev) => prev.filter((plan) => plan._id !== planId))
+      await deletePlan(deletingPlan._id)
+      await fetchPlans()
+      setDeletingPlan(null)
+      setSnack({ open: true, message: 'Plan deleted successfully.', severity: 'success' })
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to delete plan.')
+      setSnack({ open: true, message: 'Failed to delete plan.', severity: 'error' })
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -181,6 +211,7 @@ function MessPlans() {
           variant="contained"
           startIcon={<Add />}
           onClick={openCreateDialog}
+          disabled={loading || saving || deleting}
           sx={{ borderRadius: 2, textTransform: 'none', py: 1.2, px: 3 }}
         >
           Add New Plan
@@ -197,21 +228,23 @@ function MessPlans() {
         <TextField
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search plans by name"
+          placeholder="Search plans by name or price"
           fullWidth
           size="small"
         />
       </Box>
 
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
-          <CircularProgress />
-        </Box>
+      {loading || isDebouncing ? (
+        <Grid container spacing={3}>
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Grid key={index} item xs={12} sm={6} md={4}>
+              <Skeleton variant="rounded" height={180} />
+            </Grid>
+          ))}
+        </Grid>
       ) : (
         <Grid container spacing={3}>
-          {plans
-            .filter((plan) => plan.name.toLowerCase().includes(search.trim().toLowerCase()))
-            .map((plan) => (
+          {plans.map((plan) => (
               <Grid item xs={12} sm={6} md={4} key={plan._id}>
                 <Card
                   sx={{
@@ -230,15 +263,19 @@ function MessPlans() {
                       ₹{plan.price}
                     </Typography>
                     <Typography color="text.secondary" mb={2}>
-                      {plan.durationInDays} days
+                      {plan.duration ?? plan.durationInDays} days
                     </Typography>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Chip label="Active" color="success" size="small" />
+                      <Chip
+                        label={plan.status || 'active'}
+                        color={(plan.status || 'active') === 'active' ? 'success' : 'default'}
+                        size="small"
+                      />
                       <Box>
                         <IconButton color="primary" size="small" onClick={(e) => { e.stopPropagation(); openEditDialog(plan); }}>
                           <Edit fontSize="small" />
                         </IconButton>
-                        <IconButton color="error" size="small" onClick={(e) => { e.stopPropagation(); handleDeletePlan(plan._id); }}>
+                        <IconButton color="error" size="small" onClick={(e) => { e.stopPropagation(); openDeleteDialog(plan); }}>
                           <Delete fontSize="small" />
                         </IconButton>
                       </Box>
@@ -247,13 +284,13 @@ function MessPlans() {
                 </Card>
               </Grid>
             ))}
-          {plans.filter((plan) => plan.name.toLowerCase().includes(search.trim().toLowerCase())).length === 0 && (
+          {plans.length === 0 && (
             <Grid item xs={12}>
               <Box sx={{ textAlign: 'center', py: 8 }}>
                 <Typography color="text.secondary">
-                  {plans.length === 0
-                    ? 'No mess plans available. Add a plan to get started.'
-                    : 'No plans match your search.'}
+                  {search.trim()
+                    ? 'No results found for your search.'
+                    : 'No mess plans available. Add a plan to get started.'}
                 </Typography>
               </Box>
             </Grid>
@@ -385,6 +422,17 @@ function MessPlans() {
             onChange={handleChange}
             fullWidth
           />
+          <TextField
+            select
+            label="Status"
+            name="status"
+            value={formValues.status}
+            onChange={handleChange}
+            fullWidth
+          >
+            <MenuItem value="active">Active</MenuItem>
+            <MenuItem value="inactive">Inactive</MenuItem>
+          </TextField>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
           <Button onClick={handleCloseDialog} sx={{ textTransform: 'none' }}>
@@ -396,10 +444,48 @@ function MessPlans() {
             disabled={saving}
             sx={{ textTransform: 'none' }}
           >
-            {editingPlan ? 'Save Changes' : 'Create Plan'}
+            {saving ? 'Saving...' : editingPlan ? 'Save Changes' : 'Create Plan'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Dialog open={!!deletingPlan} onClose={closeDeleteDialog} fullWidth maxWidth="xs">
+        <DialogTitle>Delete Plan</DialogTitle>
+        <DialogContent>
+          <Typography color="text.secondary">
+            Are you sure you want to delete {deletingPlan?.name || 'this plan'}?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={closeDeleteDialog} disabled={deleting} sx={{ textTransform: 'none' }}>
+            Cancel
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={handleDeletePlan}
+            disabled={deleting}
+            sx={{ textTransform: 'none' }}
+          >
+            {deleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={3200}
+        onClose={() => setSnack((prev) => ({ ...prev, open: false }))}
+      >
+        <Alert
+          severity={snack.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+          onClose={() => setSnack((prev) => ({ ...prev, open: false }))}
+        >
+          {snack.message}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

@@ -1,9 +1,11 @@
 import { Box, CircularProgress, CssBaseline, ThemeProvider } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { BrowserRouter as Router, Navigate, Routes, Route } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 
 import RootLayout from "./layouts/RootLayout.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
+import AboutPage from "./pages/AboutPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
 
@@ -13,22 +15,19 @@ import StudentDashboard from "./pages/StudentDashboard.jsx";
 import ApplyRoom from "./pages/ApplyRoom.jsx";
 import MessAdminDashboard from "./pages/MessAdminDashboard.jsx";
 import MessPlans from "./pages/MessPlans.jsx";
-import MessComingSoon from "./pages/MessComingSoon.jsx";
 import MessMenu from "./pages/MessMenu.jsx";
 import ApplyMessPlan from "./pages/ApplyMessPlan.jsx";
 import MessAdminLayout from "./layouts/MessAdminLayout.jsx";
-import MessPayments from "./pages/MessPayments.jsx";
-import MessSubscriptions from "./pages/MessSubscriptions.jsx";
-import MessStudents from "./pages/MessStudents.jsx";
+import MessRecords from "./pages/MessRecords.jsx";
 import MessMenuManagement from "./pages/MessMenuManagement.jsx";
 import MessAdminProfile from "./pages/MessAdminProfile.jsx";
 import MessNotifications from "./pages/MessNotifications.jsx";
 import MessReports from "./pages/MessReports.jsx";
+import MessSubscriptions from "./pages/MessSubscriptions.jsx";
+import MessStudents from "./pages/MessStudents.jsx";
+import MessPayments from "./pages/MessPayments.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
-import ResetPassword from "./pages/ResetPassword.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
-import { AuthProvider } from "./context/AuthContext.jsx";
-import { useAuth } from "./context/AuthContext.jsx";
 import { getDefaultRouteForRole } from "./utils/roleRoutes.js";
 
 import getTheme from "./styles/theme.js";
@@ -87,6 +86,14 @@ function App() {
           <Route
             path="/"
             element={<HomeEntry mode={mode} onToggleTheme={handleToggleTheme} />}
+          />
+          <Route
+            path="/about"
+            element={
+              <RootLayout>
+                <AboutPage mode={mode} onToggleTheme={handleToggleTheme} />
+              </RootLayout>
+            }
           />
 
           {/* Auth */}
@@ -159,6 +166,7 @@ function App() {
             <Route index element={<MessAdminDashboard />} />
             <Route path="dashboard" element={<MessAdminDashboard />} />
             <Route path="plans" element={<MessPlans />} />
+            <Route path="records" element={<MessRecords />} />
             <Route path="subscriptions" element={<MessSubscriptions />} />
             <Route path="students" element={<MessStudents />} />
             <Route path="payments" element={<MessPayments />} />

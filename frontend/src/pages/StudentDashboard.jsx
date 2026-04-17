@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Box, CircularProgress, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, Skeleton, Typography } from '@mui/material'
 import StudentSidebarNav from '../components/dashboard/student/StudentSidebarNav.jsx'
 import StudentTopBar from '../components/dashboard/student/StudentTopBar.jsx'
 import StudentStatusCards from '../components/dashboard/student/StudentStatusCards.jsx'
@@ -63,8 +63,17 @@ function StudentDashboard({ mode = 'light', onToggleTheme }) {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <CircularProgress />
+      <Box sx={{ p: 4 }}>
+        <Skeleton variant="rounded" height={64} sx={{ mb: 3 }} />
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, mb: 3 }}>
+          <Skeleton variant="rounded" height={120} />
+          <Skeleton variant="rounded" height={120} />
+          <Skeleton variant="rounded" height={120} />
+        </Box>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 2 }}>
+          <Skeleton variant="rounded" height={280} />
+          <Skeleton variant="rounded" height={280} />
+        </Box>
       </Box>
     )
   }
@@ -72,7 +81,19 @@ function StudentDashboard({ mode = 'light', onToggleTheme }) {
   if (error) {
     return (
       <Box sx={{ p: 4 }}>
-        <Typography color="error" variant="h6">{error}</Typography>
+        <Alert severity="error" sx={{ borderRadius: 2 }} action={<Button color="inherit" size="small" onClick={() => fetchDashboard()}>Retry</Button>}>
+          {error}
+        </Alert>
+      </Box>
+    )
+  }
+
+  if (!dashboardData) {
+    return (
+      <Box sx={{ p: 4, textAlign: 'center' }}>
+        <Typography variant="h6" mb={1}>No dashboard data available</Typography>
+        <Typography color="text.secondary" mb={2}>Please reload to fetch your latest data.</Typography>
+        <Button variant="outlined" onClick={() => fetchDashboard()} sx={{ textTransform: 'none' }}>Reload</Button>
       </Box>
     )
   }

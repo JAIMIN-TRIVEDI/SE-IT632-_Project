@@ -3,7 +3,9 @@ import {
   Box,
   Card,
   CardContent,
-  CircularProgress,
+  Button,
+  Snackbar,
+  Skeleton,
   Table,
   TableBody,
   TableCell,
@@ -13,22 +15,27 @@ import {
   Typography,
   Paper,
   Alert,
+  TextField,
 } from '@mui/material'
 import { getStudents } from '../services/messService'
+import { useSearch } from '../hooks/useSearch'
 
 function MessStudents() {
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [snack, setSnack] = useState({ open: false, message: '', severity: 'error' })
+  const { search, setSearch, isDebouncing, buildSearchParams } = useSearch('', 400)
 
   const fetchStudents = async () => {
     try {
       setError('')
       setLoading(true)
-      const data = await getStudents()
+      const data = await getStudents(buildSearchParams())
       setStudents(data)
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Unable to load student list.')
+      setSnack({ open: true, message: 'Unable to load student list.', severity: 'error' })
     } finally {
       setLoading(false)
     }
@@ -36,7 +43,7 @@ function MessStudents() {
 
   useEffect(() => {
     fetchStudents()
-  }, [])
+  }, [buildSearchParams])
 
   return (
     <Box sx={{ minHeight: '100%' }}>
@@ -59,18 +66,49 @@ function MessStudents() {
             </Typography>
           </CardContent>
         </Card>
+        <Button variant="outlined" onClick={fetchStudents} disabled={loading} sx={{ textTransform: 'none' }}>
+          Refresh
+        </Button>
+      </Box>
+
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search students by name, email, or enrollment"
+          fullWidth
+          size="small"
+        />
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} action={<Button color="inherit" size="small" onClick={fetchStudents}>Retry</Button>}>
           {error}
         </Alert>
       )}
 
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-          <CircularProgress />
-        </Box>
+      {loading || isDebouncing ? (
+        <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Enrollment</TableCell>
+                <TableCell>Phone</TableCell>
+                <TableCell>Plan</TableCell>
+                <TableCell>Status</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <TableRow key={index}>
+                  <TableCell colSpan={6}><Skeleton variant="text" height={34} /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       ) : (
         <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
           <Table>
@@ -88,7 +126,7 @@ function MessStudents() {
               {students.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                    No students found.
+                    {search.trim() ? 'No results found.' : 'No students found.'}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -107,6 +145,21 @@ function MessStudents() {
           </Table>
         </TableContainer>
       )}
+
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={3200}
+        onClose={() => setSnack((prev) => ({ ...prev, open: false }))}
+      >
+        <Alert
+          severity={snack.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+          onClose={() => setSnack((prev) => ({ ...prev, open: false }))}
+        >
+          {snack.message}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

@@ -41,7 +41,7 @@ function MessAdminProfile() {
       try {
         setError('')
         const res = await api.get('/auth/me')
-        const u = res.data || {}
+        const u = res.data?.data || {}
         const profile = {
           name: u.name || '',
           email: u.email || '',
@@ -65,13 +65,29 @@ function MessAdminProfile() {
     try {
       setSaving(true)
       setError('')
-      await api.put('/auth/update-profile', {
+      const res = await api.put('/auth/me', {
         name: form.name,
         phone: form.phone,
       })
-      setOriginal(form)
+
+      const updated = res.data?.data || {}
+      const updatedProfile = {
+        name: updated.name || form.name,
+        email: updated.email || form.email,
+        phone: updated.phone || form.phone,
+      }
+
+      setForm(updatedProfile)
+      setOriginal(updatedProfile)
+
+      const existing = JSON.parse(localStorage.getItem('user') || '{}')
+      localStorage.setItem('user', JSON.stringify({
+        ...existing,
+        ...updated,
+      }))
+
       setSnack({ open: true, msg: 'Profile updated successfully!', severity: 'success' })
-      setLastUpdated(new Date().toISOString())
+      setLastUpdated(updated.updatedAt || new Date().toISOString())
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update profile.')
       setSnack({ open: true, msg: 'Failed to update profile.', severity: 'error' })

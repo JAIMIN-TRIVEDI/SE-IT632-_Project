@@ -5,9 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 const menu = [
   { label: 'Dashboard', route: '/mess-admin/dashboard' },
   { label: 'Mess Plans', route: '/mess-admin/plans' },
-  { label: 'Subscriptions', route: '/mess-admin/subscriptions' },
-  { label: 'Students', route: '/mess-admin/students' },
-  { label: 'Payments', route: '/mess-admin/payments' },
+  { label: 'Records', route: '/mess-admin/records' },
   { label: 'Menu Management', route: '/mess-admin/menu' },
   { label: 'Notifications', route: '/mess-admin/notifications' },
   { label: 'Reports', route: '/mess-admin/reports' },

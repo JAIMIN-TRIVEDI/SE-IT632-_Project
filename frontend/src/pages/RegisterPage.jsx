@@ -79,10 +79,11 @@ function RegisterPage() {
         password: formData.password,
         role: 'student',
       })
+      const authData = data?.data || data
 
       // Save token and user to localStorage
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify(data.user))
+      localStorage.setItem('token', authData.token)
+      localStorage.setItem('user', JSON.stringify(authData.user))
 
       // Redirect to dashboard after successful registration
       navigate('/login') // change this to your actual home/dashboard route

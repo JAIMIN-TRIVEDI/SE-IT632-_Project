@@ -1,7 +1,17 @@
 import api from '../api/api'
 
-export const getPlans = async () => {
-  const response = await api.get('/mess/plans')
+const cleanParams = (params = {}) => {
+  const nextParams = { ...params }
+
+  if (typeof nextParams.search === 'string' && !nextParams.search.trim()) {
+    delete nextParams.search
+  }
+
+  return nextParams
+}
+
+export const getPlans = async (params = {}) => {
+  const response = await api.get('/mess/plans', { params: cleanParams(params) })
   return response.data?.data ?? []
 }
 
@@ -20,29 +30,31 @@ export const deletePlan = async (id) => {
   return response.data
 }
 
-export const getSubscriptions = async () => {
-  const response = await api.get('/mess/subscriptions')
+export const getSubscriptions = async (params = {}) => {
+  const response = await api.get('/mess/subscriptions', { params: cleanParams(params) })
   return response.data?.data ?? []
 }
 
-export const getStudents = async () => {
-  const response = await api.get('/mess/students')
+export const getStudents = async (params = {}) => {
+  const response = await api.get('/mess/students', { params: cleanParams(params) })
   return response.data?.data ?? []
 }
 
-export const getPayments = async () => {
-  const response = await api.get('/mess/payments')
+export const getPayments = async (params = {}) => {
+  const response = await api.get('/mess/payments', { params: cleanParams(params) })
   return response.data ?? { data: [], totalRevenue: 0 }
 }
 
-export const getMessMenu = async () => {
-  const response = await api.get('/mess/menu')
+export const getMessMenu = async (date) => {
+  const response = await api.get('/mess/menu', {
+    params: date ? { date } : undefined,
+  })
   return response.data?.data
 }
 
 export const updateMessMenu = async (payload) => {
   const response = await api.put('/mess/menu', payload)
-  return response.data?.data
+  return response.data
 }
 
 export const approveRefund = async (id) => {

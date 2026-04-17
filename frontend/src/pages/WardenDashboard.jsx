@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Box, CircularProgress, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, Skeleton, Typography } from '@mui/material'
 import WardenSidebarNav from '../components/dashboard/warden/WardenSidebarNav.jsx'
 import WardenTopBar from '../components/dashboard/warden/WardenTopBar.jsx'
 import WardenStatCard from '../components/dashboard/warden/WardenStatCard.jsx'
@@ -131,8 +131,17 @@ function WardenDashboard() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <CircularProgress />
+      <Box sx={{ p: 4 }}>
+        <Skeleton variant="rounded" height={64} sx={{ mb: 3 }} />
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, mb: 3 }}>
+          <Skeleton variant="rounded" height={120} />
+          <Skeleton variant="rounded" height={120} />
+          <Skeleton variant="rounded" height={120} />
+        </Box>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 2 }}>
+          <Skeleton variant="rounded" height={280} />
+          <Skeleton variant="rounded" height={280} />
+        </Box>
       </Box>
     )
   }
@@ -140,9 +149,19 @@ function WardenDashboard() {
   if (error) {
     return (
       <Box sx={{ p: 4 }}>
-        <Typography color="error" variant="h6">
+        <Alert severity="error" sx={{ borderRadius: 2 }} action={<Button color="inherit" size="small" onClick={fetchDashboardData}>Retry</Button>}>
           {error}
-        </Typography>
+        </Alert>
+      </Box>
+    )
+  }
+
+  if (!dashboardData) {
+    return (
+      <Box sx={{ p: 4, textAlign: 'center' }}>
+        <Typography variant="h6" mb={1}>No dashboard data available</Typography>
+        <Typography color="text.secondary" mb={2}>Try reloading to fetch the latest records.</Typography>
+        <Button variant="outlined" onClick={fetchDashboardData} sx={{ textTransform: 'none' }}>Reload</Button>
       </Box>
     )
   }
