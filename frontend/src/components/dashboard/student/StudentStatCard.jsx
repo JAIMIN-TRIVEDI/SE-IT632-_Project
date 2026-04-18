@@ -35,17 +35,17 @@ function StudentStatCard({ icon: Icon, gradient, label, value, sub }) {
         </Box>
         <Typography
           fontSize={12}
-          color="#94a3b8"
+          color="text.secondary"
           fontWeight={600}
           textTransform="uppercase"
           letterSpacing={0.5}
         >
           {label}
         </Typography>
-        <Typography fontSize={26} fontWeight={900} color="#0f172a" lineHeight={1.2} mt={0.3}>
+        <Typography fontSize={26} fontWeight={900} color="text.primary" lineHeight={1.2} mt={0.3}>
           {value}
         </Typography>
-        <Typography fontSize={12} color="#64748b" mt={0.3}>
+        <Typography fontSize={12} color="text.secondary" mt={0.3}>
           {sub}
         </Typography>
       </CardContent>

@@ -38,13 +38,13 @@ function ResetPassword() {
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      bgcolor: '#f8fafc'
+      bgcolor: 'background.default'
     }}>
 
       <Box sx={{
         width: 400,
         p: 4,
-        bgcolor: '#fff',
+        bgcolor: 'background.paper',
         borderRadius: 4,
         boxShadow: '0 10px 40px rgba(0,0,0,0.08)'
       }}>

@@ -72,7 +72,7 @@ function MessSubscriptions() {
             Review active subscriptions and process refund requests.
           </Typography>
         </Box>
-        <Card sx={{ minWidth: 240, p: 2, bgcolor: '#fff' }}>
+        <Card sx={{ minWidth: 240, p: 2, bgcolor: 'background.paper' }}>
           <CardContent>
             <Typography fontSize={12} color="text.secondary" gutterBottom>
               Pending refund requests

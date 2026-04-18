@@ -44,6 +44,42 @@ const getTheme = (mode) =>
     shape: {
       borderRadius: 16,
     },
+    components: {
+      MuiCard: {
+        styleOverrides: {
+          root: {
+            backgroundImage: 'none',
+            border: '1px solid',
+            borderColor: mode === 'dark' ? 'rgba(148, 163, 184, 0.2)' : 'rgba(148, 163, 184, 0.18)',
+          },
+        },
+      },
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            backgroundImage: 'none',
+          },
+        },
+      },
+      MuiTableHead: {
+        styleOverrides: {
+          root: {
+            backgroundColor: mode === 'dark' ? 'rgba(148, 163, 184, 0.08)' : 'rgba(15, 23, 42, 0.03)',
+          },
+        },
+      },
+      MuiTableCell: {
+        styleOverrides: {
+          root: {
+            borderBottomColor: mode === 'dark' ? 'rgba(148, 163, 184, 0.16)' : 'rgba(148, 163, 184, 0.25)',
+          },
+          head: {
+            color: mode === 'dark' ? '#e2e8f0' : '#0f172a',
+            fontWeight: 700,
+          },
+        },
+      },
+    },
   })
 
 export default getTheme

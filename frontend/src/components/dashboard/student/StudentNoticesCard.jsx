@@ -9,16 +9,17 @@ function StudentNoticesCard() {
         flex: 0.9,
         borderRadius: 4,
         boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-        border: '1px solid #f1f5f9',
+        border: '1px solid',
+        borderColor: 'divider',
       }}
     >
       <CardContent sx={{ p: 3 }}>
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
           <Box>
-            <Typography fontWeight={800} fontSize={16} color="#0f172a">
+            <Typography fontWeight={800} fontSize={16} color="text.primary">
               Notices
             </Typography>
-            <Typography fontSize={12} color="#94a3b8" mt={0.2}>
+            <Typography fontSize={12} color="text.secondary" mt={0.2}>
               Latest updates
             </Typography>
           </Box>
@@ -42,17 +43,18 @@ function StudentNoticesCard() {
               sx={{
                 p: 2,
                 borderRadius: 3,
-                border: '1.5px solid #f1f5f9',
+                border: '1.5px solid',
+                borderColor: 'divider',
                 transition: 'all 0.2s',
                 cursor: 'pointer',
                 '&:hover': {
                   borderColor: '#e0e7ff',
-                  bgcolor: '#fafbff',
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.1)' : '#fafbff',
                 },
               }}
             >
               <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={0.5}>
-                <Typography fontSize={13} fontWeight={700} color="#0f172a" flex={1} pr={1}>
+                <Typography fontSize={13} fontWeight={700} color="text.primary" flex={1} pr={1}>
                   {notice.title}
                 </Typography>
                 <Chip
@@ -69,10 +71,10 @@ function StudentNoticesCard() {
                   }}
                 />
               </Box>
-              <Typography fontSize={12} color="#64748b" lineHeight={1.5}>
+              <Typography fontSize={12} color="text.secondary" lineHeight={1.5}>
                 {notice.desc}
               </Typography>
-              <Typography fontSize={11} color="#94a3b8" mt={0.5}>
+              <Typography fontSize={11} color="text.secondary" mt={0.5}>
                 {notice.time}
               </Typography>
             </Box>

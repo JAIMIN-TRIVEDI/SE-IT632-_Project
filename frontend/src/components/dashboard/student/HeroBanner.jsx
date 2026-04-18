@@ -66,7 +66,7 @@ function HeroBanner() {
           fontWeight: 700,
           fontSize: 13,
           color: '#312e81',
-          bgcolor: '#fff',
+          bgcolor: 'background.paper',
           borderRadius: 3,
           px: 2.5,
           py: 1.2,

@@ -8,14 +8,15 @@ function StudentAttendanceCard() {
         flex: 0.9,
         borderRadius: 4,
         boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-        border: '1px solid #f1f5f9',
+        border: '1px solid',
+        borderColor: 'divider',
       }}
     >
       <CardContent sx={{ p: 3 }}>
-        <Typography fontWeight={800} fontSize={16} color="#0f172a" mb={0.5}>
+        <Typography fontWeight={800} fontSize={16} color="text.primary" mb={0.5}>
           Weekly Attendance
         </Typography>
-        <Typography fontSize={12} color="#94a3b8" mb={2.5}>
+        <Typography fontSize={12} color="text.secondary" mb={2.5}>
           This week's overview
         </Typography>
 
@@ -70,7 +71,7 @@ function StudentAttendanceCard() {
                       ? 'linear-gradient(180deg, #6366f1, #8b5cf6)'
                       : d.val === 50
                       ? 'linear-gradient(180deg, #fbbf24, #f59e0b)'
-                      : '#f1f5f9',
+                      : (theme) => theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.2)' : '#f1f5f9',
                   display: 'flex',
                   alignItems: 'flex-end',
                   justifyContent: 'center',
@@ -90,7 +91,7 @@ function StudentAttendanceCard() {
                   }}
                 />
               </Box>
-              <Typography fontSize={10} fontWeight={600} color="#94a3b8">
+              <Typography fontSize={10} fontWeight={600} color="text.secondary">
                 {d.day}
               </Typography>
             </Box>

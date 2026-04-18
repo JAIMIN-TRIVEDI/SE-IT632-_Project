@@ -81,13 +81,15 @@ export default function StudentQuickActions({ searchQuery = '', onActionSelect }
                     },
                   }
                 : {
-                    bgcolor: 'white',
+                    bgcolor: 'background.paper',
                     color: 'text.primary',
                     border: '1px solid',
                     borderColor: 'divider',
+                    boxShadow: 'none',
                     '&:hover': {
-                      borderColor: 'text.secondary',
+                      borderColor: 'primary.main',
                       boxShadow: 1,
+                      bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(47, 97, 255, 0.08)' : 'background.paper',
                     },
                   }),
             }}
@@ -122,7 +124,7 @@ export default function StudentQuickActions({ searchQuery = '', onActionSelect }
             <ChevronRight
               sx={{
                 fontSize: 16,
-                color: action.highlight ? 'rgba(255,255,255,0.8)' : 'text.disabled',
+                color: action.highlight ? 'rgba(255,255,255,0.8)' : 'text.secondary',
               }}
             />
           </Button>
@@ -134,18 +136,20 @@ export default function StudentQuickActions({ searchQuery = '', onActionSelect }
         sx={{
           mt: 3,
           p: 2,
-          background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
+          background: (theme) => theme.palette.mode === 'dark'
+            ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.96) 100%)'
+            : 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
           border: '1px solid',
-          borderColor: 'success.light',
+          borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.22)' : 'success.light',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-          <CheckCircle sx={{ fontSize: 20, color: 'success.dark', flexShrink: 0, mt: 0.25 }} />
+          <CheckCircle sx={{ fontSize: 20, color: (theme) => theme.palette.mode === 'dark' ? 'success.light' : 'success.dark', flexShrink: 0, mt: 0.25 }} />
           <Box>
-            <Typography variant="body2" fontWeight={600} color="success.dark">
+            <Typography variant="body2" fontWeight={600} color="text.primary">
               You're all caught up!
             </Typography>
-            <Typography variant="caption" sx={{ color: 'success.dark', mt: 0.5, display: 'block' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, display: 'block' }}>
               No pending actions or urgent tasks right now.
             </Typography>
           </Box>
