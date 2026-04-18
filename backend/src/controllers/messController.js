@@ -53,6 +53,24 @@ const MENU_MEALS = ["breakfast", "lunch", "snacks", "dinner"];
 
 const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+const markMessPaymentFailed = async ({ orderId, paymentId, reason }) => {
+  const payment = await Payment.findOne({
+    ...(orderId ? { orderId } : {}),
+    ...(paymentId ? { paymentId } : {}),
+  });
+
+  if (!payment || payment.status === "success") {
+    return payment;
+  }
+
+  payment.status = "failed";
+  payment.failureReason = reason || "Payment failed";
+  payment.failedAt = new Date();
+  await payment.save();
+
+  return payment;
+};
+
 const toLocalDate = (value) => {
   if (!value) return new Date();
 
@@ -209,6 +227,11 @@ export const verifyMessPayment = async (req, res) => {
       .digest("hex");
 
     if (sign !== razorpay_signature) {
+      await markMessPaymentFailed({
+        orderId: razorpay_order_id,
+        paymentId: razorpay_payment_id,
+        reason: "Invalid payment signature",
+      });
       return res.status(400).json({ message: "Invalid payment signature." });
     }
 
@@ -226,6 +249,8 @@ export const verifyMessPayment = async (req, res) => {
 
     payment.status = "success";
     payment.paymentId = razorpay_payment_id;
+    payment.failureReason = "";
+    payment.failedAt = undefined;
     payment.type = "mess";
     payment.purpose = `Mess plan: ${plan.name}`;
     await payment.save();

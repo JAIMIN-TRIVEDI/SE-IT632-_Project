@@ -8,7 +8,7 @@ const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
 export const registerUserService = async (payload) => {
-  const { name, email, password, enrollmentNo, phone, gender, role } = payload;
+  const { name, email, password, enrollmentNo, phone, gender, role, course, studyYear } = payload;
   const normalizedEmail = email?.toLowerCase();
 
   if (!gender) {
@@ -28,6 +28,8 @@ export const registerUserService = async (payload) => {
     phone,
     gender,
     role: role || "student",
+    course,
+    studyYear,
   });
 
   return {
@@ -59,6 +61,8 @@ export const loginUserService = async (email, password) => {
       phone: user.phone,
       gender: user.gender,
       enrollmentNo: user.enrollmentNo,
+      course: user.course,
+      studyYear: user.studyYear,
     },
   };
 };
@@ -111,6 +115,8 @@ export const updateProfileService = async (userId, payload) => {
   if (payload.name !== undefined) user.name = payload.name;
   if (payload.phone !== undefined) user.phone = payload.phone;
   if (payload.enrollmentNo !== undefined) user.enrollmentNo = payload.enrollmentNo;
+  if (payload.course !== undefined) user.course = payload.course;
+  if (payload.studyYear !== undefined) user.studyYear = payload.studyYear;
 
   if (payload.emergencyName !== undefined) user.emergencyName = payload.emergencyName;
   if (payload.emergencyRelationship !== undefined) {

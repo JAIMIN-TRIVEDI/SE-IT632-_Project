@@ -7,6 +7,8 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true },
   phone: { type: String },
   enrollmentNo: { type: String, trim: true },
+  course: { type: String, trim: true },
+  studyYear: { type: Number, min: 1, max: 8 },
   gender: { type: String, enum: ["male", "female"], required: true },
   role: { type: String, enum: ["student", "warden", "hostel_admin", "mess_admin"], required: true },
   isActive: { type: Boolean, default: true },
