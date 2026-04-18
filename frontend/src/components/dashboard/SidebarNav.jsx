@@ -4,6 +4,7 @@ import { Add } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import { DRAWER_WIDTH } from '../../constants/constants'
 import { navItems } from '../../constants/data'
+import BrandImage from '../BrandImage.jsx'
 
 function SidebarNav({ activeNav, onSelect }) {
   const navigate = useNavigate()
@@ -35,26 +36,8 @@ function SidebarNav({ activeNav, onSelect }) {
         }}
         onClick={() => navigate('/')}
       >
-        <Box
-          sx={{
-            width: 38,
-            height: 38,
-            borderRadius: 2,
-            bgcolor: (theme) => theme.palette.primary.main,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontWeight: 800,
-            fontSize: 16,
-          }}
-        >
-          H
-        </Box>
         <Box>
-          <Typography fontWeight={800} fontSize={16} color="text.primary" lineHeight={1}>
-            Hostezy
-          </Typography>
+          <BrandImage width={200} />
           <Typography fontSize={11} color="text.secondary">
             Hostel Admin
           </Typography>

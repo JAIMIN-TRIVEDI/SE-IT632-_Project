@@ -4,6 +4,7 @@ import { Add } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import { DRAWER_WIDTH } from '../../../constants/constants'
 import { navItems } from './data'
+import BrandImage from '../../BrandImage.jsx'
 
 function WardenSidebarNav({ activeNav, onSelect }) {
   const navigate = useNavigate()
@@ -35,26 +36,8 @@ function WardenSidebarNav({ activeNav, onSelect }) {
         }}
         onClick={() => navigate('/')}
       >
-        <Box
-          sx={{
-            width: 40,
-            height: 40,
-            borderRadius: 2,
-            bgcolor: 'primary.main',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontWeight: 800,
-            fontSize: 18,
-          }}
-        >
-          H
-        </Box>
         <Box>
-          <Typography fontWeight={800} fontSize={15} color="text.primary" lineHeight={1}>
-            Hostezy
-          </Typography>
+          <BrandImage width={200} />
           <Typography fontSize={10} color="text.secondary" letterSpacing={1} textTransform="uppercase" sx={{ fontWeight: 700 }}>
             MANAGEMENT
           </Typography>

@@ -1,5 +1,6 @@
-import { Box, Container, Typography, Link } from '@mui/material'
+import { Box, Container, Link } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
+import BrandImage from './BrandImage.jsx'
 
 function AuthHeader() {
   const navigate = useNavigate()
@@ -27,24 +28,7 @@ function AuthHeader() {
             }}
             onClick={() => navigate('/')}
           >
-            <Box
-              sx={{
-                width: 40,
-                height: 40,
-                borderRadius: 1.5,
-                background: 'linear-gradient(135deg, #2f61ff 0%, #1e40af 100%)',
-                display: 'grid',
-                placeItems: 'center',
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: 18,
-              }}
-            >
-              H
-            </Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
-              Hostezy
-            </Typography>
+            <BrandImage width={220} />
           </Box>
           <Box sx={{ display: 'flex', gap: 3 }}>
             <Link

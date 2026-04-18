@@ -505,6 +505,7 @@ export default function ApplyMessPlan() {
         amount: order.amount,
         currency: order.currency,
         name: 'Hostezy',
+        image: '/hostezy_logo.svg',
         description: `Mess Plan: ${plan.name} (${plan.durationInDays} days)`,
         order_id: order.id,
         prefill: {},

@@ -129,7 +129,7 @@ function PaymentsView() {
 
   const handleExport = () => {
     const csvContent = buildCsvContent(payments)
-    triggerDownload('hostezy-payments.csv', csvContent)
+    triggerDownload('payments.csv', csvContent)
   }
 
   if (loading) {

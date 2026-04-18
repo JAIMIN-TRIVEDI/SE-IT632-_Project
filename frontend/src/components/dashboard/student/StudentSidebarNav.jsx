@@ -7,6 +7,7 @@ import { LogoutOutlined } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import { navItems } from './data'
 import { useAuth } from '../../../context/AuthContext.jsx'
+import BrandImage from '../../BrandImage.jsx'
 
 const DRAWER_WIDTH = 240
 
@@ -49,15 +50,8 @@ function StudentSidebarNav({ activeNav, onSelect, user }) {
         onClick={() => navigate('/')}
         sx={{ px: 2.5, py: 2.5, display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
       >
-        <Box sx={{
-          width: 40, height: 40, borderRadius: 2, bgcolor: 'primary.main',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#fff', fontWeight: 800, fontSize: 18,
-        }}>
-          H
-        </Box>
         <Box>
-          <Typography fontWeight={800} fontSize={15} color="text.primary" lineHeight={1}>Hostezy</Typography>
+          <BrandImage width={200} />
           <Typography fontSize={10} color="text.secondary" letterSpacing={1} textTransform="uppercase">
             Student Portal
           </Typography>

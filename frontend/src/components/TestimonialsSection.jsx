@@ -1,11 +1,12 @@
 import { Box, Container, Typography, Paper, Avatar, Rating } from '@mui/material'
+import BrandImage from './BrandImage.jsx'
 
 const testimonials = [
   {
     name: 'Sarah Chen',
     role: 'Hostel Administrator',
     rating: 5,
-    text: '"Hostezy completely changed how we manage our 300-student hostel. The mess tracking alone saved us 20% on food waste last semester."',
+    text: '"This platform completely changed how we manage our 300-student hostel. The mess tracking alone saved us 20% on food waste last semester."',
     initial: 'S',
     color: '#f59e0b',
   },
@@ -77,6 +78,11 @@ const TestimonialsSection = () => {
                   color="text.secondary"
                   sx={{ lineHeight: 1.75, fontStyle: 'italic' }}
                 >
+                  {t.name === 'Sarah Chen' && (
+                    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', mr: 0.7 }}>
+                      <BrandImage width={96} sx={{ display: 'inline-block' }} />
+                    </Box>
+                  )}
                   {t.text}
                 </Typography>
               </Box>

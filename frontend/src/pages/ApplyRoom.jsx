@@ -91,6 +91,7 @@ function ApplyRoom() {
         amount: order.amount,
         currency: order.currency,
         name: 'Hostezy',
+        image: '/hostezy_logo.svg',
         description: `Payment for ${selectedRoomOption.label} room request`,
         order_id: order.id,
         handler: async (response) => {

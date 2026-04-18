@@ -1,5 +1,13 @@
 import axios from 'axios'
-import { clearAuthStorage, getStoredToken, setStoredSessionExpiresAt, setStoredToken } from '../utils/authStorage.js'
+import {
+  clearAuthStorage,
+  getStoredRefreshToken,
+  getStoredSessionExpiresAt,
+  getStoredToken,
+  setStoredRefreshToken,
+  setStoredSessionExpiresAt,
+  setStoredToken,
+} from '../utils/authStorage.js'
 import { emitToast } from '../utils/toastBus.js'
 
 const api = axios.create({
@@ -25,18 +33,44 @@ export const setSessionExpiryHandler = (handler) => {
 }
 
 const isRefreshRequest = (url = '') => url.includes('/auth/refresh')
+const isMeRequest = (url = '') => url.includes('/auth/me')
+
+const hasRefreshCapability = () => {
+  const refreshToken = getStoredRefreshToken()
+  if (refreshToken) return true
+
+  const sessionExpiresAt = getStoredSessionExpiresAt()
+  return Boolean(sessionExpiresAt && sessionExpiresAt > Date.now())
+}
+
+const getNormalizedAuthPayload = (payload) => payload?.data || payload || {}
+
+const shouldSilenceAuthError = (error) => {
+  const status = error?.response?.status
+  const url = error?.config?.url || ''
+
+  if (status !== 401) return false
+  return isMeRequest(url) || isRefreshRequest(url)
+}
 
 const refreshAccessToken = async () => {
   if (!refreshPromise) {
+    const refreshToken = getStoredRefreshToken()
+    const payload = refreshToken ? { refreshToken } : undefined
+
     refreshPromise = refreshClient
-      .post('/auth/refresh')
+      .post('/auth/refresh', payload)
       .then((res) => {
-        const token = res.data?.token
+        const authData = getNormalizedAuthPayload(res.data)
+        const token = authData?.token
+        const nextRefreshToken = authData?.refreshToken
+
         if (token) setStoredToken(token)
-        if (res.data?.sessionExpiresAt) {
-          setStoredSessionExpiresAt(res.data.sessionExpiresAt)
+        if (nextRefreshToken) setStoredRefreshToken(nextRefreshToken)
+        if (authData?.sessionExpiresAt) {
+          setStoredSessionExpiresAt(authData.sessionExpiresAt)
           if (typeof sessionExpiryHandler === 'function') {
-            sessionExpiryHandler(res.data.sessionExpiresAt)
+            sessionExpiryHandler(authData.sessionExpiresAt)
           }
         }
         return token
@@ -67,8 +101,22 @@ api.interceptors.response.use(
     const status = error.response?.status
 
     if (!originalRequest || status !== 401 || originalRequest._retry || isRefreshRequest(originalRequest.url)) {
-      const message = error?.response?.data?.message || error?.message || 'Request failed. Please try again.'
-      emitToast({ severity: 'error', message })
+      if (!shouldSilenceAuthError(error)) {
+        const message = error?.response?.data?.message || error?.message || 'Request failed. Please try again.'
+        emitToast({ severity: 'error', message })
+      }
+      return Promise.reject(error)
+    }
+
+    // For access-only setups (no refresh), skip refresh flow completely.
+    if (!hasRefreshCapability()) {
+      if (typeof unauthorizedHandler === 'function') {
+        unauthorizedHandler(error)
+      }
+      if (!shouldSilenceAuthError(error)) {
+        const message = error?.response?.data?.message || error?.message || 'Session expired. Please sign in again.'
+        emitToast({ severity: 'error', message })
+      }
       return Promise.reject(error)
     }
 
@@ -87,8 +135,12 @@ api.interceptors.response.use(
       if (typeof unauthorizedHandler === 'function') {
         unauthorizedHandler(refreshErr)
       }
-      const message = refreshErr?.response?.data?.message || 'Your session has expired. Please sign in again.'
-      emitToast({ severity: 'error', message })
+
+      if (!shouldSilenceAuthError(refreshErr)) {
+        const message = refreshErr?.response?.data?.message || 'Your session has expired. Please sign in again.'
+        emitToast({ severity: 'error', message })
+      }
+
       return Promise.reject(refreshErr)
     }
   },

@@ -1,6 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import { useLocation, useNavigate } from 'react-router-dom'
+import BrandImage from '../BrandImage.jsx'
 
 const menu = [
   { label: 'Dashboard', route: '/mess-admin/dashboard' },
@@ -30,7 +31,7 @@ function MessSidebar() {
       {/* Logo */}
       <Box display="flex" alignItems="center" gap={1} mb={3}>
         <DashboardIcon color="primary" />
-        <Typography fontWeight={700}>Hostezy</Typography>
+        <BrandImage width={190} />
       </Box>
 
       {/* Menu */}

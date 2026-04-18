@@ -4,8 +4,10 @@ import api, { setSessionExpiryHandler, setUnauthorizedHandler } from '../api/api
 import {
   clearAuthStorage,
   clearStoredSessionExpiresAt,
+  getStoredToken,
   getStoredUser,
   getStoredSessionExpiresAt,
+  setStoredRefreshToken,
   setStoredToken,
   setStoredSessionExpiresAt,
   setStoredUser,
@@ -14,10 +16,14 @@ import {
 const AuthContext = createContext(null)
 
 const normalizeMePayload = (payload) => payload?.user || payload?.data || payload || null
+const normalizeAuthPayload = (payload) => payload?.data || payload || {}
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(getStoredUser())
-  const [isAuthenticated, setIsAuthenticated] = useState(Boolean(getStoredUser()))
+  const initialToken = getStoredToken()
+  const initialUser = initialToken ? getStoredUser() : null
+
+  const [user, setUser] = useState(initialUser)
+  const [isAuthenticated, setIsAuthenticated] = useState(Boolean(initialToken && initialUser))
   const [isInitializing, setIsInitializing] = useState(true)
   const [sessionExpiresAt, setSessionExpiresAt] = useState(getStoredSessionExpiresAt())
   const sessionTimerRef = useRef(null)
@@ -62,6 +68,13 @@ export function AuthProvider({ children }) {
   const bootstrapAuth = useCallback(async () => {
     try {
       const storedExpiresAt = getStoredSessionExpiresAt()
+      const storedToken = getStoredToken()
+
+      // No access token and no refresh-session marker means no active session to restore.
+      if (!storedToken && !storedExpiresAt) {
+        clearSession()
+        return
+      }
 
       if (storedExpiresAt && storedExpiresAt <= Date.now()) {
         clearSession()
@@ -123,8 +136,14 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const { data } = await api.post('/auth/login', { email, password })
-    applyAuthState(data?.user, data?.token, data?.sessionExpiresAt)
-    return data
+    const authData = normalizeAuthPayload(data)
+
+    applyAuthState(authData?.user, authData?.token, authData?.sessionExpiresAt)
+    if (authData?.refreshToken) {
+      setStoredRefreshToken(authData.refreshToken)
+    }
+
+    return authData
   }, [applyAuthState])
 
   const logout = useCallback(async () => {

@@ -8,6 +8,7 @@ import {
   ManageAccounts,
 } from '@mui/icons-material'
 import api from '../api/api'
+import BrandImage from '../components/BrandImage.jsx'
 
 const RELATIONSHIPS = ['Parent', 'Sibling', 'Spouse', 'Guardian', 'Friend', 'Other']
 
@@ -312,8 +313,11 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
 
         {/* Footer */}
         <Box sx={{ textAlign: 'center', py: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}>
+            <BrandImage width={140} />
+          </Box>
           <Typography fontSize={11} color="text.disabled" letterSpacing={1} textTransform="uppercase" mb={1}>
-            Hostezy Resident Management System V2.4.0
+            Resident Management System V2.4.0
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
             {['Privacy Policy', 'Terms of Service', 'Help Center'].map((l) => (

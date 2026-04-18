@@ -13,6 +13,7 @@ import TwitterIcon from '@mui/icons-material/Twitter'
 import LinkedInIcon from '@mui/icons-material/LinkedIn'
 import SendIcon from '@mui/icons-material/Send'
 import LogoMark from './LogoMark.jsx'
+import BrandImage from './BrandImage.jsx'
 
 const columns = [
   {
@@ -132,9 +133,15 @@ function FooterSection() {
             gap: 2,
           }}
         >
-          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-            © 2024 Hostezy Systems Inc. All rights reserved.
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+              © 2024
+            </Typography>
+            <BrandImage width={125} sx={{ opacity: 0.9 }} />
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+              Systems Inc. All rights reserved.
+            </Typography>
+          </Box>
           <Stack direction="row" spacing={2}>
             <Button color="inherit" sx={{ color: 'rgba(255,255,255,0.6)' }}>
               Privacy Policy

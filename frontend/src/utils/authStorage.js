@@ -1,4 +1,5 @@
 const TOKEN_KEY = 'token'
+const REFRESH_TOKEN_KEY = 'refreshToken'
 const USER_KEY = 'user'
 const SESSION_EXPIRES_AT_KEY = 'sessionExpiresAt'
 
@@ -6,6 +7,16 @@ export const getStoredToken = () => localStorage.getItem(TOKEN_KEY)
 
 export const setStoredToken = (token) => {
   if (token) localStorage.setItem(TOKEN_KEY, token)
+}
+
+export const getStoredRefreshToken = () => localStorage.getItem(REFRESH_TOKEN_KEY)
+
+export const setStoredRefreshToken = (token) => {
+  if (token) localStorage.setItem(REFRESH_TOKEN_KEY, token)
+}
+
+export const clearStoredRefreshToken = () => {
+  localStorage.removeItem(REFRESH_TOKEN_KEY)
 }
 
 export const clearStoredToken = () => {
@@ -52,6 +63,7 @@ export const clearStoredSessionExpiresAt = () => {
 
 export const clearAuthStorage = () => {
   clearStoredToken()
+  clearStoredRefreshToken()
   clearStoredUser()
   clearStoredSessionExpiresAt()
 }

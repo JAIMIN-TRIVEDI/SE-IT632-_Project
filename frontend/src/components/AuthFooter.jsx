@@ -1,4 +1,5 @@
 import { Box, Typography } from '@mui/material'
+import BrandImage from './BrandImage.jsx'
 
 function AuthFooter() {
   return (
@@ -11,9 +12,11 @@ function AuthFooter() {
         textAlign: 'center',
       }}
     >
-      <Typography variant="caption" color="text.secondary">
-        © 2024 Hostezy Management System. All rights reserved.
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+        <Typography variant="caption" color="text.secondary">© 2024</Typography>
+        <BrandImage width={120} />
+        <Typography variant="caption" color="text.secondary">Management System. All rights reserved.</Typography>
+      </Box>
     </Box>
   )
 }

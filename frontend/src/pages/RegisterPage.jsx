@@ -20,6 +20,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import AuthLayout from '../layouts/AuthLayout.jsx'
 import FormInput from '../components/FormInput.jsx'
 import api from '../api/api.js'
+import BrandImage from '../components/BrandImage.jsx'
 
 function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -113,7 +114,9 @@ function RegisterPage() {
           Create your Student Account
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-          Join the Hostezy community and manage your stay with ease.
+          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.8 }}>
+            Join the <BrandImage width={116} sx={{ display: 'inline-block' }} /> community and manage your stay with ease.
+          </Box>
         </Typography>
 
         {/* Error Alert */}

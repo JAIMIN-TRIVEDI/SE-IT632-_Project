@@ -8,6 +8,7 @@ import { alpha } from '@mui/material/styles'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header.jsx'
 import FooterSection from '../components/FooterSection.jsx'
+import BrandImage from '../components/BrandImage.jsx'
 
 const values = [
   {
@@ -111,7 +112,12 @@ function AboutPage({ mode, onToggleTheme }) {
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, pt: { xs: 6, md: 10 }, pb: { xs: 8, md: 12 } }}>
           <Stack spacing={4} sx={{ maxWidth: 860, animation: 'riseIn 0.9s ease forwards' }}>
             <Chip
-              label="About Hostezy"
+              label={
+                <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.8 }}>
+                  <Typography component="span" sx={{ fontWeight: 700, color: 'primary.main' }}>About</Typography>
+                  <BrandImage width={112} />
+                </Box>
+              }
               sx={{
                 alignSelf: 'flex-start',
                 px: 1,
@@ -152,7 +158,10 @@ function AboutPage({ mode, onToggleTheme }) {
               color="text.secondary"
               sx={{ lineHeight: 1.8, maxWidth: 740, fontWeight: 400, fontSize: { xs: '1rem', md: '1.12rem' } }}
             >
-              Hostezy started with one mission: remove operational friction from hostel and mess management.
+              <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.8, mr: 0.7 }}>
+                <BrandImage width={122} sx={{ display: 'inline-block' }} />
+              </Box>
+              started with one mission: remove operational friction from hostel and mess management.
               We blend automation, transparency, and modern design so every stakeholder can move faster with confidence.
             </Typography>
 
@@ -226,7 +235,9 @@ function AboutPage({ mode, onToggleTheme }) {
                 }}
               />
               <Typography variant="h5" sx={{ fontWeight: 800, mb: 2.5 }}>
-                Why Teams Choose Hostezy
+                <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.9 }}>
+                  Why Teams Choose <BrandImage width={130} sx={{ display: 'inline-block' }} />
+                </Box>
               </Typography>
               <Stack spacing={2}>
                 {values.map((value, index) => (
