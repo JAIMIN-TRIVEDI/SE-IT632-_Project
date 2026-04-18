@@ -25,23 +25,23 @@ router.get(
 );
 
 router.get(
-  "/vacate-requests/admin",
+  "/vacate-requests/warden",
   protect,
-  authorizeRoles("hostel_admin"),
+  authorizeRoles("warden"),
   getHostelAdminVacateRequests,
 );
 
 router.put(
   "/vacate-requests/:id/approve",
   protect,
-  authorizeRoles("hostel_admin"),
+  authorizeRoles("warden"),
   approveVacate,
 );
 
 router.put(
   "/vacate-requests/:id/reject",
   protect,
-  authorizeRoles("hostel_admin"),
+  authorizeRoles("warden"),
   rejectVacate,
 );
 

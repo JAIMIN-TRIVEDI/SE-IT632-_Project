@@ -2,12 +2,96 @@ import Room from "../models/Room.js";
 import RoomRequest from "../models/RoomRequest.js";
 import RoomAllocation from "../models/RoomAllocation.js";
 import Hostel from "../models/Hostel.js";
-import Block from "../models/Block.js";
 import User from "../models/User.js";
+import { createNotification } from "../services/notificationService.js";
+
+const DEFAULT_ROOM_PRICING = {
+    double: 30000,
+    triple: 35000,
+    quad: 40000,
+};
 
 const getStudentGender = async (userId) => {
     const student = await User.findById(userId).select("gender").lean();
     return student?.gender?.toLowerCase();
+};
+
+const getAllowedHostelType = (gender) => (gender === "male" ? "boy" : "girl");
+
+const getRoomPrice = (room) => {
+    if (Number.isFinite(Number(room?.price)) && Number(room.price) > 0) {
+        return Number(room.price);
+    }
+    return DEFAULT_ROOM_PRICING[room?.roomType] || DEFAULT_ROOM_PRICING.triple;
+};
+
+const hasActiveOrPendingRequest = async (studentId) => {
+    return RoomRequest.findOne({
+        studentId,
+        $or: [
+            { status: "pending" },
+            { status: "approved", paymentStatus: "pending" },
+        ],
+    }).lean();
+};
+
+const getActiveAllocation = async (studentId) => {
+    return RoomAllocation.findOne({ studentId, status: "active" }).lean();
+};
+
+const getRoomWithResidents = async ({ hostelIds, roomType }) => {
+    const roomFilter = {
+        hostelId: { $in: hostelIds },
+        status: "available",
+        $expr: { $lt: ["$occupiedCount", "$capacity"] },
+    };
+
+    if (roomType) {
+        roomFilter.roomType = roomType;
+    }
+
+    const rooms = await Room.find(roomFilter)
+        .populate({ path: "hostelId", select: "name type" })
+        .populate({ path: "blockId", select: "name" })
+        .sort({ hostelId: 1, blockId: 1, roomNumber: 1 })
+        .lean();
+
+    if (!rooms.length) {
+        return [];
+    }
+
+    const roomIds = rooms.map((room) => room._id);
+    const allocations = await RoomAllocation.find({ roomId: { $in: roomIds }, status: "active" })
+        .populate({ path: "studentId", select: "name email enrollmentNo phone gender course studyYear" })
+        .lean();
+
+    const residentsByRoom = allocations.reduce((acc, allocation) => {
+        const roomId = allocation.roomId?.toString();
+        if (!roomId || !allocation.studentId) return acc;
+
+        if (!acc[roomId]) {
+            acc[roomId] = [];
+        }
+
+        acc[roomId].push({
+            _id: allocation.studentId._id,
+            name: allocation.studentId.name,
+            email: allocation.studentId.email,
+            phone: allocation.studentId.phone || "",
+            enrollmentNo: allocation.studentId.enrollmentNo || "",
+            gender: allocation.studentId.gender || "",
+            course: allocation.studentId.course || "",
+            studyYear: allocation.studentId.studyYear || null,
+        });
+
+        return acc;
+    }, {});
+
+    return rooms.map((room) => ({
+        ...room,
+        availableSeats: Math.max(Number(room.capacity || 0) - Number(room.occupiedCount || 0), 0),
+        residents: residentsByRoom[room._id.toString()] || [],
+    }));
 };
 
 export const getAvailableRooms = async (req, res) => {
@@ -18,7 +102,7 @@ export const getAvailableRooms = async (req, res) => {
             return res.status(400).json({ message: "User gender is missing or invalid on your profile. Please contact admin." });
         }
 
-        const hostelType = userGender === "male" ? "boy" : "girl";
+        const hostelType = getAllowedHostelType(userGender);
         const hostels = await Hostel.find({ type: hostelType }).select("_id");
 
         if (!hostels.length) {
@@ -27,14 +111,11 @@ export const getAvailableRooms = async (req, res) => {
 
         const hostelIds = hostels.map((h) => h._id);
 
-        const rooms = await Room.find({
-            status: "available",
-            hostelId: { $in: hostelIds },
-            $expr: { $lt: ["$occupiedCount", "$capacity"] },
-        })
-            .populate({ path: "hostelId", select: "name type" })
-            .populate({ path: "blockId", select: "name" })
-            .sort({ blockId: 1, roomNumber: 1 });
+        const roomType = req.query.roomType
+            ? String(req.query.roomType).trim().toLowerCase()
+            : undefined;
+
+        const rooms = await getRoomWithResidents({ hostelIds, roomType });
 
         return res.json({ success: true, data: rooms });
     } catch (err) {
@@ -57,37 +138,34 @@ export const getMyRoomRequest = async (req, res) => {
 
 export const createRoomRequest = async (req, res) => {
     try {
-        const { roomType } = req.body;
+        const { roomType, roomId, requestMode = "random" } = req.body;
 
-        if (!roomType) {
-            return res.status(400).json({ message: "Please select a room type." });
+        const normalizedRoomType = roomType ? roomType.trim().toLowerCase() : undefined;
+        const normalizedMode = String(requestMode).trim().toLowerCase();
+        const isSpecific = normalizedMode === "specific" || !!roomId;
+
+        if (!isSpecific && !normalizedRoomType) {
+            return res.status(400).json({ message: "Please select a room type for random request." });
         }
 
-        const normalizedRoomType = roomType.trim().toLowerCase();
-
-        // ── Step 1: Fetch student gender fresh from DB ────────────────────────
         const userGender = await getStudentGender(req.user._id);
-        console.log("[RoomRequest] studentId:", req.user._id, "| gender from DB:", userGender);
 
         if (!userGender || !["male", "female"].includes(userGender)) {
             return res.status(400).json({ message: "User gender is missing or invalid on your profile. Please contact admin." });
         }
 
-        // ── Step 2: Guards ────────────────────────────────────────────────────
-        const activeAllocation = await RoomAllocation.findOne({ studentId: req.user._id, status: "active" });
+        const activeAllocation = await getActiveAllocation(req.user._id);
         if (activeAllocation) {
             return res.status(400).json({ message: "You already have an assigned room." });
         }
 
-        const existingPending = await RoomRequest.findOne({ studentId: req.user._id, status: "pending" });
-        if (existingPending) {
-            return res.status(400).json({ message: "You already have a pending room request." });
+        const existingOpen = await hasActiveOrPendingRequest(req.user._id);
+        if (existingOpen) {
+            return res.status(400).json({ message: "You already have an active room request awaiting approval or payment." });
         }
 
-        // ── Step 3: Find gender-appropriate hostels ───────────────────────────
-        const hostelType = userGender === "male" ? "boy" : "girl";
+        const hostelType = getAllowedHostelType(userGender);
         const hostels = await Hostel.find({ type: hostelType }).lean();
-        console.log("[RoomRequest] hostelType:", hostelType, "| hostels found:", hostels.map(h => ({ id: h._id, name: h.name })));
 
         if (!hostels.length) {
             return res.status(404).json({ message: `No ${hostelType}s' hostels available.` });
@@ -95,93 +173,58 @@ export const createRoomRequest = async (req, res) => {
 
         const hostelIds = hostels.map((h) => h._id);
 
-        // ── Step 4: Find blocks in those hostels ──────────────────────────────
-        const blocks = await Block.find({ hostelId: { $in: hostelIds } }).sort({ name: 1 }).lean();
-        console.log("[RoomRequest] blocks found:", blocks.map(b => ({ id: b._id, name: b.name, hostelId: b.hostelId })));
-
-        if (!blocks.length) {
-            return res.status(404).json({ message: "No blocks found in the available hostels. Please contact admin." });
-        }
-
-        // ── Step 5: Broad room search (no block filter) to verify data exists ─
-        // This tells us if rooms exist at all for this hostel+type combination
-        const allMatchingRooms = await Room.find({
-            hostelId: { $in: hostelIds },
-            roomType: { $regex: new RegExp(`^${normalizedRoomType}$`, "i") },
-        }).lean();
-        console.log(
-            `[RoomRequest] ALL rooms in hostel with roomType="${normalizedRoomType}" (ignoring status/capacity):`,
-            allMatchingRooms.map(r => ({
-                id: r._id,
-                roomNumber: r.roomNumber,
-                roomType: r.roomType,
-                status: r.status,
-                blockId: r.blockId,
-                hostelId: r.hostelId,
-                occupiedCount: r.occupiedCount,
-                capacity: r.capacity,
-            }))
-        );
-
-        // ── Step 6: Block-wise search ─────────────────────────────────────────
         let selectedRoom = null;
 
-        for (const block of blocks) {
-            const room = await Room.findOne({
-                blockId: block._id,
-                hostelId: block.hostelId,
-                roomType: { $regex: new RegExp(`^${normalizedRoomType}$`, "i") },
+        if (isSpecific) {
+            selectedRoom = await Room.findOne({
+                _id: roomId,
+                hostelId: { $in: hostelIds },
+                status: "available",
+                $expr: { $lt: ["$occupiedCount", "$capacity"] },
+            }).lean();
+
+            if (!selectedRoom) {
+                return res.status(400).json({
+                    message: "Selected room is no longer available or not allowed for your hostel type.",
+                });
+            }
+        } else {
+            selectedRoom = await Room.findOne({
+                hostelId: { $in: hostelIds },
+                roomType: normalizedRoomType,
                 status: "available",
                 $expr: { $lt: ["$occupiedCount", "$capacity"] },
             })
-                .sort({ roomNumber: 1 })
+                .sort({ hostelId: 1, blockId: 1, roomNumber: 1 })
                 .lean();
 
-            console.log(`[RoomRequest] Block "${block.name}" (${block._id}) → room found:`, room ? room.roomNumber : "none");
-
-            if (room) {
-                selectedRoom = room;
-                break;
+            if (!selectedRoom) {
+                return res.status(404).json({
+                    message: `No available ${normalizedRoomType} rooms found in ${hostelType}s' hostels right now.`,
+                });
             }
         }
 
-        if (!selectedRoom) {
-            // ── Extra diagnostic: show why each room was skipped ──────────────
-            const diagnosis = allMatchingRooms.map(r => {
-                const blockMatch = blocks.find(b => b._id.toString() === r.blockId?.toString());
-                return {
-                    roomNumber: r.roomNumber,
-                    roomType: r.roomType,
-                    status: r.status,
-                    occupiedCount: r.occupiedCount,
-                    capacity: r.capacity,
-                    blockFound: !!blockMatch,
-                    blockName: blockMatch?.name ?? "NO MATCHING BLOCK",
-                    hostelIdOnRoom: r.hostelId?.toString(),
-                    hostelIdOnBlock: blockMatch?.hostelId?.toString(),
-                    hostelIdMatch: r.hostelId?.toString() === blockMatch?.hostelId?.toString(),
-                };
-            });
-            console.log("[RoomRequest] DIAGNOSIS — why rooms were skipped:", JSON.stringify(diagnosis, null, 2));
-
-            return res.status(404).json({
-                message: `No available ${normalizedRoomType} rooms found in any block of the ${hostelType}s' hostels right now.`,
-                // Return diagnosis in dev so you can see it in the API response too
-                debug: diagnosis,
-            });
-        }
-
-        // ── Step 7: Create request ────────────────────────────────────────────
-        const pricing = { double: 30000, triple: 35000, quad: 40000 };
-        const amount = pricing[normalizedRoomType] ?? selectedRoom.price ?? 35000;
+        const resolvedRoomType = selectedRoom.roomType;
+        const amount = getRoomPrice(selectedRoom);
 
         const request = await RoomRequest.create({
             studentId: req.user._id,
             hostelId: selectedRoom.hostelId,
             roomId: selectedRoom._id,
-            roomType: normalizedRoomType,
+            roomType: resolvedRoomType,
             amount,
+            requestMode: isSpecific ? "specific" : "random",
         });
+
+        const hostel = hostels.find((item) => item._id.toString() === selectedRoom.hostelId.toString());
+        if (hostel?.wardenId) {
+            await createNotification({
+                userId: hostel.wardenId,
+                type: "room_request",
+                message: `A new room request has been submitted for ${hostel.name}. Please review it in your dashboard.`,
+            });
+        }
 
         const populatedRequest = await RoomRequest.findById(request._id)
             .populate({ path: "roomId", select: "roomNumber roomType price status hostelId blockId" })
@@ -189,7 +232,110 @@ export const createRoomRequest = async (req, res) => {
 
         return res.status(201).json({ success: true, data: populatedRequest });
     } catch (err) {
-        console.error("[createRoomRequest] ERROR:", err);
+        return res.status(500).json({ message: err.message });
+    }
+};
+
+export const getWardenRoomRequests = async (req, res) => {
+    try {
+        const status = String(req.query.status || "pending").trim().toLowerCase();
+        const query = {};
+
+        if (status !== "all") {
+            query.status = status;
+        }
+
+        const hostels = await Hostel.find({ wardenId: req.user._id }).select("_id").lean();
+        const hostelIds = hostels.map((hostel) => hostel._id);
+
+        if (!hostelIds.length) {
+            return res.json({ success: true, data: [] });
+        }
+
+        const requests = await RoomRequest.find({ ...query, hostelId: { $in: hostelIds } })
+            .sort({ createdAt: -1 })
+            .populate({ path: "studentId", select: "name email phone enrollmentNo gender course studyYear" })
+            .populate({ path: "hostelId", select: "name type" })
+            .populate({ path: "roomId", select: "roomNumber roomType capacity occupiedCount status blockId" })
+            .populate({ path: "reviewedBy", select: "name email" });
+
+        return res.json({ success: true, data: requests });
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
+    }
+};
+
+export const reviewRoomRequest = async (req, res) => {
+    try {
+        const { action, reason } = req.body;
+        const normalizedAction = String(action || "").trim().toLowerCase();
+
+        if (!["approve", "reject"].includes(normalizedAction)) {
+            return res.status(400).json({ message: "Action must be approve or reject." });
+        }
+
+        const roomRequest = await RoomRequest.findById(req.params.id)
+            .populate({ path: "hostelId", select: "name wardenId" })
+            .populate({ path: "roomId", select: "status occupiedCount capacity roomNumber roomType" });
+
+        if (!roomRequest) {
+            return res.status(404).json({ message: "Room request not found." });
+        }
+
+        if (roomRequest.hostelId?.wardenId?.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: "You are not authorized to review this request." });
+        }
+
+        if (roomRequest.status !== "pending") {
+            return res.status(400).json({ message: "Only pending requests can be reviewed." });
+        }
+
+        if (normalizedAction === "approve") {
+            const room = roomRequest.roomId;
+            const isAvailable =
+                room && room.status === "available" && Number(room.occupiedCount || 0) < Number(room.capacity || 0);
+
+            if (!isAvailable) {
+                return res.status(400).json({
+                    message: "This room is no longer available. Please reject this request and ask the student to submit a new one.",
+                });
+            }
+
+            roomRequest.status = "approved";
+            roomRequest.reviewedBy = req.user._id;
+            roomRequest.reviewedAt = new Date();
+            roomRequest.rejectionReason = "";
+
+            await roomRequest.save();
+
+            await createNotification({
+                userId: roomRequest.studentId,
+                type: "room_request_approved",
+                message: `Your room request for Room ${room.roomNumber} in ${roomRequest.hostelId?.name || "your hostel"} has been approved. Please complete the payment to confirm allocation.`,
+            });
+        } else {
+            roomRequest.status = "rejected";
+            roomRequest.reviewedBy = req.user._id;
+            roomRequest.reviewedAt = new Date();
+            roomRequest.rejectionReason = reason ? String(reason).trim() : "";
+
+            await roomRequest.save();
+
+            await createNotification({
+                userId: roomRequest.studentId,
+                type: "room_request_rejected",
+                message: `Your room request has been rejected${roomRequest.rejectionReason ? `: ${roomRequest.rejectionReason}` : "."}`,
+            });
+        }
+
+        const refreshed = await RoomRequest.findById(roomRequest._id)
+            .populate({ path: "studentId", select: "name email phone enrollmentNo gender course studyYear" })
+            .populate({ path: "hostelId", select: "name type" })
+            .populate({ path: "roomId", select: "roomNumber roomType capacity occupiedCount status blockId" })
+            .populate({ path: "reviewedBy", select: "name email" });
+
+        return res.json({ success: true, data: refreshed });
+    } catch (err) {
         return res.status(500).json({ message: err.message });
     }
 };

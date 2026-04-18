@@ -8,12 +8,95 @@ import { sendPaymentSuccessNotification } from "../services/notificationService.
 
 const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+const updatePaymentFailureStatus = async ({
+  orderId,
+  paymentId,
+  reason = "Payment failed",
+}) => {
+  const payment = await Payment.findOne({
+    ...(orderId ? { orderId } : {}),
+    ...(paymentId ? { paymentId } : {}),
+  });
+
+  if (!payment) {
+    return null;
+  }
+
+  if (payment.status === "success") {
+    return payment;
+  }
+
+  payment.status = "failed";
+  payment.failureReason = reason;
+  payment.failedAt = new Date();
+  await payment.save();
+
+  return payment;
+};
+
 export const createOrder = async (req, res) => {
 
   const { amount, purpose, subscriptionId, type } = req.body;
 
+  let payableAmount = Number(amount);
+  let payablePurpose = purpose;
+
+  if ((type || "room_request") === "room_request") {
+    if (!subscriptionId) {
+      return res.status(400).json({ message: "Room request reference is required." });
+    }
+
+    const roomRequest = await RoomRequest.findById(subscriptionId)
+      .populate({ path: "roomId", select: "roomNumber roomType capacity occupiedCount status" });
+
+    if (!roomRequest) {
+      return res.status(404).json({ message: "Room request not found." });
+    }
+
+    if (roomRequest.studentId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "You are not allowed to pay for this room request." });
+    }
+
+    if (roomRequest.status !== "approved") {
+      return res.status(400).json({ message: "Room request is not approved yet." });
+    }
+
+    if (roomRequest.paymentStatus === "paid") {
+      return res.status(400).json({ message: "Payment already completed for this room request." });
+    }
+
+    const room = roomRequest.roomId;
+    const isRoomAvailable = room
+      && room.status === "available"
+      && Number(room.occupiedCount || 0) < Number(room.capacity || 0);
+
+    if (!isRoomAvailable) {
+      return res.status(400).json({
+        message: "Selected room is no longer available. Please submit a new request.",
+      });
+    }
+
+    const existingSuccessPayment = await Payment.findOne({
+      userId: req.user._id,
+      type: "room_request",
+      subscriptionId,
+      status: "success",
+    }).lean();
+
+    if (existingSuccessPayment) {
+      return res.status(400).json({ message: "Payment already completed for this room request." });
+    }
+
+    payableAmount = Number(roomRequest.amount);
+    payablePurpose = `Room request payment for Room ${room.roomNumber}`;
+  }
+
+  if (!Number.isFinite(payableAmount) || payableAmount <= 0) {
+    return res.status(400).json({ message: "Invalid payment amount." });
+  }
+
   const options = {
-    amount: amount * 100,
+    amount: payableAmount * 100,
     currency: "INR"
   };
 
@@ -22,10 +105,11 @@ export const createOrder = async (req, res) => {
   const payment = await Payment.create({
     userId: req.user._id,
     type: type || "room_request",
-    amount,
+    amount: payableAmount,
     orderId: order.id,
-    purpose,
-    subscriptionId
+    purpose: payablePurpose,
+    subscriptionId,
+    status: "pending",
   });
 
   res.json({
@@ -50,6 +134,11 @@ export const verifyPayment = async (req, res) => {
     .digest("hex");
 
   if (sign !== razorpay_signature) {
+    await updatePaymentFailureStatus({
+      orderId: razorpay_order_id,
+      paymentId: razorpay_payment_id,
+      reason: "Invalid payment signature",
+    });
     return res.status(400).json({ message: "Invalid signature" });
   }
 
@@ -61,8 +150,17 @@ export const verifyPayment = async (req, res) => {
     return res.status(404).json({ message: "Payment record not found" });
   }
 
+  if (payment.status === "success") {
+    return res.json({
+      success: true,
+      message: "Payment already verified"
+    });
+  }
+
   payment.status = "success";
   payment.paymentId = razorpay_payment_id;
+  payment.failureReason = "";
+  payment.failedAt = undefined;
   await payment.save();
 
   await sendPaymentSuccessNotification({
@@ -74,25 +172,45 @@ export const verifyPayment = async (req, res) => {
   if (payment.subscriptionId) {
     const roomRequest = await RoomRequest.findById(payment.subscriptionId);
     if (roomRequest && roomRequest.paymentStatus === "pending") {
-      roomRequest.paymentStatus = "paid";
-      roomRequest.status = "approved";
-      await roomRequest.save();
+      if (roomRequest.status !== "approved") {
+        return res.status(400).json({ message: "Room request is not approved." });
+      }
+
+      const existingAllocation = await RoomAllocation.findOne({
+        studentId: payment.userId,
+        status: "active",
+      }).lean();
+
+      if (existingAllocation) {
+        return res.status(400).json({ message: "Student already has an active room allocation." });
+      }
 
       const room = await Room.findById(roomRequest.roomId);
-      if (room && room.status === "available") {
-        room.occupiedCount += 1;
-        if (room.occupiedCount >= room.capacity) {
-          room.status = "full";
-        }
-        await room.save();
+      const isRoomAvailable = room
+        && room.status === "available"
+        && Number(room.occupiedCount || 0) < Number(room.capacity || 0);
 
-        await RoomAllocation.create({
-          studentId: payment.userId,
-          roomId: room._id,
-          hostelId: room.hostelId,
-          status: "active",
+      if (!isRoomAvailable) {
+        return res.status(400).json({
+          message: "Selected room is no longer available. Please contact your warden.",
         });
       }
+
+      room.occupiedCount += 1;
+      if (room.occupiedCount >= room.capacity) {
+        room.status = "full";
+      }
+      await room.save();
+
+      await RoomAllocation.create({
+        studentId: payment.userId,
+        roomId: room._id,
+        hostelId: room.hostelId,
+        status: "active",
+      });
+
+      roomRequest.paymentStatus = "paid";
+      await roomRequest.save();
     }
   }
 
@@ -360,9 +478,18 @@ export const refundPayment = async (req, res) => {
 
   const payment = await Payment.findById(req.params.id);
 
+  if (!payment) {
+    return res.status(404).json({ message: "Payment record not found" });
+  }
+
+  if (payment.status === "refunded") {
+    return res.json({ success: true, message: "Payment already refunded" });
+  }
+
   await razorpay.payments.refund(payment.paymentId);
 
   payment.status = "refunded";
+  payment.refundedAt = new Date();
 
   await payment.save();
 
@@ -371,4 +498,28 @@ export const refundPayment = async (req, res) => {
     message: "Refund successful"
   });
 
+};
+
+export const markPaymentFailed = async (req, res) => {
+  try {
+    const { orderId, paymentId, reason } = req.body;
+
+    if (!orderId && !paymentId) {
+      return res.status(400).json({ message: "orderId or paymentId is required." });
+    }
+
+    const payment = await updatePaymentFailureStatus({
+      orderId,
+      paymentId,
+      reason: reason || "Payment was cancelled or failed",
+    });
+
+    if (!payment) {
+      return res.status(404).json({ message: "Payment record not found" });
+    }
+
+    return res.json({ success: true, message: "Payment marked as failed", data: payment });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
 };
