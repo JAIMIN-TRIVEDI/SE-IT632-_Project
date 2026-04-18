@@ -39,7 +39,7 @@ export default function VacateRequestCard({ vacateRequest, onRequestSubmitted })
     try {
       setSubmitting(true)
       await api.post('/vacate-requests', { reason: reason.trim() })
-      setSuccess('Vacate request submitted to hostel admin for approval.')
+      setSuccess('Vacate request submitted to your hostel warden for approval.')
       setReason('')
       if (onRequestSubmitted) {
         await onRequestSubmitted()
@@ -69,7 +69,7 @@ export default function VacateRequestCard({ vacateRequest, onRequestSubmitted })
       </Typography>
       <br />
       <Typography variant="caption" color="text.secondary">
-        Submit a vacate request
+        Submit a vacate request to your hostel warden
       </Typography>
 
       {statusMeta && (
@@ -126,7 +126,7 @@ export default function VacateRequestCard({ vacateRequest, onRequestSubmitted })
 
       {/* Notice */}
       <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, display: 'block' }}>
-        {isApproved ? 'Approved request: you can proceed to vacate.' : 'Standard 30-day notice applies'}
+        {isApproved ? 'Approved request: your room has been released.' : 'Standard notice applies until the warden approves.'}
       </Typography>
     </Box>
   )
