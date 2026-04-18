@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState } from "react";
 import {
   Box,
   Button,
@@ -14,114 +14,128 @@ import {
   InputAdornment,
   Alert,
   CircularProgress,
-} from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
-import AuthLayout from '../layouts/AuthLayout.jsx'
-import FormInput from '../components/FormInput.jsx'
-import api from '../api/api.js'
-import BrandImage from '../components/BrandImage.jsx'
+} from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import AuthLayout from "../layouts/AuthLayout.jsx";
+import FormInput from "../components/FormInput.jsx";
+import api from "../api/api.js";
+import BrandImage from "../components/BrandImage.jsx";
 
 function RegisterPage() {
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    studentId: '',
-    gender: '',
-    password: '',
-    confirmPassword: '',
+    fullName: "",
+    email: "",
+    phone: "",
+    studentId: "",
+    gender: "",
+    password: "",
+    confirmPassword: "",
     agreedToTerms: false,
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const navigate = useNavigate()
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
-    const { name, value, checked, type } = e.target
+    const { name, value, checked, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }))
-  }
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
 
   const handleRegister = async (e) => {
-    e.preventDefault()
-    setError('')
+    e.preventDefault();
+    setError("");
 
     // Frontend validations
-    if (!formData.fullName || !formData.email || !formData.password || !formData.confirmPassword || !formData.gender) {
-      return setError('Please fill in all required fields.')
+    if (
+      !formData.fullName ||
+      !formData.email ||
+      !formData.password ||
+      !formData.confirmPassword ||
+      !formData.gender
+    ) {
+      return setError("Please fill in all required fields.");
     }
 
     if (formData.password !== formData.confirmPassword) {
-      return setError('Passwords do not match.')
+      return setError("Passwords do not match.");
     }
 
     if (formData.password.length < 6) {
-      return setError('Password must be at least 6 characters.')
+      return setError("Password must be at least 6 characters.");
     }
 
     if (!formData.agreedToTerms) {
-      return setError('Please agree to the Terms of Service and Privacy Policy.')
+      return setError(
+        "Please agree to the Terms of Service and Privacy Policy.",
+      );
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
-      const { data } = await api.post('/auth/register', {
+      const { data } = await api.post("/auth/register", {
         name: formData.fullName,
         email: formData.email,
         phone: formData.phone,
         enrollmentNo: formData.studentId,
         gender: formData.gender,
         password: formData.password,
-        role: 'student',
-      })
-      const authData = data?.data || data
+        role: "student",
+      });
+      const authData = data?.data || data;
 
       // Save token and user to localStorage
-      localStorage.setItem('token', authData.token)
-      localStorage.setItem('user', JSON.stringify(authData.user))
+      localStorage.setItem("token", authData.token);
+      localStorage.setItem("user", JSON.stringify(authData.user));
 
       // Redirect to dashboard after successful registration
-      navigate('/login') // change this to your actual home/dashboard route
+      navigate("/login"); // change this to your actual home/dashboard route
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.')
+      setError(
+        err.response?.data?.message || "Registration failed. Please try again.",
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <AuthLayout showFooter>
       <Box
         sx={{
-          width: '100%',
+          width: "100%",
           maxWidth: 700,
-          bgcolor: 'background.paper',
+          bgcolor: "background.paper",
           borderRadius: 3,
           p: { xs: 3, md: 6 },
           boxShadow: (theme) =>
-            theme.palette.mode === 'dark'
-              ? '0 20px 60px rgba(0, 0, 0, 0.3)'
-              : '0 20px 60px rgba(0, 0, 0, 0.08)',
+            theme.palette.mode === "dark"
+              ? "0 20px 60px rgba(0, 0, 0, 0.3)"
+              : "0 20px 60px rgba(0, 0, 0, 0.08)",
         }}
       >
         <Typography variant="h4" fontWeight={800} sx={{ mb: 1 }}>
           Create your Student Account
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.8 }}>
-            Join the <BrandImage width={116} sx={{ display: 'inline-block' }} /> community and manage your stay with ease.
+          <Box
+            component="span"
+            sx={{ display: "inline-flex", alignItems: "center", gap: 0.8 }}
+          >
+            Join the <BrandImage width={116} sx={{ display: "inline-block" }} />{" "}
+            community and manage your stay with ease.
           </Box>
         </Typography>
 
         {/* Error Alert */}
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError("")}>
             {error}
           </Alert>
         )}
@@ -225,7 +239,9 @@ function RegisterPage() {
                   onChange={handleChange}
                   icon="🔒"
                   showPassword={showConfirmPassword}
-                  onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
+                  onTogglePassword={() =>
+                    setShowConfirmPassword(!showConfirmPassword)
+                  }
                 />
               </Grid>
             </Grid>
@@ -243,27 +259,27 @@ function RegisterPage() {
                 }
                 label={
                   <Typography variant="body2" color="text.secondary">
-                    I agree to the{' '}
+                    I agree to the{" "}
                     <Link
                       component="button"
                       onClick={(e) => {
-                        e.preventDefault()
+                        e.preventDefault();
                         // Handle terms
                       }}
                       underline="none"
-                      sx={{ fontWeight: 600, color: 'primary.main' }}
+                      sx={{ fontWeight: 600, color: "primary.main" }}
                     >
                       Terms of Service
-                    </Link>{' '}
-                    and{' '}
+                    </Link>{" "}
+                    and{" "}
                     <Link
                       component="button"
                       onClick={(e) => {
-                        e.preventDefault()
+                        e.preventDefault();
                         // Handle privacy
                       }}
                       underline="none"
-                      sx={{ fontWeight: 600, color: 'primary.main' }}
+                      sx={{ fontWeight: 600, color: "primary.main" }}
                     >
                       Privacy Policy
                     </Link>
@@ -278,34 +294,40 @@ function RegisterPage() {
               variant="contained"
               color="primary"
               size="large"
-              endIcon={loading ? <CircularProgress size={18} color="inherit" /> : <ArrowForwardIcon />}
+              endIcon={
+                loading ? (
+                  <CircularProgress size={18} color="inherit" />
+                ) : (
+                  <ArrowForwardIcon />
+                )
+              }
               type="submit"
               disabled={loading}
               sx={{
                 borderRadius: 2.5,
                 fontWeight: 700,
                 py: 1.6,
-                boxShadow: '0 4px 20px rgba(47, 97, 255, 0.3)',
-                '&:hover': {
-                  boxShadow: '0 6px 28px rgba(47, 97, 255, 0.4)',
+                boxShadow: "0 4px 20px rgba(47, 97, 255, 0.3)",
+                "&:hover": {
+                  boxShadow: "0 6px 28px rgba(47, 97, 255, 0.4)",
                 },
               }}
             >
-              {loading ? 'Creating Account...' : 'Register Account'}
+              {loading ? "Creating Account..." : "Register Account"}
             </Button>
 
             {/* Login Link */}
-            <Box sx={{ textAlign: 'center' }}>
+            <Box sx={{ textAlign: "center" }}>
               <Typography variant="body2" color="text.secondary">
-                Already have an account?{' '}
+                Already have an account?{" "}
                 <Link
                   component="button"
                   onClick={(e) => {
-                    e.preventDefault()
-                    navigate('/login')
+                    e.preventDefault();
+                    navigate("/login");
                   }}
                   underline="none"
-                  sx={{ fontWeight: 700, color: 'primary.main' }}
+                  sx={{ fontWeight: 700, color: "primary.main" }}
                 >
                   Login here
                 </Link>
@@ -315,7 +337,7 @@ function RegisterPage() {
         </form>
       </Box>
     </AuthLayout>
-  )
+  );
 }
 
-export default RegisterPage
+export default RegisterPage;

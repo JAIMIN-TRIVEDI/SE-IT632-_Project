@@ -1,6 +1,16 @@
-import { Box, CircularProgress, CssBaseline, ThemeProvider } from "@mui/material";
+import {
+  Box,
+  CircularProgress,
+  CssBaseline,
+  ThemeProvider,
+} from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
-import { BrowserRouter as Router, Navigate, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Navigate,
+  Routes,
+  Route,
+} from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 
 import RootLayout from "./layouts/RootLayout.jsx";
@@ -38,7 +48,14 @@ function HomeEntry({ mode, onToggleTheme }) {
 
   if (isInitializing) {
     return (
-      <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -82,99 +99,107 @@ function App() {
       <Router>
         <AuthProvider>
           <Routes>
-          {/* Landing */}
-          <Route
-            path="/"
-            element={<HomeEntry mode={mode} onToggleTheme={handleToggleTheme} />}
-          />
-          <Route
-            path="/about"
-            element={
-              <RootLayout>
-                <AboutPage mode={mode} onToggleTheme={handleToggleTheme} />
-              </RootLayout>
-            }
-          />
+            {/* Landing */}
+            <Route
+              path="/"
+              element={
+                <HomeEntry mode={mode} onToggleTheme={handleToggleTheme} />
+              }
+            />
+            <Route
+              path="/about"
+              element={
+                <RootLayout>
+                  <AboutPage mode={mode} onToggleTheme={handleToggleTheme} />
+                </RootLayout>
+              }
+            />
 
-          {/* Auth */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+            {/* Auth */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
-          {/* ✅ STUDENT */}
-          <Route
-            path="/student/dashboard"
-            element={
-              <ProtectedRoute allowedRoles={["student"]}>
-                <StudentDashboard mode={mode} onToggleTheme={handleToggleTheme} />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/student/mess-menu"
-            element={
-              <ProtectedRoute allowedRoles={["student", "mess_admin"]}>
-                <MessMenu />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/student/apply-room"
-            element={
-              <ProtectedRoute allowedRoles={["student"]}>
-                <ApplyRoom />
-              </ProtectedRoute>
-            }
-          />
-           <Route
-            path="/student/mess-plan"
-            element={
-              <ProtectedRoute allowedRoles={["student"]}>
-                <ApplyMessPlan />
-              </ProtectedRoute>
-            }
-          />
+            {/* ✅ STUDENT */}
+            <Route
+              path="/student/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["student"]}>
+                  <StudentDashboard
+                    mode={mode}
+                    onToggleTheme={handleToggleTheme}
+                  />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/mess-menu"
+              element={
+                <ProtectedRoute allowedRoles={["student", "mess_admin"]}>
+                  <MessMenu />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/apply-room"
+              element={
+                <ProtectedRoute allowedRoles={["student"]}>
+                  <ApplyRoom />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/mess-plan"
+              element={
+                <ProtectedRoute allowedRoles={["student"]}>
+                  <ApplyMessPlan />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* ✅ WARDEN */}
-          <Route
-            path="/warden/dashboard"
-            element={
-              <ProtectedRoute allowedRoles={["warden"]}>
-                <WardenDashboard />
-              </ProtectedRoute>
-            }
-          />
+            {/* ✅ WARDEN */}
+            <Route
+              path="/warden/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["warden"]}>
+                  <WardenDashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* ✅ ADMIN */}
-          <Route
-            path="/hostel-admin/dashboard"
-            element={
-              <ProtectedRoute allowedRoles={["hostel_admin"]}>
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
+            {/* ✅ ADMIN */}
+            <Route
+              path="/hostel-admin/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["hostel_admin"]}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* ✅ MESS ADMIN */}
-          <Route
-            path="/mess-admin"
-            element={
-              <ProtectedRoute allowedRoles={["mess_admin"]}>
-                <MessAdminLayout mode={mode} onToggleTheme={handleToggleTheme} />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<MessAdminDashboard />} />
-            <Route path="dashboard" element={<MessAdminDashboard />} />
-            <Route path="plans" element={<MessPlans />} />
-            <Route path="records" element={<MessRecords />} />
-            <Route path="subscriptions" element={<MessSubscriptions />} />
-            <Route path="students" element={<MessStudents />} />
-            <Route path="payments" element={<MessPayments />} />
-            <Route path="menu" element={<MessMenuManagement />} />
-            <Route path="notifications" element={<MessNotifications />} />
-            <Route path="reports" element={<MessReports />} />
-            <Route path="profile" element={<MessAdminProfile />} />
-          </Route>
+            {/* ✅ MESS ADMIN */}
+            <Route
+              path="/mess-admin"
+              element={
+                <ProtectedRoute allowedRoles={["mess_admin"]}>
+                  <MessAdminLayout
+                    mode={mode}
+                    onToggleTheme={handleToggleTheme}
+                  />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<MessAdminDashboard />} />
+              <Route path="dashboard" element={<MessAdminDashboard />} />
+              <Route path="plans" element={<MessPlans />} />
+              <Route path="records" element={<MessRecords />} />
+              <Route path="subscriptions" element={<MessSubscriptions />} />
+              <Route path="students" element={<MessStudents />} />
+              <Route path="payments" element={<MessPayments />} />
+              <Route path="menu" element={<MessMenuManagement />} />
+              <Route path="notifications" element={<MessNotifications />} />
+              <Route path="reports" element={<MessReports />} />
+              <Route path="profile" element={<MessAdminProfile />} />
+            </Route>
 
             <Route path="/forgot-password" element={<ForgotPassword />} />
           </Routes>

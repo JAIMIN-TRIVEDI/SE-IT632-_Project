@@ -41,7 +41,9 @@ function LoginPage() {
     try {
       const data = await login(email, password);
       const requestedPath = location.state?.from;
-      navigate(requestedPath || getDefaultRouteForRole(data?.user?.role), { replace: true });
+      navigate(requestedPath || getDefaultRouteForRole(data?.user?.role), {
+        replace: true,
+      });
     } catch (err) {
       setError(
         err.response?.data?.message || "Login failed. Please try again.",

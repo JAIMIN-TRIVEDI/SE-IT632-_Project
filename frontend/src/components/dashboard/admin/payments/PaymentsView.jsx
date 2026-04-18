@@ -1,25 +1,32 @@
-import { useEffect, useRef, useState } from 'react'
-import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material'
-import PaymentsKpiCards from './PaymentsKpiCards'
-import PaymentsFiltersBar from './PaymentsFiltersBar'
-import PaymentsTransactionsTable from './PaymentsTransactionsTable'
-import { fetchAdminPayments } from '../../../../services/adminPaymentService'
+import { useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Stack,
+  Typography,
+} from "@mui/material";
+import PaymentsKpiCards from "./PaymentsKpiCards";
+import PaymentsFiltersBar from "./PaymentsFiltersBar";
+import PaymentsTransactionsTable from "./PaymentsTransactionsTable";
+import { fetchAdminPayments } from "../../../../services/adminPaymentService";
 
-const ROWS_PER_PAGE = 10
+const ROWS_PER_PAGE = 10;
 
 const buildCsvContent = (payments) => {
   const header = [
-    'Transaction ID',
-    'Tenant Name',
-    'Tenant Email',
-    'Hostel',
-    'Room',
-    'Date',
-    'Amount',
-    'Status',
-    'Type',
-    'Purpose',
-  ]
+    "Transaction ID",
+    "Tenant Name",
+    "Tenant Email",
+    "Hostel",
+    "Room",
+    "Date",
+    "Amount",
+    "Status",
+    "Type",
+    "Purpose",
+  ];
 
   const rows = payments.map((item) => [
     item.transactionId,
@@ -32,68 +39,72 @@ const buildCsvContent = (payments) => {
     item.status,
     item.type,
     item.purpose,
-  ])
+  ]);
 
   return [header, ...rows]
-    .map((row) => row.map((cell) => `"${String(cell || '').replaceAll('"', '""')}"`).join(','))
-    .join('\n')
-}
+    .map((row) =>
+      row
+        .map((cell) => `"${String(cell || "").replaceAll('"', '""')}"`)
+        .join(","),
+    )
+    .join("\n");
+};
 
 const triggerDownload = (fileName, content) => {
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.setAttribute('download', fileName)
-  document.body.appendChild(anchor)
-  anchor.click()
-  document.body.removeChild(anchor)
-  URL.revokeObjectURL(url)
-}
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.setAttribute("download", fileName);
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+};
 
 function PaymentsView() {
-  const isFirstLoad = useRef(true)
-  const [payments, setPayments] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [tableLoading, setTableLoading] = useState(false)
-  const [error, setError] = useState('')
+  const isFirstLoad = useRef(true);
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [error, setError] = useState("");
   const [metrics, setMetrics] = useState({
     totalRevenue: 0,
     pendingDues: 0,
     activeSubscriptions: 0,
-  })
-  const [total, setTotal] = useState(0)
-  const [totalPages, setTotalPages] = useState(1)
+  });
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const [searchTerm, setSearchTerm] = useState('')
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [typeFilter, setTypeFilter] = useState('all')
-  const [page, setPage] = useState(1)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm.trim())
-    }, 350)
+      setDebouncedSearchTerm(searchTerm.trim());
+    }, 350);
 
-    return () => clearTimeout(timer)
-  }, [searchTerm])
-
-  useEffect(() => {
-    setPage(1)
-  }, [debouncedSearchTerm, statusFilter, typeFilter])
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
-    let isMounted = true
+    setPage(1);
+  }, [debouncedSearchTerm, statusFilter, typeFilter]);
+
+  useEffect(() => {
+    let isMounted = true;
 
     const loadPayments = async () => {
       try {
         if (isFirstLoad.current) {
-          setLoading(true)
+          setLoading(true);
         } else {
-          setTableLoading(true)
+          setTableLoading(true);
         }
-        setError('')
+        setError("");
 
         const response = await fetchAdminPayments({
           page,
@@ -101,43 +112,50 @@ function PaymentsView() {
           search: debouncedSearchTerm,
           status: statusFilter,
           type: typeFilter,
-        })
+        });
 
-        if (!isMounted) return
+        if (!isMounted) return;
 
-        setPayments(response.data)
-        setTotal(response.total)
-        setTotalPages(response.totalPages)
-        setMetrics(response.metrics)
+        setPayments(response.data);
+        setTotal(response.total);
+        setTotalPages(response.totalPages);
+        setMetrics(response.metrics);
       } catch (err) {
-        if (!isMounted) return
-        setError(err.response?.data?.message || 'Failed to load payment details.')
+        if (!isMounted) return;
+        setError(
+          err.response?.data?.message || "Failed to load payment details.",
+        );
       } finally {
         if (isMounted) {
-          setLoading(false)
-          setTableLoading(false)
+          setLoading(false);
+          setTableLoading(false);
         }
-        isFirstLoad.current = false
+        isFirstLoad.current = false;
       }
-    }
+    };
 
-    loadPayments()
+    loadPayments();
     return () => {
-      isMounted = false
-    }
-  }, [page, debouncedSearchTerm, statusFilter, typeFilter])
+      isMounted = false;
+    };
+  }, [page, debouncedSearchTerm, statusFilter, typeFilter]);
 
   const handleExport = () => {
-    const csvContent = buildCsvContent(payments)
-    triggerDownload('payments.csv', csvContent)
-  }
+    const csvContent = buildCsvContent(payments);
+    triggerDownload("payments.csv", csvContent);
+  };
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="60vh"
+      >
         <CircularProgress />
       </Box>
-    )
+    );
   }
 
   return (
@@ -147,7 +165,8 @@ function PaymentsView() {
           Payments Overview
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Monitor transactions, pending dues, and payment statuses across all hostels.
+          Monitor transactions, pending dues, and payment statuses across all
+          hostels.
         </Typography>
       </Stack>
 
@@ -156,7 +175,11 @@ function PaymentsView() {
           severity="error"
           sx={{ mb: 2 }}
           action={
-            <Button size="small" color="inherit" onClick={() => window.location.reload()}>
+            <Button
+              size="small"
+              color="inherit"
+              onClick={() => window.location.reload()}
+            >
               Retry
             </Button>
           }
@@ -186,7 +209,7 @@ function PaymentsView() {
         onPageChange={setPage}
       />
     </Box>
-  )
+  );
 }
 
-export default PaymentsView
+export default PaymentsView;

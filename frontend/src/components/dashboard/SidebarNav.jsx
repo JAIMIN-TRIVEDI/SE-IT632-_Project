@@ -1,13 +1,24 @@
-import { Box, Button, Divider, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography } from '@mui/material'
-import { alpha } from '@mui/material/styles'
-import { Add } from '@mui/icons-material'
-import { useNavigate } from 'react-router-dom'
-import { DRAWER_WIDTH } from '../../constants/constants'
-import { navItems } from '../../constants/data'
-import BrandImage from '../BrandImage.jsx'
+import {
+  Box,
+  Button,
+  Divider,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Typography,
+} from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import { Add } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { DRAWER_WIDTH } from "../../constants/constants";
+import { navItems } from "../../constants/data";
+import BrandImage from "../BrandImage.jsx";
 
 function SidebarNav({ activeNav, onSelect }) {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   return (
     <Drawer
@@ -15,13 +26,13 @@ function SidebarNav({ activeNav, onSelect }) {
       sx={{
         width: DRAWER_WIDTH,
         flexShrink: 0,
-        '& .MuiDrawer-paper': {
+        "& .MuiDrawer-paper": {
           width: DRAWER_WIDTH,
-          boxSizing: 'border-box',
+          boxSizing: "border-box",
           bgcolor: (theme) => theme.palette.background.paper,
           borderRight: (theme) => `1px solid ${theme.palette.divider}`,
-          display: 'flex',
-          flexDirection: 'column',
+          display: "flex",
+          flexDirection: "column",
         },
       }}
     >
@@ -29,12 +40,12 @@ function SidebarNav({ activeNav, onSelect }) {
         sx={{
           px: 2.5,
           py: 2.5,
-          display: 'flex',
-          alignItems: 'center',
+          display: "flex",
+          alignItems: "center",
           gap: 1.5,
-          cursor: 'pointer',
+          cursor: "pointer",
         }}
-        onClick={() => navigate('/')}
+        onClick={() => navigate("/")}
       >
         <Box>
           <BrandImage width={200} />
@@ -46,7 +57,7 @@ function SidebarNav({ activeNav, onSelect }) {
       <Divider />
       <List sx={{ px: 1.5, pt: 1.5, flexGrow: 1 }}>
         {navItems.map((item) => {
-          const Icon = item.icon
+          const Icon = item.icon;
           return (
             <ListItem key={item.label} disablePadding sx={{ mb: 0.5 }}>
               <ListItemButton
@@ -58,22 +69,29 @@ function SidebarNav({ activeNav, onSelect }) {
                   bgcolor: (theme) =>
                     activeNav === item.label
                       ? theme.palette.primary.main
-                      : 'transparent',
+                      : "transparent",
                   color: (theme) =>
-                    activeNav === item.label ? theme.palette.primary.contrastText : theme.palette.text.secondary,
-                  '&:hover': {
+                    activeNav === item.label
+                      ? theme.palette.primary.contrastText
+                      : theme.palette.text.secondary,
+                  "&:hover": {
                     bgcolor: (theme) =>
                       activeNav === item.label
                         ? theme.palette.primary.main
-                        : alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.18 : 0.08),
+                        : alpha(
+                            theme.palette.primary.main,
+                            theme.palette.mode === "dark" ? 0.18 : 0.08,
+                          ),
                     color: (theme) =>
                       activeNav === item.label
                         ? theme.palette.primary.contrastText
                         : theme.palette.primary.main,
                   },
-                  '& .MuiListItemIcon-root': {
+                  "& .MuiListItemIcon-root": {
                     color: (theme) =>
-                      activeNav === item.label ? theme.palette.primary.contrastText : theme.palette.text.secondary,
+                      activeNav === item.label
+                        ? theme.palette.primary.contrastText
+                        : theme.palette.text.secondary,
                     minWidth: 36,
                   },
                 }}
@@ -90,11 +108,11 @@ function SidebarNav({ activeNav, onSelect }) {
                 />
               </ListItemButton>
             </ListItem>
-          )
+          );
         })}
       </List>
     </Drawer>
-  )
+  );
 }
 
-export default SidebarNav
+export default SidebarNav;

@@ -1,46 +1,53 @@
-import { Box, Container, Link } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import BrandImage from './BrandImage.jsx'
+import { Box, Container, Link } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import BrandImage from "./BrandImage.jsx";
 
 function AuthHeader() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   return (
     <Box
       sx={{
-        bgcolor: 'background.paper',
-        borderBottom: '1px solid',
-        borderColor: 'divider',
+        bgcolor: "background.paper",
+        borderBottom: "1px solid",
+        borderColor: "divider",
         py: 2,
-        minHeight: { xs: '64px', sm: '72px' },
-        display: 'flex',
-        alignItems: 'center',
+        minHeight: { xs: "64px", sm: "72px" },
+        display: "flex",
+        alignItems: "center",
       }}
     >
       <Container maxWidth="lg">
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
           <Box
             sx={{
-              display: 'flex',
-              alignItems: 'center',
+              display: "flex",
+              alignItems: "center",
               gap: 1,
-              cursor: 'pointer',
+              cursor: "pointer",
             }}
-            onClick={() => navigate('/')}
+            onClick={() => navigate("/")}
           >
             <BrandImage width={220} />
           </Box>
-          <Box sx={{ display: 'flex', gap: 3 }}>
+          <Box sx={{ display: "flex", gap: 3 }}>
             <Link
               component="button"
               onClick={(e) => {
-                e.preventDefault()
+                e.preventDefault();
                 // Handle support
               }}
               underline="none"
               sx={{
                 fontWeight: 600,
-                color: 'primary.main',
+                color: "primary.main",
               }}
             >
               Need help?
@@ -48,13 +55,13 @@ function AuthHeader() {
             <Link
               component="button"
               onClick={(e) => {
-                e.preventDefault()
+                e.preventDefault();
                 // Handle support
               }}
               underline="none"
               sx={{
                 fontWeight: 600,
-                color: 'primary.main',
+                color: "primary.main",
               }}
             >
               Support
@@ -63,7 +70,7 @@ function AuthHeader() {
         </Box>
       </Container>
     </Box>
-  )
+  );
 }
 
-export default AuthHeader
+export default AuthHeader;

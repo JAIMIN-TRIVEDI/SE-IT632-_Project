@@ -1,51 +1,62 @@
-import { Box, Container, Typography, Paper, Avatar, Rating } from '@mui/material'
-import BrandImage from './BrandImage.jsx'
+import {
+  Box,
+  Container,
+  Typography,
+  Paper,
+  Avatar,
+  Rating,
+} from "@mui/material";
+import BrandImage from "./BrandImage.jsx";
 
 const testimonials = [
   {
-    name: 'Sarah Chen',
-    role: 'Hostel Administrator',
+    name: "Sarah Chen",
+    role: "Hostel Administrator",
     rating: 5,
     text: '"This platform completely changed how we manage our 300-student hostel. The mess tracking alone saved us 20% on food waste last semester."',
-    initial: 'S',
-    color: '#f59e0b',
+    initial: "S",
+    color: "#f59e0b",
   },
   {
-    name: 'Alex Rodriguez',
-    role: 'Graduate Student',
+    name: "Alex Rodriguez",
+    role: "Graduate Student",
     rating: 4.5,
     text: '"Paying fees and raising maintenance complaints has never been easier. I can do everything from the app without visiting the office."',
-    initial: 'A',
-    color: '#10b981',
+    initial: "A",
+    color: "#10b981",
   },
   {
-    name: 'David Wilson',
-    role: 'Property Manager',
+    name: "David Wilson",
+    role: "Property Manager",
     rating: 5,
     text: '"The transparency is amazing. No more disputes about attendance or pending payments. Highly recommended for any hostel owner."',
-    initial: 'D',
-    color: '#3b82f6',
+    initial: "D",
+    color: "#3b82f6",
   },
-]
+];
 
 const TestimonialsSection = () => {
   return (
-    <Box sx={{ py: { xs: 8, md: 12 }, bgcolor: 'background.default' }}>
+    <Box sx={{ py: { xs: 8, md: 12 }, bgcolor: "background.default" }}>
       <Container maxWidth="lg">
         <Typography
           variant="h3"
           fontWeight={800}
           color="text.primary"
           textAlign="center"
-          sx={{ mb: 6, letterSpacing: -0.5, fontSize: { xs: '1.8rem', md: '2.2rem' } }}
+          sx={{
+            mb: 6,
+            letterSpacing: -0.5,
+            fontSize: { xs: "1.8rem", md: "2.2rem" },
+          }}
         >
           Trusted by Students & Admins
         </Typography>
 
         <Box
           sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr 1fr" },
             gap: 3,
           }}
         >
@@ -55,13 +66,13 @@ const TestimonialsSection = () => {
               elevation={0}
               sx={{
                 p: 3.5,
-                border: '1px solid',
-                borderColor: 'divider',
+                border: "1px solid",
+                borderColor: "divider",
                 borderRadius: 3,
-                bgcolor: 'background.paper',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
+                bgcolor: "background.paper",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
                 gap: 3,
               }}
             >
@@ -71,27 +82,48 @@ const TestimonialsSection = () => {
                   precision={0.5}
                   readOnly
                   size="small"
-                  sx={{ mb: 2, '& .MuiRating-iconFilled': { color: '#f59e0b' } }}
+                  sx={{
+                    mb: 2,
+                    "& .MuiRating-iconFilled": { color: "#f59e0b" },
+                  }}
                 />
                 <Typography
                   variant="body2"
                   color="text.secondary"
-                  sx={{ lineHeight: 1.75, fontStyle: 'italic' }}
+                  sx={{ lineHeight: 1.75, fontStyle: "italic" }}
                 >
-                  {t.name === 'Sarah Chen' && (
-                    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', mr: 0.7 }}>
-                      <BrandImage width={96} sx={{ display: 'inline-block' }} />
+                  {t.name === "Sarah Chen" && (
+                    <Box
+                      component="span"
+                      sx={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        mr: 0.7,
+                      }}
+                    >
+                      <BrandImage width={96} sx={{ display: "inline-block" }} />
                     </Box>
                   )}
                   {t.text}
                 </Typography>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Avatar sx={{ bgcolor: t.color, width: 40, height: 40, fontWeight: 700 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <Avatar
+                  sx={{
+                    bgcolor: t.color,
+                    width: 40,
+                    height: 40,
+                    fontWeight: 700,
+                  }}
+                >
                   {t.initial}
                 </Avatar>
                 <Box>
-                  <Typography variant="body2" fontWeight={700} color="text.primary">
+                  <Typography
+                    variant="body2"
+                    fontWeight={700}
+                    color="text.primary"
+                  >
                     {t.name}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
@@ -104,7 +136,7 @@ const TestimonialsSection = () => {
         </Box>
       </Container>
     </Box>
-  )
-}
+  );
+};
 
-export default TestimonialsSection
+export default TestimonialsSection;

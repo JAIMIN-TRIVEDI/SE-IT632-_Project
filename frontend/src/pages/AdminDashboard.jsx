@@ -1,77 +1,90 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from "react";
 // import { Alert, Box, CircularProgress } from '@mui/material'
-import { Alert, Box, Button, CircularProgress, Skeleton, Typography } from '@mui/material'
-import SidebarNav from '../components/dashboard/SidebarNav.jsx'
-import TopBar from '../components/dashboard/TopBar.jsx'
-import DashboardHeader from '../components/dashboard/DashboardHeader.jsx'
-import StatsGrid from '../components/dashboard/StatsGrid.jsx'
-import RevenueChartCard from '../components/dashboard/RevenueChartCard.jsx'
-import RecentActivityCard from '../components/dashboard/RecentActivityCard.jsx'
-import PendingFeesCard from '../components/dashboard/PendingFeesCard.jsx'
-import HostelsView from '../components/dashboard/admin/HostelsView.jsx'
-import StudentsView from '../components/dashboard/admin/StudentsView.jsx'
-import PaymentsView from '../components/dashboard/admin/payments/PaymentsView.jsx'
-import ReportsView from '../components/dashboard/admin/ReportsView.jsx'
-import NotificationsView from '../components/dashboard/admin/NotificationsView.jsx'
-import api from '../api/api'
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Skeleton,
+  Typography,
+} from "@mui/material";
+import SidebarNav from "../components/dashboard/SidebarNav.jsx";
+import TopBar from "../components/dashboard/TopBar.jsx";
+import DashboardHeader from "../components/dashboard/DashboardHeader.jsx";
+import StatsGrid from "../components/dashboard/StatsGrid.jsx";
+import RevenueChartCard from "../components/dashboard/RevenueChartCard.jsx";
+import RecentActivityCard from "../components/dashboard/RecentActivityCard.jsx";
+import PendingFeesCard from "../components/dashboard/PendingFeesCard.jsx";
+import HostelsView from "../components/dashboard/admin/HostelsView.jsx";
+import StudentsView from "../components/dashboard/admin/StudentsView.jsx";
+import PaymentsView from "../components/dashboard/admin/payments/PaymentsView.jsx";
+import ReportsView from "../components/dashboard/admin/ReportsView.jsx";
+import NotificationsView from "../components/dashboard/admin/NotificationsView.jsx";
+import api from "../api/api";
 
 function AdminDashboard() {
-  const [activeNav, setActiveNav] = useState('Hostels')
+  const [activeNav, setActiveNav] = useState("Hostels");
 
   // ✅ REAL DATA STATE
-  const [dashboardData, setDashboardData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const fetchDashboard = async () => {
     try {
-      setError('')
-      setLoading(true)
-      const res = await api.get('/reports/dashboard/admin')
-      setDashboardData(res.data?.data || null)
+      setError("");
+      setLoading(true);
+      const res = await api.get("/reports/dashboard/admin");
+      setDashboardData(res.data?.data || null);
     } catch (err) {
-      const message = err.response?.data?.message || 'Failed to load admin dashboard data.'
-      setError(message)
-      console.error('Dashboard fetch error:', {
+      const message =
+        err.response?.data?.message || "Failed to load admin dashboard data.";
+      setError(message);
+      console.error("Dashboard fetch error:", {
         message,
         status: err.response?.status,
-        endpoint: '/reports/dashboard/admin',
-      })
+        endpoint: "/reports/dashboard/admin",
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // ✅ FETCH ADMIN DASHBOARD DATA
   useEffect(() => {
-    fetchDashboard()
-  }, [])
+    fetchDashboard();
+  }, []);
 
   const renderContent = () => {
     switch (activeNav) {
-      case 'Hostels':
-        return <HostelsView />
+      case "Hostels":
+        return <HostelsView />;
 
-      case 'Students':
-        return <StudentsView />
+      case "Students":
+        return <StudentsView />;
 
-      case 'Payments':
-        return <PaymentsView />
+      case "Payments":
+        return <PaymentsView />;
 
-      case 'Reports':
-        return <ReportsView />
+      case "Reports":
+        return <ReportsView />;
 
-      case 'Notifications':
-        return <NotificationsView />
+      case "Notifications":
+        return <NotificationsView />;
 
-      case 'Dashboard':
-        // return <HostelsView />
+      case "Dashboard":
+      // return <HostelsView />
       default:
         if (loading) {
           return (
             <Box>
               <Skeleton variant="text" width={220} height={44} sx={{ mb: 2 }} />
-              <Box display="grid" gridTemplateColumns="repeat(4, 1fr)" gap={2} mb={3}>
+              <Box
+                display="grid"
+                gridTemplateColumns="repeat(4, 1fr)"
+                gap={2}
+                mb={3}
+              >
                 <Skeleton variant="rounded" height={120} />
                 <Skeleton variant="rounded" height={120} />
                 <Skeleton variant="rounded" height={120} />
@@ -82,44 +95,66 @@ function AdminDashboard() {
                 <Skeleton variant="rounded" height={280} />
               </Box>
             </Box>
-          )
+          );
         }
 
         if (error) {
           return (
-            <Alert severity="error" sx={{ borderRadius: 2 }} action={<Button color="inherit" size="small" onClick={fetchDashboard}>Retry</Button>}>
+            <Alert
+              severity="error"
+              sx={{ borderRadius: 2 }}
+              action={
+                <Button color="inherit" size="small" onClick={fetchDashboard}>
+                  Retry
+                </Button>
+              }
+            >
               {error}
             </Alert>
-          )
+          );
         }
 
         if (!dashboardData) {
           return (
-            <Box sx={{ py: 8, textAlign: 'center' }}>
-              <Typography variant="h6" mb={1}>No dashboard data available</Typography>
-              <Typography color="text.secondary" mb={2}>Please refresh to fetch admin dashboard metrics.</Typography>
-              <Button variant="outlined" onClick={fetchDashboard} sx={{ textTransform: 'none' }}>Reload</Button>
+            <Box sx={{ py: 8, textAlign: "center" }}>
+              <Typography variant="h6" mb={1}>
+                No dashboard data available
+              </Typography>
+              <Typography color="text.secondary" mb={2}>
+                Please refresh to fetch admin dashboard metrics.
+              </Typography>
+              <Button
+                variant="outlined"
+                onClick={fetchDashboard}
+                sx={{ textTransform: "none" }}
+              >
+                Reload
+              </Button>
             </Box>
-          )
+          );
         }
 
-       return <HostelsView />
+        return <HostelsView />;
     }
-  }
+  };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100vh",
+        bgcolor: "background.default",
+      }}
+    >
       <SidebarNav activeNav={activeNav} onSelect={setActiveNav} />
 
-      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
         <TopBar />
 
-        <Box sx={{ p: 3, flexGrow: 1 }}>
-          {renderContent()}
-        </Box>
+        <Box sx={{ p: 3, flexGrow: 1 }}>{renderContent()}</Box>
       </Box>
     </Box>
-  )
+  );
 }
 
-export default AdminDashboard
+export default AdminDashboard;

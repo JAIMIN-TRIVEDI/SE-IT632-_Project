@@ -1,13 +1,25 @@
-import { Box, Button, Divider, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography, Badge } from '@mui/material'
-import { alpha } from '@mui/material/styles'
-import { Add } from '@mui/icons-material'
-import { useNavigate } from 'react-router-dom'
-import { DRAWER_WIDTH } from '../../../constants/constants'
-import { navItems } from './data'
-import BrandImage from '../../BrandImage.jsx'
+import {
+  Box,
+  Button,
+  Divider,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Typography,
+  Badge,
+} from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import { Add } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { DRAWER_WIDTH } from "../../../constants/constants";
+import { navItems } from "./data";
+import BrandImage from "../../BrandImage.jsx";
 
 function WardenSidebarNav({ activeNav, onSelect }) {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   return (
     <Drawer
@@ -15,13 +27,13 @@ function WardenSidebarNav({ activeNav, onSelect }) {
       sx={{
         width: DRAWER_WIDTH,
         flexShrink: 0,
-        '& .MuiDrawer-paper': {
+        "& .MuiDrawer-paper": {
           width: DRAWER_WIDTH,
-          boxSizing: 'border-box',
+          boxSizing: "border-box",
           bgcolor: (theme) => theme.palette.background.paper,
           borderRight: (theme) => `1px solid ${theme.palette.divider}`,
-          display: 'flex',
-          flexDirection: 'column',
+          display: "flex",
+          flexDirection: "column",
         },
       }}
     >
@@ -29,16 +41,22 @@ function WardenSidebarNav({ activeNav, onSelect }) {
         sx={{
           px: 2.5,
           py: 3,
-          display: 'flex',
-          alignItems: 'center',
+          display: "flex",
+          alignItems: "center",
           gap: 1.5,
-          cursor: 'pointer',
+          cursor: "pointer",
         }}
-        onClick={() => navigate('/')}
+        onClick={() => navigate("/")}
       >
         <Box>
           <BrandImage width={200} />
-          <Typography fontSize={10} color="text.secondary" letterSpacing={1} textTransform="uppercase" sx={{ fontWeight: 700 }}>
+          <Typography
+            fontSize={10}
+            color="text.secondary"
+            letterSpacing={1}
+            textTransform="uppercase"
+            sx={{ fontWeight: 700 }}
+          >
             MANAGEMENT
           </Typography>
         </Box>
@@ -46,7 +64,7 @@ function WardenSidebarNav({ activeNav, onSelect }) {
       <Divider />
       <List sx={{ px: 1.5, pt: 1.5, flexGrow: 1 }}>
         {navItems.map((item) => {
-          const Icon = item.icon
+          const Icon = item.icon;
           return (
             <ListItem key={item.label} disablePadding sx={{ mb: 0.5 }}>
               <ListItemButton
@@ -59,22 +77,35 @@ function WardenSidebarNav({ activeNav, onSelect }) {
                   borderLeft: (theme) =>
                     activeNav === item.label
                       ? `4px solid ${theme.palette.primary.main}`
-                      : '4px solid transparent',
+                      : "4px solid transparent",
                   bgcolor: (theme) =>
                     activeNav === item.label
-                      ? alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.24 : 0.12)
-                      : 'transparent',
+                      ? alpha(
+                          theme.palette.primary.main,
+                          theme.palette.mode === "dark" ? 0.24 : 0.12,
+                        )
+                      : "transparent",
                   color: (theme) =>
-                    activeNav === item.label ? theme.palette.primary.main : theme.palette.text.secondary,
-                  '&:hover': {
+                    activeNav === item.label
+                      ? theme.palette.primary.main
+                      : theme.palette.text.secondary,
+                  "&:hover": {
                     bgcolor: (theme) =>
                       activeNav === item.label
-                        ? alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.28 : 0.16)
-                        : alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.2 : 0.08),
+                        ? alpha(
+                            theme.palette.primary.main,
+                            theme.palette.mode === "dark" ? 0.28 : 0.16,
+                          )
+                        : alpha(
+                            theme.palette.primary.main,
+                            theme.palette.mode === "dark" ? 0.2 : 0.08,
+                          ),
                   },
-                  '& .MuiListItemIcon-root': {
+                  "& .MuiListItemIcon-root": {
                     color: (theme) =>
-                      activeNav === item.label ? theme.palette.primary.main : theme.palette.text.secondary,
+                      activeNav === item.label
+                        ? theme.palette.primary.main
+                        : theme.palette.text.secondary,
                     minWidth: 36,
                   },
                 }}
@@ -84,7 +115,13 @@ function WardenSidebarNav({ activeNav, onSelect }) {
                     <Badge
                       badgeContent={item.badge}
                       color="error"
-                      sx={{ '& .MuiBadge-badge': { fontSize: 10, height: 16, minWidth: 16 } }}
+                      sx={{
+                        "& .MuiBadge-badge": {
+                          fontSize: 10,
+                          height: 16,
+                          minWidth: 16,
+                        },
+                      }}
                     >
                       <Icon fontSize="small" />
                     </Badge>
@@ -101,7 +138,7 @@ function WardenSidebarNav({ activeNav, onSelect }) {
                 />
               </ListItemButton>
             </ListItem>
-          )
+          );
         })}
       </List>
       {/* <Box sx={{ px: 2, pb: 3 }}>
@@ -124,7 +161,7 @@ function WardenSidebarNav({ activeNav, onSelect }) {
         </Button>
       </Box> */}
     </Drawer>
-  )
+  );
 }
 
-export default WardenSidebarNav
+export default WardenSidebarNav;
