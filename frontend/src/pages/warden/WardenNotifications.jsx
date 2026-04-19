@@ -22,21 +22,20 @@ import {
   Typography,
 } from "@mui/material";
 import { NotificationsActive, Search, Send } from "@mui/icons-material";
-import api from "../api/api";
-import NotificationCard from "../components/notifications/NotificationCard";
-import NotificationList from "../components/notifications/NotificationList";
-import NotificationsList from "../components/notifications/NotificationsList.jsx";
-import { useAuth } from "../context/AuthContext.jsx";
-import { connectSocketForUser } from "../services/socket";
+import api from "../../api/api";
+import NotificationCard from "../../components/notifications/NotificationCard";
+import NotificationList from "../../components/notifications/NotificationList";
+import NotificationsList from "../../components/notifications/NotificationsList.jsx";
+import { useAuth } from "../../context/AuthContext.jsx";
+import { connectSocketForUser } from "../../services/socket";
 import {
   deleteNotificationById,
-  fetchSentMessNotifications,
-  sendMessAdminNotification,
-} from "../services/notificationService";
+  fetchSentWardenNotifications,
+  sendWardenNotification,
+} from "../../services/notificationService";
 
 const targetTypeOptions = [
   { value: "all", label: "All Students" },
-  { value: "subscription", label: "By Subscription Plan" },
   { value: "users", label: "Specific Students" },
 ];
 
@@ -51,92 +50,10 @@ const initialForm = {
   title: "",
   message: "",
   targetType: "all",
-  planId: "",
   targetUsers: [],
 };
 
-const MESS_COMPLAINT_KEYWORDS = [
-  "mess",
-  "meal",
-  "food",
-  "menu",
-  "canteen",
-  "dining",
-  "kitchen",
-];
-
-const isMessComplaint = (complaint = {}) => {
-  const haystack = [complaint.category, complaint.title, complaint.description]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  return MESS_COMPLAINT_KEYWORDS.some((keyword) => haystack.includes(keyword));
-};
-
-const normalizeReceivedFeed = ({
-  notifications = [],
-  recentActivities = [],
-  complaints = [],
-}) => {
-  const baseNotifications = Array.isArray(notifications)
-    ? notifications.map((item) => ({ ...item, _source: "notification" }))
-    : [];
-
-  const financeEvents = Array.isArray(recentActivities)
-    ? recentActivities
-        .filter((event) =>
-          [
-            "payment",
-            "refund_requested",
-            "refund_approved",
-            "refund_rejected",
-          ].includes(String(event?.type || "")),
-        )
-        .map((event) => ({
-          _id: `finance-${event.type}-${new Date(event.date || Date.now()).getTime()}`,
-          title: event.type === "payment" ? "Payment Update" : "Refund Update",
-          message: event.message || "Finance activity updated.",
-          type: event.type.includes("payment")
-            ? "payment_update"
-            : "refund_update",
-          isRead: true,
-          createdAt: event.date || new Date().toISOString(),
-          _source: "finance",
-        }))
-    : [];
-
-  const complaintEvents = Array.isArray(complaints)
-    ? complaints
-        .filter((complaint) => isMessComplaint(complaint))
-        .map((complaint) => ({
-          _id: `complaint-${complaint._id}`,
-          title: complaint.title || "Complaint Update",
-          message: `${complaint.description || "Complaint submitted."} Status: ${String(complaint.status || "pending").replace(/_/g, " ")}`,
-          type: "complaint_update",
-          isRead: true,
-          createdAt:
-            complaint.updatedAt ||
-            complaint.createdAt ||
-            new Date().toISOString(),
-          _source: "complaint",
-        }))
-    : [];
-
-  const uniqueById = new Map();
-  [...baseNotifications, ...financeEvents, ...complaintEvents].forEach(
-    (item) => {
-      if (!item?._id || uniqueById.has(item._id)) return;
-      uniqueById.set(item._id, item);
-    },
-  );
-
-  return Array.from(uniqueById.values()).sort(
-    (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
-  );
-};
-
-function MessNotifications() {
+export default function WardenNotifications({ searchQuery = "" }) {
   const { user } = useAuth();
   const [form, setForm] = useState(initialForm);
   const [activeTab, setActiveTab] = useState("all");
@@ -153,7 +70,6 @@ function MessNotifications() {
     severity: "success",
   });
 
-  const [planOptions, setPlanOptions] = useState([]);
   const [userOptions, setUserOptions] = useState([]);
   const [receivedNotifications, setReceivedNotifications] = useState([]);
   const [sentNotifications, setSentNotifications] = useState([]);
@@ -166,46 +82,20 @@ function MessNotifications() {
       setLoading(true);
       setError("");
 
-      const [
-        receivedRes,
-        sentItems,
-        archivedItems,
-        reportsRes,
-        complaintsRes,
-        plansRes,
-        studentsRes,
-      ] = await Promise.all([
-        api.get("/notifications"),
-        fetchSentMessNotifications(),
-        fetchSentMessNotifications({ deleted: "only" }),
-        api.get("/mess/reports", { params: { page: 1, limit: 20 } }),
-        api.get("/complaints"),
-        api.get("/mess/plans"),
-        api.get("/notifications/targets/students"),
-      ]);
+      const [receivedRes, sentItems, archivedItems, studentsRes] =
+        await Promise.all([
+          api.get("/notifications"),
+          fetchSentWardenNotifications(),
+          fetchSentWardenNotifications({ deleted: "only" }),
+          api.get("/notifications/targets/students"),
+        ]);
 
-      const receivedItems = receivedRes.data?.data || [];
-      const recentActivities = reportsRes.data?.data?.recentActivities || [];
-      const complaintItems = complaintsRes.data?.data || [];
       setReceivedNotifications(
-        normalizeReceivedFeed({
-          notifications: Array.isArray(receivedItems) ? receivedItems : [],
-          recentActivities,
-          complaints: Array.isArray(complaintItems) ? complaintItems : [],
-        }),
+        Array.isArray(receivedRes.data?.data) ? receivedRes.data.data : [],
       );
-
       setSentNotifications(Array.isArray(sentItems) ? sentItems : []);
       setArchivedNotifications(
         Array.isArray(archivedItems) ? archivedItems : [],
-      );
-
-      const plans = plansRes.data?.data || [];
-      setPlanOptions(
-        plans.map((plan) => ({
-          id: plan._id,
-          label: `${plan.name} (INR ${plan.price || 0})`,
-        })),
       );
 
       const studentItems = studentsRes.data?.data || [];
@@ -229,6 +119,10 @@ function MessNotifications() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    setSearch(searchQuery || "");
+  }, [searchQuery]);
 
   useEffect(() => {
     if (!user?._id) return undefined;
@@ -262,34 +156,6 @@ function MessNotifications() {
         }),
       );
 
-      if (notificationBatchId || id) {
-        const removedSentItems = sentNotifications.filter((item) => {
-          if (notificationBatchId)
-            return item.notificationBatchId === notificationBatchId;
-          return id && item._id === id;
-        });
-
-        if (removedSentItems.length) {
-          setArchivedNotifications((prev) => {
-            const next = [
-              ...removedSentItems.map((item) => ({
-                ...item,
-                status: "archived",
-                deletedAt: new Date().toISOString(),
-              })),
-              ...prev,
-            ];
-            const seen = new Set();
-            return next.filter((item) => {
-              const key = item.notificationBatchId || item._id;
-              if (seen.has(key)) return false;
-              seen.add(key);
-              return true;
-            });
-          });
-        }
-      }
-
       setReceivedNotifications((prev) =>
         prev.filter((item) => {
           if (ids.includes(item._id)) return false;
@@ -311,12 +177,7 @@ function MessNotifications() {
       socket.off("new_notification", handleNewNotification);
       socket.off("delete_notification", handleDeleteNotification);
     };
-  }, [sentNotifications, user?._id]);
-
-  const selectedPlanOption = useMemo(
-    () => planOptions.find((plan) => plan.id === form.planId) || null,
-    [form.planId, planOptions],
-  );
+  }, [user?._id]);
 
   const selectedUserOptions = useMemo(
     () => userOptions.filter((option) => form.targetUsers.includes(option.id)),
@@ -345,6 +206,16 @@ function MessNotifications() {
       return text.includes(q);
     });
   }, [search, sentNotifications]);
+
+  const filteredArchivedNotifications = useMemo(() => {
+    const q = search.trim().toLowerCase();
+
+    return archivedNotifications.filter((item) => {
+      if (!q) return true;
+      const text = `${item.title || ""} ${item.message || ""}`.toLowerCase();
+      return text.includes(q);
+    });
+  }, [archivedNotifications, search]);
 
   const unreadReceivedCount = useMemo(
     () => receivedNotifications.filter((item) => !item.isRead).length,
@@ -405,7 +276,6 @@ function MessNotifications() {
     setForm((prev) => ({
       ...prev,
       targetType: value,
-      planId: value === "subscription" ? prev.planId : "",
       targetUsers: value === "users" ? prev.targetUsers : [],
     }));
   };
@@ -421,10 +291,9 @@ function MessNotifications() {
         targetType: form.targetType,
       };
 
-      if (form.targetType === "subscription") payload.planId = form.planId;
       if (form.targetType === "users") payload.targetUsers = form.targetUsers;
 
-      const result = await sendMessAdminNotification(payload);
+      const result = await sendWardenNotification(payload);
 
       const newItem = {
         _id: result?.id || `${Date.now()}`,
@@ -484,6 +353,7 @@ function MessNotifications() {
         severity: "success",
         message: "Notification deleted",
       });
+      fetchData();
     } catch (err) {
       setSentNotifications(previous);
       setToast({
@@ -563,18 +433,6 @@ function MessNotifications() {
                 ))}
               </TextField>
 
-              {form.targetType === "subscription" ? (
-                <Autocomplete
-                  options={planOptions}
-                  getOptionLabel={(option) => option.label}
-                  value={selectedPlanOption}
-                  onChange={(_, next) => handleChange("planId", next?.id || "")}
-                  renderInput={(params) => (
-                    <TextField {...params} label="Select Plan" />
-                  )}
-                />
-              ) : null}
-
               {form.targetType === "users" ? (
                 <Autocomplete
                   multiple
@@ -643,9 +501,9 @@ function MessNotifications() {
               <CircularProgress />
             </Box>
           ) : activeTab === "compose" ? null : activeTab === "archived" ? (
-            archivedNotifications.length ? (
+            filteredArchivedNotifications.length ? (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                {archivedNotifications.map((item) => (
+                {filteredArchivedNotifications.map((item) => (
                   <NotificationCard
                     key={item.notificationBatchId || item._id}
                     item={item}
@@ -685,7 +543,7 @@ function MessNotifications() {
               showSearch={false}
               showMarkAllButton
               emptyMessage="No received notifications found"
-              emptyDescription="Payment, refund, complaint, and direct notifications will appear here."
+              emptyDescription="New notifications will appear here."
             />
           ) : (
             <NotificationList
@@ -728,5 +586,3 @@ function MessNotifications() {
     </Box>
   );
 }
-
-export default MessNotifications;

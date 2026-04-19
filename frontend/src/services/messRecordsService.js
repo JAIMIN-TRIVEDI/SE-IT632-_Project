@@ -15,7 +15,7 @@ const normalizeResponse = (payload = {}) => ({
 })
 
 export const fetchStudentsRecords = async (params = {}) => {
-  const response = await api.get('/mess/students', { params })
+  const response = await api.get('/mess/students/subscribed', { params })
   return normalizeResponse(response.data)
 }
 

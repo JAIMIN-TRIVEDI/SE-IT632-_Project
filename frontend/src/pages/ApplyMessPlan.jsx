@@ -287,22 +287,28 @@ function PlanCard({ plan, isActive, isCurrent, onSelect, loading, locked }) {
 function SubscriptionStatusCard({ subscription, currentStatus }) {
   if (!subscription) return null;
 
+  const requestedAt = subscription.refund?.requestedAt
+    ? new Date(subscription.refund.requestedAt).toLocaleString("en-IN")
+    : null;
+  const processedAt = subscription.refund?.processedAt
+    ? new Date(subscription.refund.processedAt).toLocaleString("en-IN")
+    : null;
+
   const statusMap = {
     active: {
       label: "Active",
       color: "success",
       message: "Your plan is active.",
     },
-    cancellation_requested: {
-      label: "Cancellation Requested",
+    requested: {
+      label: "Refund Requested",
       color: "warning",
-      message: `Your cancellation is pending mess admin approval. Refund amount: ₹${subscription.refund?.amount ?? 0}.`,
+      message: `Your refund request is pending mess admin approval. Refund amount: ₹${subscription.refund?.amount ?? 0}.${subscription.refund?.reason ? ` Reason: ${subscription.refund.reason}` : ""}${requestedAt ? ` Requested on: ${requestedAt}.` : ""}`,
     },
-    cancelled: {
-      label: "Cancelled",
-      color: "error",
-      message:
-        "Your plan has been cancelled. You can now purchase a new mess plan.",
+    refunded: {
+      label: "Refunded",
+      color: "info",
+      message: `Your refund has been processed.${processedAt ? ` Processed on: ${processedAt}.` : ""}`,
     },
     expired: {
       label: "Expired",
@@ -347,8 +353,13 @@ function SubscriptionStatusCard({ subscription, currentStatus }) {
 }
 
 // ── Active subscription banner ────────────────────────────────────────────────
-function ActiveSubscriptionBanner({ subscription, onCancel, cancelling }) {
-  const cancellationRequested = Boolean(
+function ActiveSubscriptionBanner({
+  subscription,
+  currentStatus,
+  onCancel,
+  cancelling,
+}) {
+  const refundRequested = Boolean(
     subscription.refund?.requested && !subscription.refund?.approved,
   );
   const daysLeft = Math.max(
@@ -368,10 +379,10 @@ function ActiveSubscriptionBanner({ subscription, onCancel, cancelling }) {
       sx={{
         p: 3,
         border: "2px solid",
-        borderColor: cancellationRequested ? "warning.main" : "success.main",
+        borderColor: refundRequested ? "warning.main" : "success.main",
         borderRadius: 3,
         background: (theme) =>
-          cancellationRequested
+          refundRequested
             ? theme.palette.mode === "dark"
               ? "rgba(245,158,11,0.1)"
               : "rgba(245,158,11,0.08)"
@@ -390,7 +401,7 @@ function ActiveSubscriptionBanner({ subscription, onCancel, cancelling }) {
       >
         <Box>
           <Box display="flex" alignItems="center" gap={1} mb={1}>
-            {cancellationRequested ? (
+            {refundRequested ? (
               <AutorenewIcon sx={{ color: "warning.main", fontSize: 22 }} />
             ) : (
               <CheckCircleIcon sx={{ color: "success.main", fontSize: 22 }} />
@@ -398,7 +409,7 @@ function ActiveSubscriptionBanner({ subscription, onCancel, cancelling }) {
             <Typography
               fontWeight={700}
               fontSize={16}
-              color={cancellationRequested ? "warning.main" : "success.main"}
+              color={refundRequested ? "warning.main" : "success.main"}
             >
               Active Subscription
             </Typography>
@@ -406,9 +417,9 @@ function ActiveSubscriptionBanner({ subscription, onCancel, cancelling }) {
           <Typography fontWeight={800} fontSize={22} color="text.primary">
             {subscription.planId?.name || "Mess Plan"}
           </Typography>
-          {cancellationRequested && (
+          {refundRequested && (
             <Chip
-              label="Requested for cancellation"
+              label="Refund requested"
               color="warning"
               size="small"
               sx={{ mt: 1, fontWeight: 700 }}
@@ -475,7 +486,7 @@ function ActiveSubscriptionBanner({ subscription, onCancel, cancelling }) {
         color="error"
         variant="outlined"
         onClick={onCancel}
-        disabled={cancelling || cancellationRequested}
+        disabled={cancelling || refundRequested || currentStatus === "refunded"}
         startIcon={cancelling ? <CircularProgress size={14} /> : null}
         sx={{
           borderRadius: 2,
@@ -484,16 +495,19 @@ function ActiveSubscriptionBanner({ subscription, onCancel, cancelling }) {
           fontSize: 13,
         }}
       >
-        {cancellationRequested
-          ? "Cancellation Requested"
+        {refundRequested
+          ? "Refund Requested"
           : cancelling
-            ? "Cancelling..."
-            : "Cancel Subscription"}
+            ? "Requesting..."
+            : "Request Refund"}
       </Button>
-      {cancellationRequested && (
+      {refundRequested && (
         <Typography color="warning.main" mt={1} fontSize={13}>
-          Cancellation requested. Refund amount pending approval: ₹
+          Refund requested. Amount pending approval: ₹
           {subscription.refund?.amount}
+          {subscription.refund?.reason
+            ? ` | Reason: ${subscription.refund.reason}`
+            : ""}
         </Typography>
       )}
     </Card>
@@ -520,7 +534,7 @@ export default function ApplyMessPlan() {
     setSnack({ open: true, msg, severity });
 
   const hasActiveAccess =
-    currentStatus === "active" || currentStatus === "cancellation_requested";
+    currentStatus === "active" || currentStatus === "requested";
   const canPurchaseNewPlan = !hasActiveAccess;
 
   const refreshSubscription = async () => {
@@ -576,7 +590,7 @@ export default function ApplyMessPlan() {
       if (!orderId) return;
 
       try {
-        await api.post('/payments/fail', { orderId, reason });
+        await api.post("/payments/fail", { orderId, reason });
       } catch (_) {
         // Failure state persistence is best-effort.
       }
@@ -594,7 +608,10 @@ export default function ApplyMessPlan() {
       // 3. Load Razorpay script
       const loaded = await loadRazorpay();
       if (!loaded) {
-        await markPaymentFailed(order.id, 'Unable to load Razorpay checkout script');
+        await markPaymentFailed(
+          order.id,
+          "Unable to load Razorpay checkout script",
+        );
         throw new Error(
           "Could not load Razorpay. Check your internet connection.",
         );
@@ -613,7 +630,7 @@ export default function ApplyMessPlan() {
         theme: { color: "#2f61ff" },
         modal: {
           ondismiss: () => {
-            markPaymentFailed(order.id, 'Checkout dismissed by user');
+            markPaymentFailed(order.id, "Checkout dismissed by user");
             setPaying(false);
             setSelectedPlan(null);
             notify("Payment cancelled.", "warning");
@@ -648,7 +665,7 @@ export default function ApplyMessPlan() {
       razorpayInstance.on("payment.failed", (resp) => {
         markPaymentFailed(
           resp?.error?.metadata?.order_id || order.id,
-          resp?.error?.description || 'Payment failed',
+          resp?.error?.description || "Payment failed",
         );
         setError(`Payment failed: ${resp.error.description}`);
         notify("Payment failed. Please try again.", "error");
@@ -665,14 +682,16 @@ export default function ApplyMessPlan() {
 
   // ── Cancel subscription ──────────────────────────────────────────────────────
   const handleCancel = async () => {
-    if (!window.confirm("Cancel subscription? Refund will be calculated."))
-      return;
+    if (!window.confirm("Request refund for your active subscription?")) return;
+
+    const reason =
+      window.prompt("Optional: Enter refund reason (max 300 chars)", "") || "";
 
     setCancelling(true);
     try {
-      const res = await api.post("/mess/subscription/cancel");
+      const res = await api.post("/refund/request", { reason });
       notify(
-        `Cancellation requested. Refund amount: ₹${res.data.refundAmount}`,
+        `Refund requested. Amount: ₹${res.data?.data?.refund?.amount ?? 0}`,
         "info",
       );
       await refreshSubscription();
@@ -743,6 +762,7 @@ export default function ApplyMessPlan() {
       {subscription && hasActiveAccess && (
         <ActiveSubscriptionBanner
           subscription={subscription}
+          currentStatus={currentStatus}
           onCancel={handleCancel}
           cancelling={cancelling}
         />

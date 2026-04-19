@@ -36,7 +36,7 @@ export const getSubscriptions = async (params = {}) => {
 }
 
 export const getStudents = async (params = {}) => {
-  const response = await api.get('/mess/students', { params: cleanParams(params) })
+  const response = await api.get('/mess/students/subscribed', { params: cleanParams(params) })
   return response.data?.data ?? []
 }
 
@@ -58,6 +58,21 @@ export const updateMessMenu = async (payload) => {
 }
 
 export const approveRefund = async (id) => {
-  const response = await api.post(`/mess/subscription/refund/${id}`)
+  const response = await api.patch(`/refund/approve/${id}`)
+  return response.data
+}
+
+export const rejectRefund = async (id, payload = {}) => {
+  const response = await api.patch(`/refund/reject/${id}`, payload)
+  return response.data
+}
+
+export const requestRefund = async (payload = {}) => {
+  const response = await api.post('/refund/request', payload)
+  return response.data
+}
+
+export const getPendingRefunds = async () => {
+  const response = await api.get('/refund/pending')
   return response.data
 }

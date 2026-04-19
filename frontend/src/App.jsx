@@ -161,7 +161,10 @@ function App() {
               path="/warden/dashboard"
               element={
                 <ProtectedRoute allowedRoles={["warden"]}>
-                  <WardenDashboard />
+                  <WardenDashboard
+                    mode={mode}
+                    onToggleTheme={handleToggleTheme}
+                  />
                 </ProtectedRoute>
               }
             />

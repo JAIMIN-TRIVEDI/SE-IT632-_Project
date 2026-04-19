@@ -8,8 +8,9 @@ export default function ActiveMessPlan() {
   const [loading, setLoading] = useState(true);
   const [canceling, setCanceling] = useState(false);
 
-  const cancellationRequested = currentStatus === "cancellation_requested";
-  const hasActiveAccess = currentStatus === "active" || currentStatus === "cancellation_requested";
+  const refundRequested = currentStatus === "requested";
+  const hasActiveAccess =
+    currentStatus === "active" || currentStatus === "requested";
 
   const fetchSub = async () => {
     try {
@@ -28,15 +29,19 @@ export default function ActiveMessPlan() {
   }, []);
 
   const handleCancel = async () => {
-    if (!window.confirm("Cancel mess plan? Refund will be processed.")) return;
+    if (!window.confirm("Request refund for this plan?")) return;
+    const reason =
+      window.prompt("Optional: Enter refund reason (max 300 chars)", "") || "";
 
     setCanceling(true);
     try {
-      const res = await api.post("/mess/subscription/cancel");
-      alert(`Cancellation requested. Refund amount: ₹${res.data.refundAmount}`);
+      const res = await api.post("/refund/request", { reason });
+      alert(
+        `Refund requested. Amount: ₹${res.data?.data?.refund?.amount ?? 0}`,
+      );
       await fetchSub();
     } catch (err) {
-      alert(err?.response?.data?.message || "Error cancelling");
+      alert(err?.response?.data?.message || "Error requesting refund");
     } finally {
       setCanceling(false);
     }
@@ -48,32 +53,30 @@ export default function ActiveMessPlan() {
 
   return (
     <Card sx={{ p: 3 }}>
-      <Typography variant="h6">
-        {subscription.planId?.name}
-      </Typography>
+      <Typography variant="h6">{subscription.planId?.name}</Typography>
 
       <Typography>
         Ends on: {new Date(subscription.endDate).toDateString()}
       </Typography>
 
-      <Typography color={cancellationRequested ? "warning.main" : "success.main"}>
+      <Typography color={refundRequested ? "warning.main" : "success.main"}>
         Status: {String(currentStatus || "unknown").replace(/_/g, " ")}
       </Typography>
 
-      {hasActiveAccess && !cancellationRequested && (
+      {hasActiveAccess && !refundRequested && (
         <Button
           color="error"
           variant="contained"
           onClick={handleCancel}
           disabled={canceling}
         >
-          {canceling ? "Processing..." : "Cancel Plan"}
+          {canceling ? "Processing..." : "Request Refund"}
         </Button>
       )}
 
-      {cancellationRequested && (
+      {refundRequested && (
         <Typography color="warning.main">
-          Requested for cancellation (Refund: ₹{subscription.refund?.amount})
+          Refund requested (Amount: ₹{subscription.refund?.amount})
         </Typography>
       )}
     </Card>

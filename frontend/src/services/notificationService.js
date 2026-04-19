@@ -22,3 +22,27 @@ export const sendNotificationBroadcast = async (payload) => {
   const response = await api.post('/admin/notifications/broadcast', payload)
   return response.data?.data || null
 }
+
+export const sendMessAdminNotification = async (payload) => {
+  const response = await api.post('/notifications/send', payload)
+  return response.data?.data || null
+}
+
+export const sendWardenNotification = async (payload) => {
+  const response = await api.post('/notifications/send', payload)
+  return response.data?.data || null
+}
+
+export const fetchSentMessNotifications = async (params = {}) => {
+  const response = await api.get('/notifications/sent', { params })
+  return response.data?.data || []
+}
+
+export const fetchSentWardenNotifications = async (params = {}) => {
+  const response = await api.get('/notifications/sent', { params })
+  return response.data?.data || []
+}
+
+export const deleteNotificationById = async (id) => {
+  await api.delete(`/notifications/${id}`)
+}
