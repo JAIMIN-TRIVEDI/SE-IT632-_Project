@@ -209,6 +209,14 @@ export const verifyPayment = async (req, res) => {
         status: "active",
       });
 
+      const io = req.app.get("io");
+      if (io) {
+        io.emit("warden_update", {
+          source: "check_in",
+          at: new Date().toISOString(),
+        });
+      }
+
       roomRequest.paymentStatus = "paid";
       await roomRequest.save();
     }

@@ -6,7 +6,10 @@ import MessSubscription from "../models/MessSubscription.js";
 import Hostel from "../models/Hostel.js";
 import RoomAllocation from "../models/RoomAllocation.js";
 import RoomRequest from "../models/RoomRequest.js";
+import VacateRequest from "../models/VacateRequest.js";
 import Block from "../models/Block.js";
+import MessPlan from "../models/MessPlan.js";
+import Notification from "../models/Notification.js";
 import { expireSubscriptionsAndNotify } from "../services/notificationService.js";
 
 const toObjectId = (value) => {
@@ -110,7 +113,7 @@ const calculateTrend = (currentValue, previousValue) => {
   };
 };
 
-export const adminDashboard = async(req,res)=>{
+export const adminDashboard = async (req, res) => {
   const now = new Date();
   const currentMonth = getMonthRange(now);
   const previousMonth = getMonthRange(
@@ -155,8 +158,8 @@ export const adminDashboard = async(req,res)=>{
     complaints > 0 ? Number(((resolvedComplaints / complaints) * 100).toFixed(1)) : 0;
 
   res.json({
-    success:true,
-    data:{
+    success: true,
+    data: {
       totalStudents,
       totalRooms,
       complaints,
@@ -169,67 +172,192 @@ export const adminDashboard = async(req,res)=>{
 
 };
 
-export const wardenDashboard = async(req,res)=>{
+const parseAnnouncementMessage = (value = "") => {
+  const full = String(value || "").trim();
+  const [titleLine, ...rest] = full.split("\n\n");
+  const title = (titleLine || "Announcement").trim();
+  const message = (rest.length ? rest.join("\n\n") : full).trim();
 
-  const complaints = await Complaint.countDocuments({
-    status:"pending"
-  });
+  return {
+    title,
+    message: message || title,
+  };
+};
 
-  const rooms = await Room.countDocuments();
+const buildRoomAvailability = (rooms = []) => {
+  const counters = {
+    single: { available: 0, total: 0 },
+    double: { available: 0, total: 0 },
+  };
 
-  res.json({
-    success:true,
-    data:{
-      complaints,
-      rooms
+  rooms.forEach((room) => {
+    const type = String(room.roomType || "").toLowerCase();
+    if (type === "single") {
+      counters.single.total += 1;
+      if ((room.status || "") === "available" && Number(room.occupiedCount || 0) < Number(room.capacity || 0)) {
+        counters.single.available += 1;
+      }
+    }
+
+    if (type === "double") {
+      counters.double.total += 1;
+      if ((room.status || "") === "available" && Number(room.occupiedCount || 0) < Number(room.capacity || 0)) {
+        counters.double.available += 1;
+      }
     }
   });
 
+  return {
+    singleRooms: counters.single,
+    doubleRooms: counters.double,
+  };
 };
 
-export const occupancyReport = async(req,res)=>{
+export const wardenDashboard = async (req, res) => {
+  const managedHostels = await Hostel.find({ wardenId: req.user._id }).select("_id").lean();
+  const managedHostelIds = managedHostels.map((hostel) => hostel._id);
+
+  if (!managedHostelIds.length) {
+    return res.json({
+      success: true,
+      data: {
+        totalRooms: 0,
+        totalCapacity: 0,
+        occupiedRooms: 0,
+        pendingComplaints: 0,
+        studentsOnLeave: 0,
+        recentActivity: [],
+        announcements: [],
+        roomAvailability: {
+          singleRooms: { available: 0, total: 0 },
+          doubleRooms: { available: 0, total: 0 },
+        },
+      },
+    });
+  }
+
+  const [
+    roomDocs,
+    pendingComplaints,
+    pendingVacateRequests,
+    recentAllocations,
+    recentVacates,
+    announcementDocs,
+  ] = await Promise.all([
+    Room.find({ hostelId: { $in: managedHostelIds } }, { roomType: 1, capacity: 1, occupiedCount: 1, status: 1 }).lean(),
+    Complaint.countDocuments({ status: "pending", hostelId: { $in: managedHostelIds } }),
+    VacateRequest.countDocuments({ status: "pending", hostelId: { $in: managedHostelIds } }),
+    RoomAllocation.find({ status: "active", hostelId: { $in: managedHostelIds } })
+      .sort({ updatedAt: -1 })
+      .limit(8)
+      .populate({ path: "studentId", select: "name" })
+      .populate({ path: "roomId", select: "roomNumber" })
+      .lean(),
+    VacateRequest.find({ status: "approved", hostelId: { $in: managedHostelIds } })
+      .sort({ processedAt: -1, updatedAt: -1 })
+      .limit(8)
+      .populate({ path: "studentId", select: "name" })
+      .populate({ path: "roomId", select: "roomNumber" })
+      .lean(),
+    Notification.find({
+      userId: req.user._id,
+      isDeleted: { $ne: true },
+      type: { $regex: "^system:(warden|both):", $options: "i" },
+    })
+      .sort({ createdAt: -1 })
+      .limit(6)
+      .lean(),
+  ]);
+
+  const totalRooms = roomDocs.length;
+  const totalCapacity = roomDocs.reduce((sum, room) => sum + Number(room.capacity || 0), 0);
+  const occupiedRooms = roomDocs.filter((room) => Number(room.occupiedCount || 0) > 0).length;
+
+  const checkInActivity = recentAllocations.map((row) => ({
+    studentName: row.studentId?.name || "Student",
+    roomNumber: row.roomId?.roomNumber || "-",
+    status: "CHECK-IN",
+    time: row.updatedAt || row.createdAt,
+  }));
+
+  const checkOutActivity = recentVacates.map((row) => ({
+    studentName: row.studentId?.name || "Student",
+    roomNumber: row.roomId?.roomNumber || "-",
+    status: "CHECK-OUT",
+    time: row.processedAt || row.updatedAt || row.createdAt,
+  }));
+
+  const recentActivity = [...checkInActivity, ...checkOutActivity]
+    .sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0))
+    .slice(0, 10);
+
+  const announcements = announcementDocs.map((row) => {
+    const parsed = parseAnnouncementMessage(row.message);
+    return {
+      title: parsed.title,
+      message: parsed.message,
+      createdAt: row.createdAt,
+    };
+  });
+
+  return res.json({
+    success: true,
+    data: {
+      totalRooms,
+      totalCapacity,
+      occupiedRooms,
+      pendingComplaints,
+      studentsOnLeave: pendingVacateRequests,
+      recentActivity,
+      announcements,
+      roomAvailability: buildRoomAvailability(roomDocs),
+    },
+  });
+};
+
+export const occupancyReport = async (req, res) => {
 
   const rooms = await Room.find();
 
-  const report = rooms.map(room=>({
+  const report = rooms.map(room => ({
 
-    roomNumber:room.roomNumber,
-    capacity:room.capacity,
-    occupied:room.occupied
+    roomNumber: room.roomNumber,
+    capacity: room.capacity,
+    occupied: room.occupied
 
   }));
 
   res.json({
-    success:true,
-    data:report
+    success: true,
+    data: report
   });
 
 };
 
-export const paymentReport = async(req,res)=>{
+export const paymentReport = async (req, res) => {
 
   const payments = await Payment.find();
 
   const totalRevenue = payments.reduce(
-    (sum,p)=>sum+p.amount,
+    (sum, p) => sum + p.amount,
     0
   );
 
   res.json({
-    success:true,
+    success: true,
     totalRevenue,
     payments
   });
 
 };
 
-export const complaintReport = async(req,res)=>{
+export const complaintReport = async (req, res) => {
 
   const complaints = await Complaint.find();
 
   res.json({
-    success:true,
-    data:complaints
+    success: true,
+    data: complaints
   });
 
 };
@@ -245,11 +373,15 @@ export const messReport = async (req, res) => {
 
   const [
     totalStudentsAgg,
-    totalRevenueAgg,
+    grossRevenueAgg,
     subscriptionStatsAgg,
     monthlyRevenueTrendAgg,
     pendingRefundsAgg,
     currentMonthRevenueAgg,
+    totalPlansAgg,
+    totalRefundsAgg,
+    totalRefundedAmountAgg,
+    monthlyRefundTrendAgg,
   ] = await Promise.all([
     User.aggregate([
       { $match: { role: "student" } },
@@ -342,14 +474,102 @@ export const messReport = async (req, res) => {
         },
       },
     ]),
+    MessPlan.aggregate([{ $count: "total" }]),
+    MessSubscription.aggregate([
+      {
+        $match: {
+          $or: [
+            { "refund.status": "approved" },
+            { "refund.status": "refunded" },
+            { "refund.approved": true },
+            { status: "refund_approved" },
+          ],
+        },
+      },
+      { $count: "total" },
+    ]),
+    MessSubscription.aggregate([
+      {
+        $match: {
+          $or: [
+            { "refund.status": "approved" },
+            { "refund.status": "refunded" },
+            { "refund.approved": true },
+            { status: "refund_approved" },
+          ],
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: { $ifNull: ["$refund.amount", 0] } },
+        },
+      },
+    ]),
+    MessSubscription.aggregate([
+      {
+        $match: {
+          $or: [
+            { "refund.status": "approved" },
+            { "refund.status": "refunded" },
+            { "refund.approved": true },
+            { status: "refund_approved" },
+          ],
+          $expr: {
+            $and: [
+              {
+                $gte: [
+                  { $ifNull: ["$refund.processedAt", "$updatedAt"] },
+                  trendStart,
+                ],
+              },
+              {
+                $lt: [
+                  { $ifNull: ["$refund.processedAt", "$updatedAt"] },
+                  trendEnd,
+                ],
+              },
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: {
+              $year: {
+                $ifNull: ["$refund.processedAt", "$updatedAt"],
+              },
+            },
+            month: {
+              $month: {
+                $ifNull: ["$refund.processedAt", "$updatedAt"],
+              },
+            },
+          },
+          amount: { $sum: { $ifNull: ["$refund.amount", 0] } },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: {
+          "_id.year": 1,
+          "_id.month": 1,
+        },
+      },
+    ]),
   ]);
 
   const totalStudents = totalStudentsAgg[0]?.total || 0;
-  const totalRevenue = totalRevenueAgg[0]?.total || 0;
+  const totalRevenue = grossRevenueAgg[0]?.total || 0;
   const activeSubscriptions = subscriptionStatsAgg[0]?.active || 0;
   const expiredSubscriptions = subscriptionStatsAgg[0]?.expired || 0;
   const pendingRefundRequests = pendingRefundsAgg[0]?.total || 0;
   const monthlyRevenue = currentMonthRevenueAgg[0]?.total || 0;
+  const totalPlans = totalPlansAgg[0]?.total || 0;
+  const totalRefundsCount = totalRefundsAgg[0]?.total || 0;
+  const totalRefundedAmount = totalRefundedAmountAgg[0]?.total || 0;
+  const netRevenue = totalRevenue - totalRefundedAmount;
 
   const monthlyRevenueTrend = monthlyRevenueTrendAgg.map((item) => {
     const month = String(item._id.month).padStart(2, "0");
@@ -359,11 +579,22 @@ export const messReport = async (req, res) => {
     };
   });
 
+  const monthlyRefundTrend = monthlyRefundTrendAgg.map((item) => {
+    const month = String(item._id.month).padStart(2, "0");
+    return {
+      month: `${item._id.year}-${month}`,
+      refundedAmount: item.amount,
+      refundCount: item.count,
+    };
+  });
+
   res.json({
     success: true,
     data: {
       totalStudents,
+      totalPlans,
       totalRevenue,
+      netRevenue,
       activeSubscriptions,
       expiredSubscriptions,
       subscriptions: {
@@ -371,6 +602,9 @@ export const messReport = async (req, res) => {
         expired: expiredSubscriptions,
       },
       monthlyRevenueTrend,
+      monthlyRefundTrend,
+      totalRefundsCount,
+      totalRefundedAmount,
       // Legacy fields kept for current frontend compatibility.
       pendingRefundRequests,
       monthlyRevenue,

@@ -38,9 +38,9 @@ router.get("/student/dashboard", protect, async (req, res) => {
     let messCurrentStatus = 'none';
     if (messSubscription) {
       if (messSubscription.refund?.requested && !messSubscription.refund?.approved) {
-        messCurrentStatus = 'cancellation_requested';
+        messCurrentStatus = 'requested';
       } else if (messSubscription.status === 'cancelled' || messSubscription.status === 'refund_approved') {
-        messCurrentStatus = 'cancelled';
+        messCurrentStatus = 'refunded';
       } else if (
         messSubscription.status === 'expired' ||
         (messSubscription.status === 'active' && messSubscription.endDate && new Date(messSubscription.endDate) < new Date())

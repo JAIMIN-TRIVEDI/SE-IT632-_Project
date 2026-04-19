@@ -5,6 +5,15 @@ import Hostel from "../models/Hostel.js";
 import Notification from "../models/Notification.js";
 import mongoose from "mongoose";
 
+const emitWardenUpdate = (req, source = "vacate") => {
+  const io = req.app.get("io");
+  if (!io) return;
+  io.emit("warden_update", {
+    source,
+    at: new Date().toISOString(),
+  });
+};
+
 const getManagedHostelQuery = (req, extra = {}) => ({
   ...extra,
   wardenId: req.user._id,
@@ -59,6 +68,8 @@ export const requestVacate = async (req, res) => {
       .populate({ path: "roomId", select: "roomNumber status" })
       .populate({ path: "hostelId", select: "name type" })
       .populate({ path: "studentId", select: "name email enrollmentNo" });
+
+    emitWardenUpdate(req, "vacate_request");
 
     return res.status(201).json({ success: true, data: populated });
   } catch (err) {
@@ -188,6 +199,8 @@ export const approveVacate = async (req, res) => {
         .populate({ path: "processedBy", select: "name role" })
         .lean();
 
+      emitWardenUpdate(req, "vacate_approved");
+
       return res.json({ success: true, message: "Vacate request approved and room released.", data: refreshed });
     } catch (innerErr) {
       await session.abortTransaction();
@@ -232,6 +245,8 @@ export const rejectVacate = async (req, res) => {
       type: "vacate_request",
       message: `Your vacate request was rejected by the warden of ${managedHostel.name}.${request.rejectionReason ? ` Reason: ${request.rejectionReason}` : ''}`,
     });
+
+    emitWardenUpdate(req, "vacate_rejected");
 
     return res.json({ success: true, message: "Vacate request rejected." });
   } catch (err) {

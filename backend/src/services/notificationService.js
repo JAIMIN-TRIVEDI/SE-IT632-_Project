@@ -3,16 +3,60 @@ import MessSubscription from "../models/MessSubscription.js";
 import User from "../models/User.js";
 import sendEmail from "../utils/sendEmail.js";
 
+let notificationRealtimeEmitter = null;
+const NOTIFICATION_EVENT_NAME = process.env.NOTIFICATION_SOCKET_EVENT || "new_notification";
+
+export const registerNotificationRealtimeEmitter = (emitter) => {
+  notificationRealtimeEmitter = typeof emitter === "function" ? emitter : null;
+};
+
+const emitNotificationRealtime = (payload) => {
+  if (!notificationRealtimeEmitter) return;
+
+  try {
+    notificationRealtimeEmitter({
+      event: NOTIFICATION_EVENT_NAME,
+      payload,
+    });
+  } catch (err) {
+    console.error("[NotificationService] Realtime emit failed:", err.message);
+  }
+};
+
 export const createNotification = async ({ userId, message, type = "system" }) => {
   if (!userId || !message) {
     return null;
   }
 
-  return Notification.create({
+  const notification = await Notification.create({
     userId,
     message,
     type,
   });
+
+  emitNotificationRealtime({
+    userId: String(notification.userId),
+    notification,
+  });
+
+  return notification;
+};
+
+export const createNotificationsBulk = async (notifications = []) => {
+  if (!Array.isArray(notifications) || notifications.length === 0) {
+    return [];
+  }
+
+  const docs = await Notification.insertMany(notifications);
+
+  docs.forEach((notification) => {
+    emitNotificationRealtime({
+      userId: String(notification.userId),
+      notification,
+    });
+  });
+
+  return docs;
 };
 
 const sendEmailSafely = async ({ to, subject, text }) => {

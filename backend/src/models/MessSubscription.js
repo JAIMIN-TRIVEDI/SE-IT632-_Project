@@ -31,4 +31,8 @@ const MessSubscriptionSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+MessSubscriptionSchema.index({ status: 1, endDate: -1, createdAt: -1 });
+MessSubscriptionSchema.index({ "refund.requested": 1, "refund.approved": 1, createdAt: -1 });
+MessSubscriptionSchema.index({ studentId: 1, createdAt: -1 });
+
 export default mongoose.model("MessSubscription", MessSubscriptionSchema);

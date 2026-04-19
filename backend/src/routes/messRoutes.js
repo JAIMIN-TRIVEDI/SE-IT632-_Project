@@ -3,9 +3,11 @@ import {
   subscribePlan,
   getMySubscription,
   cancelSubscription,
+  requestRefund,
   getSubscriptions,
   getAllSubscriptionsWithDetails,
   getStudents,
+  getSubscribedStudents,
   getAllMessPayments,
   getStudentsWithCurrentPlanStatus,
   getPayments,
@@ -17,7 +19,10 @@ import {
   createMessOrder,
   verifyMessPayment,
   approveRefund,
+  rejectRefund,
+  getPendingRefundRequests,
   getMessAdminDashboardStats,
+  getMessReports,
 } from "../controllers/messController.js";
 import {
   createMessPlan,
@@ -74,18 +79,26 @@ router.post("/mess/subscribe", protect, authorizeRoles("student"), subscribePlan
 // ── Subscription management ────────────────────────────────────────────────
 router.get("/mess/subscription/me", protect, authorizeRoles("student"), getMySubscription);
 router.post("/mess/subscription/cancel", protect, authorizeRoles("student"), cancelSubscription);
+router.post("/refund/request", protect, authorizeRoles("student"), requestRefund);
 router.post("/mess/subscription/renew", protect, authorizeRoles("student"), renewSubscription);
 router.get("/mess/subscriptions", protect, authorizeRoles("mess_admin"), getSubscriptions);
 router.get("/mess/subscriptions/details", protect, authorizeRoles("mess_admin"), getAllSubscriptionsWithDetails);
 router.get("/mess/students", protect, authorizeRoles("mess_admin"), getStudents);
+router.get("/mess/students/subscribed", protect, authorizeRoles("mess_admin"), getSubscribedStudents);
 router.get("/mess/students/current-plan", protect, authorizeRoles("mess_admin"), getStudentsWithCurrentPlanStatus);
 router.get("/mess/payments/all", protect, authorizeRoles("mess_admin"), getAllMessPayments);
 router.get("/mess/payments", protect, authorizeRoles("mess_admin"), getPayments);
+router.get("/mess/dashboard", protect, authorizeRoles("mess_admin"), getMessAdminDashboardStats);
 router.get("/mess/dashboard/stats", protect, authorizeRoles("mess_admin"), getMessAdminDashboardStats);
+router.get("/mess/reports", protect, authorizeRoles("mess_admin"), getMessReports);
+router.get("/refund/pending", protect, authorizeRoles("mess_admin"), getPendingRefundRequests);
 router.get("/mess/plans/:planId/students", protect, authorizeRoles("mess_admin"), getStudentsByPlan);
 router.get("/mess/plans/:planId/payments", protect, authorizeRoles("mess_admin"), getPaymentsByPlan);
 router.post("/mess/subscription/refund/:id", protect, authorizeRoles("mess_admin"), approveRefund);
 router.patch("/mess/subscriptions/:id/refund/approve", protect, authorizeRoles("mess_admin"), approveRefund);
+router.patch("/refund/approve/:id", protect, authorizeRoles("mess_admin"), approveRefund);
+router.patch("/refund/reject/:id", protect, authorizeRoles("mess_admin"), rejectRefund);
+router.patch("/mess/subscriptions/:id/refund/reject", protect, authorizeRoles("mess_admin"), rejectRefund);
 // ── Menu ───────────────────────────────────────────────────────────────────
 router.get("/mess/menu", protect, getMenu);
 router.put("/mess/menu", protect, authorizeRoles("mess_admin"), updateMenu);

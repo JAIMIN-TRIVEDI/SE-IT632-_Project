@@ -5,6 +5,7 @@ import Payment from "../models/Payment.js";
 import User from "../models/User.js";
 import razorpay from "../config/razorpay.js";
 import crypto from "crypto";
+import mongoose from "mongoose";
 import asyncHandler from "../utils/asyncHandler.js";
 import { sendSuccess } from "../utils/apiResponse.js";
 import {
@@ -17,11 +18,11 @@ const getSubscriptionCurrentStatus = (subscription) => {
   if (!subscription) return "none";
 
   if (subscription.refund?.requested && !subscription.refund?.approved) {
-    return "cancellation_requested";
+    return "requested";
   }
 
   if (subscription.status === "cancelled" || subscription.status === "refund_approved") {
-    return "cancelled";
+    return "refunded";
   }
 
   if (subscription.status === "expired") {
@@ -138,6 +139,123 @@ const toPositiveInt = (value, fallback) => {
   const parsed = Number.parseInt(value, 10);
   if (Number.isNaN(parsed) || parsed <= 0) return fallback;
   return parsed;
+};
+
+const MAX_REFUND_REASON_LENGTH = 300;
+
+const parseRefundReason = (value = "") => String(value || "").trim();
+
+const calculateRefundAmount = (subscription, plan) => {
+  if (!subscription || !plan) return 0;
+
+  const today = new Date();
+  const start = new Date(subscription.startDate);
+  let usedDays = Math.ceil((today - start) / (1000 * 60 * 60 * 24));
+  if (usedDays <= 0) usedDays = 1;
+
+  const totalDays = Math.max(1, Number(plan.durationInDays) || 30);
+  const perDay = Number(plan.price || 0) / totalDays;
+  return Math.max(0, Math.floor(Number(plan.price || 0) - usedDays * perDay));
+};
+
+const findLatestSuccessfulMessPayment = async (studentId) => {
+  return Payment.findOne({
+    userId: studentId,
+    type: "mess",
+    status: "success",
+    purpose: { $ne: "Mess Refund" },
+  }).sort({ createdAt: -1 });
+};
+
+const getNormalizedRefundDetails = ({ subscriptionRefund, subscriptionStatus, payment }) => {
+  const refund = subscriptionRefund || {};
+  const paymentRefund = payment?.refund || {};
+
+  let refundStatus = "none";
+
+  if (refund.status === "requested" || (refund.requested && !refund.approved)) {
+    refundStatus = "requested";
+  } else if (refund.status === "rejected") {
+    refundStatus = "rejected";
+  } else if (
+    refund.status === "approved"
+    || refund.status === "refunded"
+    || refund.approved
+    || subscriptionStatus === "refund_approved"
+  ) {
+    refundStatus = "approved";
+  }
+
+  const refundAmount = Number(
+    refund.amount
+    ?? paymentRefund.amount
+    ?? 0
+  );
+
+  const refundDate =
+    refund.processedAt
+    || refund.rejectedAt
+    || refund.requestedAt
+    || paymentRefund.processedAt
+    || payment?.refundedAt
+    || null;
+
+  const refundReason =
+    refund.reason
+    || refund.rejectionReason
+    || paymentRefund.reason
+    || "";
+
+  const isRefunded = Boolean(
+    payment?.status === "refunded" || refund.status === "refunded"
+  );
+
+  return {
+    refundStatus,
+    refundAmount,
+    refundDate,
+    refundReason,
+    isRefunded,
+  };
+};
+
+const isValidDateValue = (value) => {
+  if (!value) return false;
+  const date = new Date(value);
+  return !Number.isNaN(date.getTime());
+};
+
+const toDateOnlyKey = (value) => {
+  const date = new Date(value);
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const toMonthKey = (value) => {
+  const date = new Date(value);
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  return `${yyyy}-${mm}`;
+};
+
+const getRefundStatusFromSubscription = (subscription = {}) => {
+  const refund = subscription.refund || {};
+
+  if (refund.status === "rejected") return "rejected";
+  if (refund.status === "approved" || refund.status === "refunded" || refund.approved || subscription.status === "refund_approved") {
+    return "approved";
+  }
+  if (refund.status === "requested" || (refund.requested && !refund.approved)) {
+    return "requested";
+  }
+  return "none";
+};
+
+const getRefundDateFromSubscription = (subscription = {}) => {
+  const refund = subscription.refund || {};
+  return refund.processedAt || refund.rejectedAt || refund.requestedAt || subscription.updatedAt || null;
 };
 
 export const getPlans = async (req, res) => {
@@ -387,6 +505,33 @@ export const getSubscriptions = async (req, res) => {
         preserveNullAndEmptyArrays: true,
       },
     },
+    {
+      $lookup: {
+        from: "payments",
+        let: { sid: "$studentId" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$userId", "$$sid"] },
+                  { $eq: ["$type", "mess"] },
+                ],
+              },
+            },
+          },
+          { $sort: { updatedAt: -1, createdAt: -1 } },
+          { $limit: 1 },
+        ],
+        as: "latestPayment",
+      },
+    },
+    {
+      $unwind: {
+        path: "$latestPayment",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
   ];
 
   const matchConditions = [];
@@ -456,6 +601,17 @@ export const getSubscriptions = async (req, res) => {
                 requested: "$refund.requested",
                 approved: "$refund.approved",
                 amount: "$refund.amount",
+                status: "$refund.status",
+                reason: "$refund.reason",
+                requestedAt: "$refund.requestedAt",
+                processedAt: "$refund.processedAt",
+                rejectedAt: "$refund.rejectedAt",
+                rejectionReason: "$refund.rejectionReason",
+              },
+              latestPayment: {
+                status: "$latestPayment.status",
+                refundedAt: "$latestPayment.refundedAt",
+                refund: "$latestPayment.refund",
               },
               createdAt: 1,
             },
@@ -475,7 +631,22 @@ export const getSubscriptions = async (req, res) => {
   );
 
   const [result] = await MessSubscription.aggregate(pipeline);
-  const items = result?.items || [];
+  const items = (result?.items || []).map((item) => {
+    const normalizedRefund = getNormalizedRefundDetails({
+      subscriptionRefund: item.refund,
+      subscriptionStatus: item.status,
+      payment: item.latestPayment,
+    });
+
+    return {
+      ...item,
+      refundStatus: normalizedRefund.refundStatus,
+      refundAmount: normalizedRefund.refundAmount,
+      refundDate: normalizedRefund.refundDate,
+      refundReason: normalizedRefund.refundReason,
+      isRefunded: normalizedRefund.isRefunded,
+    };
+  });
   const totalRecords = result?.totalRecords || 0;
   const totalPages = Math.max(1, Math.ceil(totalRecords / limit));
   const statusBreakdown = result?.statusBreakdown || [];
@@ -637,7 +808,7 @@ export const getStudents = async (req, res) => {
     {
       $unwind: {
         path: "$latestSubscription",
-        preserveNullAndEmptyArrays: true,
+        preserveNullAndEmptyArrays: false,
       },
     },
     {
@@ -678,12 +849,52 @@ export const getStudents = async (req, res) => {
               },
               {
                 case: { $eq: ["$latestSubscription.status", "cancelled"] },
-                then: "cancelled",
+                then: "refunded",
+              },
+              {
+                case: { $eq: ["$latestSubscription.status", "refund_approved"] },
+                then: "refunded",
+              },
+              {
+                case: {
+                  $and: [
+                    { $eq: ["$latestSubscription.refund.requested", true] },
+                    { $eq: ["$latestSubscription.refund.approved", false] },
+                  ],
+                },
+                then: "requested",
               },
             ],
-            default: "none",
+            default: "refunded",
           },
         },
+      },
+    },
+    {
+      $lookup: {
+        from: "payments",
+        let: { sid: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$userId", "$$sid"] },
+                  { $eq: ["$type", "mess"] },
+                ],
+              },
+            },
+          },
+          { $sort: { updatedAt: -1, createdAt: -1 } },
+          { $limit: 1 },
+        ],
+        as: "latestPayment",
+      },
+    },
+    {
+      $unwind: {
+        path: "$latestPayment",
+        preserveNullAndEmptyArrays: true,
       },
     },
   ];
@@ -746,6 +957,23 @@ export const getStudents = async (req, res) => {
               phone: 1,
               currentPlan: { $ifNull: ["$latestPlan.name", "N/A"] },
               status: "$currentStatus",
+              latestSubscriptionId: "$latestSubscription._id",
+              refund: {
+                requested: { $ifNull: ["$latestSubscription.refund.requested", false] },
+                approved: { $ifNull: ["$latestSubscription.refund.approved", false] },
+                amount: { $ifNull: ["$latestSubscription.refund.amount", 0] },
+                reason: { $ifNull: ["$latestSubscription.refund.reason", ""] },
+                status: { $ifNull: ["$latestSubscription.refund.status", "not_requested"] },
+                requestedAt: "$latestSubscription.refund.requestedAt",
+                processedAt: "$latestSubscription.refund.processedAt",
+                rejectedAt: "$latestSubscription.refund.rejectedAt",
+                rejectionReason: "$latestSubscription.refund.rejectionReason",
+              },
+              latestPayment: {
+                status: "$latestPayment.status",
+                refundedAt: "$latestPayment.refundedAt",
+                refund: "$latestPayment.refund",
+              },
             },
           },
         ],
@@ -763,7 +991,22 @@ export const getStudents = async (req, res) => {
   );
 
   const [result] = await User.aggregate(pipeline);
-  const items = result?.items || [];
+  const items = (result?.items || []).map((item) => {
+    const normalizedRefund = getNormalizedRefundDetails({
+      subscriptionRefund: item.refund,
+      subscriptionStatus: item.status,
+      payment: item.latestPayment,
+    });
+
+    return {
+      ...item,
+      refundStatus: normalizedRefund.refundStatus,
+      refundAmount: normalizedRefund.refundAmount,
+      refundDate: normalizedRefund.refundDate,
+      refundReason: normalizedRefund.refundReason,
+      isRefunded: normalizedRefund.isRefunded,
+    };
+  });
   const totalRecords = result?.totalRecords || 0;
   const totalPages = Math.max(1, Math.ceil(totalRecords / limit));
 
@@ -783,6 +1026,8 @@ export const getStudents = async (req, res) => {
     },
   });
 };
+
+export const getSubscribedStudents = getStudents;
 
 export const getStudentsWithCurrentPlanStatus = asyncHandler(async (req, res) => {
   await expireSubscriptionsAndNotify();
@@ -892,7 +1137,7 @@ export const getStudentsWithCurrentPlanStatus = asyncHandler(async (req, res) =>
                     { $eq: ["$currentSubscription.refund.approved", false] },
                   ],
                 },
-                then: "cancellation_requested",
+                then: "requested",
               },
               {
                 case: {
@@ -905,11 +1150,11 @@ export const getStudentsWithCurrentPlanStatus = asyncHandler(async (req, res) =>
               },
               {
                 case: { $eq: ["$currentSubscription.status", "refund_approved"] },
-                then: "refund_approved",
+                then: "refunded",
               },
               {
                 case: { $eq: ["$currentSubscription.status", "cancelled"] },
-                then: "cancelled",
+                then: "refunded",
               },
               {
                 case: { $eq: ["$currentSubscription.status", "expired"] },
@@ -1008,6 +1253,30 @@ export const getPayments = async (req, res) => {
         preserveNullAndEmptyArrays: true,
       },
     },
+    {
+      $lookup: {
+        from: "messsubscriptions",
+        let: { sid: "$userId" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$studentId", "$$sid"],
+              },
+            },
+          },
+          { $sort: { updatedAt: -1, createdAt: -1 } },
+          { $limit: 1 },
+        ],
+        as: "latestSubscription",
+      },
+    },
+    {
+      $unwind: {
+        path: "$latestSubscription",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
   ];
 
   const matchConditions = [];
@@ -1090,6 +1359,12 @@ export const getPayments = async (req, res) => {
               createdAt: 1,
               paymentId: 1,
               orderId: 1,
+              refundedAt: 1,
+              refund: 1,
+              latestSubscription: {
+                status: "$latestSubscription.status",
+                refund: "$latestSubscription.refund",
+              },
               userId: {
                 _id: "$student._id",
                 name: "$student.name",
@@ -1115,7 +1390,26 @@ export const getPayments = async (req, res) => {
   );
 
   const [result] = await Payment.aggregate(pipeline);
-  const items = result?.items || [];
+  const items = (result?.items || []).map((item) => {
+    const normalizedRefund = getNormalizedRefundDetails({
+      subscriptionRefund: item.latestSubscription?.refund,
+      subscriptionStatus: item.latestSubscription?.status,
+      payment: {
+        status: item.status,
+        refundedAt: item.refundedAt,
+        refund: item.refund,
+      },
+    });
+
+    return {
+      ...item,
+      refundStatus: normalizedRefund.refundStatus,
+      refundAmount: normalizedRefund.refundAmount,
+      refundDate: normalizedRefund.refundDate,
+      refundReason: normalizedRefund.refundReason,
+      isRefunded: normalizedRefund.isRefunded,
+    };
+  });
   const totalRecords = result?.totalRecords || 0;
   const totalPages = Math.max(1, Math.ceil(totalRecords / limit));
   const totalRevenue = result?.totalRevenue || 0;
@@ -1225,74 +1519,678 @@ export const getMessAdminDashboardStats = asyncHandler(async (req, res) => {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-  const [activeSubscriptionsAgg, totalPlansAgg, monthlyRevenueAgg, pendingRefundsAgg] = await Promise.all([
+  const thirtyDaysStart = new Date(now);
+  thirtyDaysStart.setHours(0, 0, 0, 0);
+  thirtyDaysStart.setDate(thirtyDaysStart.getDate() - 29);
+
+  const [subscriptionsAgg, paymentsAgg, totalPlans] = await Promise.all([
     MessSubscription.aggregate([
       {
-        $match: {
-          status: "active",
-          endDate: { $gte: now },
-        },
-      },
-      { $count: "total" },
-    ]),
-    MessPlan.aggregate([{ $count: "total" }]),
-    Payment.aggregate([
-      {
-        $match: {
-          type: "mess",
-          status: "success",
-          createdAt: {
-            $gte: monthStart,
-            $lt: nextMonthStart,
-          },
-          purpose: { $ne: "Mess Refund" },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: "$amount" },
-        },
-      },
-    ]),
-    MessSubscription.aggregate([
-      {
-        $match: {
-          $or: [
+        $facet: {
+          totalSubscriptions: [{ $count: "count" }],
+          pendingRefunds: [
             {
-              "refund.requested": true,
-              "refund.approved": false,
+              $match: {
+                "refund.requested": true,
+                "refund.approved": false,
+              },
             },
+            { $count: "count" },
+          ],
+          recentSubscriptions: [
+            { $sort: { createdAt: -1 } },
+            { $limit: 5 },
             {
-              status: "refund_pending",
+              $lookup: {
+                from: "users",
+                localField: "studentId",
+                foreignField: "_id",
+                as: "student",
+              },
+            },
+            { $unwind: { path: "$student", preserveNullAndEmptyArrays: true } },
+            {
+              $project: {
+                _id: 0,
+                type: { $literal: "subscription" },
+                createdAt: "$createdAt",
+                studentName: { $ifNull: ["$student.name", "Student"] },
+              },
+            },
+          ],
+          recentExpiredSubscriptions: [
+            { $match: { status: "expired" } },
+            { $sort: { endDate: -1 } },
+            { $limit: 5 },
+            {
+              $lookup: {
+                from: "users",
+                localField: "studentId",
+                foreignField: "_id",
+                as: "student",
+              },
+            },
+            { $unwind: { path: "$student", preserveNullAndEmptyArrays: true } },
+            {
+              $project: {
+                _id: 0,
+                type: { $literal: "expired" },
+                createdAt: "$endDate",
+                studentName: { $ifNull: ["$student.name", "Student"] },
+              },
             },
           ],
         },
       },
-      { $count: "total" },
     ]),
+    Payment.aggregate([
+      {
+        $match: {
+          type: "mess",
+        },
+      },
+      {
+        $facet: {
+          totalRevenue: [
+            {
+              $match: {
+                status: "success",
+                purpose: { $ne: "Mess Refund" },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                total: { $sum: "$amount" },
+              },
+            },
+          ],
+          monthlyRevenue: [
+            {
+              $match: {
+                status: "success",
+                purpose: { $ne: "Mess Refund" },
+                createdAt: {
+                  $gte: monthStart,
+                  $lt: nextMonthStart,
+                },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                total: { $sum: "$amount" },
+              },
+            },
+          ],
+          last30DaysRevenue: [
+            {
+              $match: {
+                status: "success",
+                purpose: { $ne: "Mess Refund" },
+                createdAt: { $gte: thirtyDaysStart },
+              },
+            },
+            {
+              $group: {
+                _id: {
+                  $dateToString: {
+                    format: "%Y-%m-%d",
+                    date: "$createdAt",
+                  },
+                },
+                revenue: { $sum: "$amount" },
+              },
+            },
+            { $sort: { _id: 1 } },
+          ],
+          recentPayments: [
+            {
+              $match: {
+                status: "success",
+                purpose: { $ne: "Mess Refund" },
+              },
+            },
+            { $sort: { createdAt: -1 } },
+            { $limit: 5 },
+            {
+              $lookup: {
+                from: "users",
+                localField: "userId",
+                foreignField: "_id",
+                as: "user",
+              },
+            },
+            { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+            {
+              $project: {
+                _id: 0,
+                type: { $literal: "payment" },
+                createdAt: "$createdAt",
+                amount: { $ifNull: ["$amount", 0] },
+                studentName: { $ifNull: ["$user.name", "Student"] },
+              },
+            },
+          ],
+          recentRefunds: [
+            {
+              $match: {
+                status: "refunded",
+              },
+            },
+            { $sort: { updatedAt: -1 } },
+            { $limit: 5 },
+            {
+              $lookup: {
+                from: "users",
+                localField: "userId",
+                foreignField: "_id",
+                as: "user",
+              },
+            },
+            { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+            {
+              $project: {
+                _id: 0,
+                type: { $literal: "refund" },
+                createdAt: "$updatedAt",
+                amount: { $ifNull: ["$amount", 0] },
+                studentName: { $ifNull: ["$user.name", "Student"] },
+              },
+            },
+          ],
+        },
+      },
+    ]),
+    MessPlan.countDocuments(),
   ]);
 
+  const subscriptionFacet = subscriptionsAgg[0] || {};
+  const paymentFacet = paymentsAgg[0] || {};
+
+  const totalSubscriptions = subscriptionFacet.totalSubscriptions?.[0]?.count || 0;
+  const pendingRefunds = subscriptionFacet.pendingRefunds?.[0]?.count || 0;
+  const totalRevenue = paymentFacet.totalRevenue?.[0]?.total || 0;
+  const monthlyRevenue = paymentFacet.monthlyRevenue?.[0]?.total || 0;
+
+  const revenueByDay = new Map(
+    (paymentFacet.last30DaysRevenue || []).map((item) => [item._id, item.revenue])
+  );
+
+  const revenueSeries = [];
+  for (let offset = 0; offset < 30; offset += 1) {
+    const date = new Date(thirtyDaysStart);
+    date.setDate(thirtyDaysStart.getDate() + offset);
+
+    const key = date.toISOString().slice(0, 10);
+    const label = date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+    });
+
+    revenueSeries.push({
+      date: key,
+      label,
+      revenue: revenueByDay.get(key) || 0,
+    });
+  }
+
+  const buildActivityMessage = (activity) => {
+    if (activity.type === "payment") {
+      return `Payment received ₹${activity.amount} - ${activity.studentName}`;
+    }
+
+    if (activity.type === "refund") {
+      return `Refund processed ₹${activity.amount} - ${activity.studentName}`;
+    }
+
+    if (activity.type === "expired") {
+      return `Subscription expired - ${activity.studentName}`;
+    }
+
+    return `New subscription - ${activity.studentName}`;
+  };
+
+  const recentActivities = [
+    ...(paymentFacet.recentPayments || []),
+    ...(paymentFacet.recentRefunds || []),
+    ...(subscriptionFacet.recentSubscriptions || []),
+    ...(subscriptionFacet.recentExpiredSubscriptions || []),
+  ]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 5)
+    .map((activity) => ({
+      ...activity,
+      message: buildActivityMessage(activity),
+    }));
+
   const dashboardStats = {
-    totalActiveSubscriptions: activeSubscriptionsAgg[0]?.total || 0,
-    totalPlans: totalPlansAgg[0]?.total || 0,
-    monthlyRevenue: monthlyRevenueAgg[0]?.total || 0,
-    pendingRefundsCount: pendingRefundsAgg[0]?.total || 0,
+    totalSubscriptions,
+    totalPlans,
+    monthlyRevenue,
+    totalRevenue,
+    pendingRefunds,
+    recentActivities,
+    revenueSeries,
   };
 
   return sendSuccess(
     res,
     200,
-    "Mess admin dashboard stats fetched successfully",
+    "Mess admin dashboard fetched successfully",
     dashboardStats
   );
 });
 
-export const cancelSubscription = async (req, res) => {
+export const getMessReports = asyncHandler(async (req, res) => {
+  await expireSubscriptionsAndNotify();
+
+  const now = new Date();
+  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const endOfPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const thirtyDaysStart = new Date(now);
+  thirtyDaysStart.setHours(0, 0, 0, 0);
+  thirtyDaysStart.setDate(thirtyDaysStart.getDate() - 29);
+
+  const sixMonthsStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+  const page = toPositiveInt(req.query.page, 1);
+  const limit = Math.min(toPositiveInt(req.query.limit, 10), 100);
+  const skip = (page - 1) * limit;
+  const statusFilter = (req.query.status || "all").trim().toLowerCase();
+  const planId = (req.query.planId || "").trim();
+  const dateFrom = (req.query.from || "").trim();
+  const dateTo = (req.query.to || "").trim();
+
+  let filterStart = null;
+  let filterEnd = null;
+
+  if (dateFrom && isValidDateValue(dateFrom)) {
+    filterStart = new Date(dateFrom);
+    filterStart.setHours(0, 0, 0, 0);
+  }
+
+  if (dateTo && isValidDateValue(dateTo)) {
+    filterEnd = new Date(dateTo);
+    filterEnd.setHours(23, 59, 59, 999);
+  }
+
+  const [
+    totalSubscriptions,
+    activeSubscriptions,
+    expiredSubscriptions,
+    plans,
+    paymentFacets,
+    refundSubscriptions,
+    pendingRefunds,
+    popularPlanAgg,
+    recentPayments,
+    recentSubscriptions,
+  ] = await Promise.all([
+    MessSubscription.countDocuments(),
+    MessSubscription.countDocuments({
+      status: "active",
+      endDate: { $gte: now },
+    }),
+    MessSubscription.countDocuments({
+      $or: [
+        { status: "expired" },
+        { status: "refund_approved" },
+        { status: "cancelled" },
+      ],
+    }),
+    MessPlan.find({}, { _id: 1, name: 1, price: 1 }).sort({ createdAt: -1 }).lean(),
+    Payment.aggregate([
+      {
+        $match: {
+          type: "mess",
+        },
+      },
+      {
+        $facet: {
+          totalRevenue: [
+            {
+              $match: {
+                status: "success",
+                purpose: { $ne: "Mess Refund" },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                amount: { $sum: "$amount" },
+                count: { $sum: 1 },
+              },
+            },
+          ],
+          monthlyRevenue: [
+            {
+              $match: {
+                status: "success",
+                purpose: { $ne: "Mess Refund" },
+                createdAt: { $gte: startOfCurrentMonth },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                amount: { $sum: "$amount" },
+              },
+            },
+          ],
+          previousMonthlyRevenue: [
+            {
+              $match: {
+                status: "success",
+                purpose: { $ne: "Mess Refund" },
+                createdAt: {
+                  $gte: startOfPreviousMonth,
+                  $lt: endOfPreviousMonth,
+                },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                amount: { $sum: "$amount" },
+              },
+            },
+          ],
+          dailyRevenueTrend: [
+            {
+              $match: {
+                status: "success",
+                purpose: { $ne: "Mess Refund" },
+                createdAt: { $gte: thirtyDaysStart },
+              },
+            },
+            {
+              $group: {
+                _id: {
+                  $dateToString: {
+                    format: "%Y-%m-%d",
+                    date: "$createdAt",
+                  },
+                },
+                amount: { $sum: "$amount" },
+              },
+            },
+            { $sort: { _id: 1 } },
+          ],
+        },
+      },
+    ]),
+    MessSubscription.find({}, {
+      _id: 1,
+      studentId: 1,
+      planId: 1,
+      status: 1,
+      refund: 1,
+      updatedAt: 1,
+    })
+      .populate("studentId", "name email")
+      .populate("planId", "name")
+      .lean(),
+    MessSubscription.countDocuments({
+      "refund.requested": true,
+      "refund.approved": false,
+    }),
+    MessSubscription.aggregate([
+      {
+        $group: {
+          _id: "$planId",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: 1 },
+      {
+        $lookup: {
+          from: "messplans",
+          localField: "_id",
+          foreignField: "_id",
+          as: "plan",
+        },
+      },
+      { $unwind: { path: "$plan", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 0,
+          planId: "$_id",
+          planName: "$plan.name",
+          count: 1,
+        },
+      },
+    ]),
+    Payment.find({
+      type: "mess",
+      status: "success",
+      purpose: { $ne: "Mess Refund" },
+    })
+      .populate("userId", "name")
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean(),
+    MessSubscription.find({})
+      .populate("studentId", "name")
+      .sort({ updatedAt: -1, createdAt: -1 })
+      .limit(8)
+      .lean(),
+  ]);
+
+  const paymentFacet = paymentFacets[0] || {};
+  const totalRevenue = paymentFacet.totalRevenue?.[0]?.amount || 0;
+  const totalSuccessfulTransactions = paymentFacet.totalRevenue?.[0]?.count || 0;
+  const monthlyRevenue = paymentFacet.monthlyRevenue?.[0]?.amount || 0;
+  const previousMonthlyRevenue = paymentFacet.previousMonthlyRevenue?.[0]?.amount || 0;
+
+  const revenueByDayMap = new Map(
+    (paymentFacet.dailyRevenueTrend || []).map((entry) => [entry._id, entry.amount])
+  );
+
+  const dailyRevenueTrend = [];
+  for (let i = 0; i < 30; i += 1) {
+    const date = new Date(thirtyDaysStart);
+    date.setDate(thirtyDaysStart.getDate() + i);
+    const key = toDateOnlyKey(date);
+    dailyRevenueTrend.push({
+      date: key,
+      amount: revenueByDayMap.get(key) || 0,
+    });
+  }
+
+  const allRefundRows = refundSubscriptions
+    .map((subscription) => {
+      const refundStatus = getRefundStatusFromSubscription(subscription);
+      const refundAmount = Number(subscription?.refund?.amount || 0);
+      const refundDate = getRefundDateFromSubscription(subscription);
+      const refundReason =
+        subscription?.refund?.reason
+        || subscription?.refund?.rejectionReason
+        || "";
+
+      return {
+        subscriptionId: subscription._id,
+        studentName: subscription.studentId?.name || "Unknown",
+        studentEmail: subscription.studentId?.email || "",
+        planId: subscription.planId?._id || null,
+        plan: subscription.planId?.name || "N/A",
+        refundStatus,
+        refundAmount,
+        refundDate,
+        refundReason,
+      };
+    })
+    .filter((row) => row.refundStatus !== "none");
+
+  const approvedRefundRows = allRefundRows.filter((row) => row.refundStatus === "approved");
+  const totalRefundedAmount = approvedRefundRows.reduce((sum, row) => sum + row.refundAmount, 0);
+  const totalRefundCount = approvedRefundRows.length;
+  const netRevenue = totalRevenue - totalRefundedAmount;
+
+  const monthlyRefundTrendMap = new Map();
+  approvedRefundRows.forEach((row) => {
+    if (!row.refundDate) return;
+    const date = new Date(row.refundDate);
+    if (Number.isNaN(date.getTime())) return;
+    if (date < sixMonthsStart) return;
+
+    const monthKey = toMonthKey(date);
+    const previous = monthlyRefundTrendMap.get(monthKey) || { month: monthKey, count: 0, amount: 0 };
+    previous.count += 1;
+    previous.amount += row.refundAmount;
+    monthlyRefundTrendMap.set(monthKey, previous);
+  });
+
+  const monthlyRefundTrend = Array.from(monthlyRefundTrendMap.values()).sort((a, b) =>
+    new Date(`${a.month}-01`) - new Date(`${b.month}-01`)
+  );
+
+  let filteredRefundRows = [...allRefundRows];
+
+  if (statusFilter && statusFilter !== "all") {
+    filteredRefundRows = filteredRefundRows.filter((row) => row.refundStatus === statusFilter);
+  }
+
+  if (planId && mongoose.Types.ObjectId.isValid(planId)) {
+    filteredRefundRows = filteredRefundRows.filter(
+      (row) => String(row.planId || "") === String(planId)
+    );
+  }
+
+  if (filterStart || filterEnd) {
+    filteredRefundRows = filteredRefundRows.filter((row) => {
+      if (!row.refundDate) return false;
+      const date = new Date(row.refundDate);
+      if (Number.isNaN(date.getTime())) return false;
+      if (filterStart && date < filterStart) return false;
+      if (filterEnd && date > filterEnd) return false;
+      return true;
+    });
+  }
+
+  filteredRefundRows.sort((a, b) => new Date(b.refundDate || 0) - new Date(a.refundDate || 0));
+
+  const refundTotalRecords = filteredRefundRows.length;
+  const refundTotalPages = Math.max(1, Math.ceil(refundTotalRecords / limit));
+  const pagedRefundRows = filteredRefundRows.slice(skip, skip + limit);
+
+  const revenueChangePercent = previousMonthlyRevenue === 0
+    ? (monthlyRevenue > 0 ? 100 : 0)
+    : ((monthlyRevenue - previousMonthlyRevenue) / previousMonthlyRevenue) * 100;
+
+  const refundRatePercent = totalSuccessfulTransactions === 0
+    ? 0
+    : (totalRefundCount / totalSuccessfulTransactions) * 100;
+
+  const mostPopularPlan = popularPlanAgg[0] || {
+    planId: null,
+    planName: "N/A",
+    count: 0,
+  };
+
+  const recentActivities = [
+    ...recentPayments.map((payment) => ({
+      type: "payment",
+      date: payment.createdAt,
+      message: `Payment received ₹${payment.amount} - ${payment.userId?.name || "Student"}`,
+    })),
+    ...recentSubscriptions
+      .filter((subscription) => getRefundStatusFromSubscription(subscription) !== "none")
+      .map((subscription) => {
+        const status = getRefundStatusFromSubscription(subscription);
+        const amount = subscription?.refund?.amount || 0;
+        const studentName = subscription.studentId?.name || "Student";
+        const eventDate = getRefundDateFromSubscription(subscription);
+
+        if (status === "requested") {
+          return {
+            type: "refund_requested",
+            date: eventDate,
+            message: `Refund requested ₹${amount} - ${studentName}`,
+          };
+        }
+
+        if (status === "rejected") {
+          return {
+            type: "refund_rejected",
+            date: eventDate,
+            message: `Refund rejected - ${studentName}`,
+          };
+        }
+
+        return {
+          type: "refund_approved",
+          date: eventDate,
+          message: `Refund approved ₹${amount} - ${studentName}`,
+        };
+      }),
+  ]
+    .filter((item) => item.date)
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 8);
+
+  const insights = {
+    revenueChangePercent: Number(Math.abs(revenueChangePercent).toFixed(1)),
+    revenueTrend: revenueChangePercent >= 0 ? "up" : "down",
+    refundRatePercent: Number(refundRatePercent.toFixed(1)),
+    mostPopularPlan,
+    messages: [
+      `Revenue ${revenueChangePercent >= 0 ? "increased" : "decreased"} by ${Math.abs(revenueChangePercent).toFixed(1)}% this month`,
+      `Refund rate: ${refundRatePercent.toFixed(1)}% of total successful transactions`,
+      `Most popular plan: ${mostPopularPlan.planName || "N/A"}`,
+    ],
+  };
+
+  return sendSuccess(res, 200, "Mess reports fetched successfully", {
+    totalSubscriptions,
+    activeSubscriptions,
+    expiredSubscriptions,
+    totalPlans: plans.length,
+    plans,
+    totalRevenue,
+    monthlyRevenue,
+    dailyRevenueTrend,
+    totalRefundedAmount,
+    totalRefundCount,
+    pendingRefunds,
+    monthlyRefundTrend,
+    netRevenue,
+    recentActivities,
+    insights,
+    refundTable: {
+      items: pagedRefundRows,
+      exportRows: filteredRefundRows,
+      pagination: {
+        page,
+        limit,
+        totalRecords: refundTotalRecords,
+        totalPages: refundTotalPages,
+        hasNextPage: page < refundTotalPages,
+        hasPrevPage: page > 1,
+      },
+      filters: {
+        status: statusFilter,
+        planId,
+        from: dateFrom,
+        to: dateTo,
+      },
+    },
+  });
+});
+
+export const requestRefund = async (req, res) => {
   try {
+    const reason = parseRefundReason(req.body?.reason);
+    if (reason.length > MAX_REFUND_REASON_LENGTH) {
+      return res.status(400).json({ message: "Refund reason cannot exceed 300 characters." });
+    }
+
     const subscription = await MessSubscription.findOne({
       studentId: req.user._id,
-      status: "active"
+      status: { $in: ["active", "refund_pending"] },
     }).populate("planId");
 
     if (!subscription) {
@@ -1300,44 +2198,54 @@ export const cancelSubscription = async (req, res) => {
     }
 
     if (subscription.refund?.requested && !subscription.refund?.approved) {
-      return res.status(400).json({ message: "Cancellation is already requested." });
+      return res.status(409).json({ message: "Refund is already requested for this subscription." });
     }
 
-    const today = new Date();
-    const start = new Date(subscription.startDate);
+    const refundAmount = calculateRefundAmount(subscription, subscription.planId);
+    const requestedAt = new Date();
 
-    // Calculate used days (minimum 1 day)
-    let usedDays = Math.ceil((today - start) / (1000 * 60 * 60 * 24));
-    if (usedDays <= 0) usedDays = 1;
-
-    const totalDays = subscription.planId.durationInDays;
-    const perDay = subscription.planId.price / totalDays;
-
-    const refundAmount =
-      subscription.planId.price - usedDays * perDay;
-
-    // Keep the subscription active until the mess admin approves the refund
-    subscription.status = "active";
+    subscription.status = "refund_pending";
     subscription.refund = {
       requested: true,
       approved: false,
-      amount: Math.max(0, Math.floor(refundAmount)),
+      amount: refundAmount,
     };
 
     await subscription.save();
+
+    await MessSubscription.collection.updateOne(
+      { _id: subscription._id },
+      {
+        $set: {
+          "refund.status": "requested",
+          "refund.reason": reason,
+          "refund.requestedAt": requestedAt,
+          "refund.processedAt": null,
+          "refund.rejectedAt": null,
+          "refund.rejectionReason": "",
+          updatedAt: requestedAt,
+        },
+      }
+    );
+
     const updatedSubscription = await MessSubscription.findById(subscription._id).populate("planId");
 
-    res.json({
-      success: true,
-      message: "Cancellation request submitted",
-      refundAmount: subscription.refund.amount,
+    return sendSuccess(res, 200, "Refund request submitted successfully", {
       subscription: updatedSubscription,
+      refund: {
+        status: "requested",
+        amount: refundAmount,
+        reason,
+        requestedAt,
+      },
       currentStatus: getSubscriptionCurrentStatus(updatedSubscription),
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
+
+export const cancelSubscription = requestRefund;
 
 export const getMenu = asyncHandler(async (req, res) => {
   const dateQuery = req.query.date;
@@ -1401,47 +2309,208 @@ export const renewSubscription = async (req, res) => {
 
 export const approveRefund = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid subscription id." });
+    }
+
+    const reason = parseRefundReason(req.body?.reason);
+    if (reason.length > MAX_REFUND_REASON_LENGTH) {
+      return res.status(400).json({ message: "Refund reason cannot exceed 300 characters." });
+    }
+
     const subscription = await MessSubscription.findById(req.params.id);
 
-    if (!subscription || !subscription.refund?.requested) {
-      return res.status(400).json({ message: "Invalid request" });
+    if (!subscription) {
+      return res.status(404).json({ message: "Subscription not found." });
     }
+
+    if (!subscription.refund?.requested || subscription.refund?.approved) {
+      return res.status(409).json({ message: "Refund is already processed or not requested." });
+    }
+
+    let approvedAmount = Number(subscription.refund?.amount || 0);
+    if (req.body?.amount !== undefined) {
+      const parsedAmount = Number(req.body.amount);
+      if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
+        return res.status(400).json({ message: "Refund amount must be a positive number." });
+      }
+      approvedAmount = parsedAmount;
+    }
+
+    const processedAt = new Date();
 
     subscription.status = "refund_approved";
     subscription.refund.approved = true;
-    subscription.endDate = new Date();
+    subscription.refund.amount = approvedAmount;
+    subscription.endDate = processedAt;
 
     await subscription.save();
 
-    const paymentToRefund = await Payment.findOne({
-      userId: subscription.studentId,
-      type: "mess",
-      status: "success",
-      purpose: { $ne: "Mess Refund" },
-    }).sort({ createdAt: -1 });
+    const paymentToRefund = await findLatestSuccessfulMessPayment(subscription.studentId);
 
     if (paymentToRefund) {
-      // Keep schema unchanged while updating persisted payment status as requested.
       await Payment.collection.updateOne(
         { _id: paymentToRefund._id },
         {
           $set: {
             status: "refunded",
-            updatedAt: new Date(),
+            refundedAt: processedAt,
+            "refund.status": "refunded",
+            "refund.amount": approvedAmount,
+            "refund.reason": reason,
+            "refund.processedAt": processedAt,
+            "refund.subscriptionId": subscription._id,
+            updatedAt: processedAt,
           },
         }
       );
     }
 
+    await MessSubscription.collection.updateOne(
+      { _id: subscription._id },
+      {
+        $set: {
+          "refund.status": "refunded",
+          "refund.reason": reason,
+          "refund.processedAt": processedAt,
+          "refund.rejectedAt": null,
+          "refund.rejectionReason": "",
+          updatedAt: processedAt,
+        },
+      }
+    );
+
     return sendSuccess(res, 200, "Refund approved successfully", {
       subscriptionId: subscription._id,
       paymentId: paymentToRefund?._id || null,
       paymentStatus: paymentToRefund ? "refunded" : "not_found",
+      refund: {
+        status: "refunded",
+        amount: approvedAmount,
+        reason,
+        processedAt,
+      },
     });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
 };
+
+export const rejectRefund = async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid subscription id." });
+    }
+
+    const rejectionReason = parseRefundReason(req.body?.reason);
+    if (rejectionReason.length > MAX_REFUND_REASON_LENGTH) {
+      return res.status(400).json({ message: "Refund reason cannot exceed 300 characters." });
+    }
+
+    const subscription = await MessSubscription.findById(req.params.id);
+
+    if (!subscription) {
+      return res.status(404).json({ message: "Subscription not found." });
+    }
+
+    if (!subscription.refund?.requested || subscription.refund?.approved) {
+      return res.status(409).json({ message: "Refund is already processed or not requested." });
+    }
+
+    const processedAt = new Date();
+    subscription.status = "active";
+    subscription.refund.requested = false;
+    subscription.refund.approved = false;
+    await subscription.save();
+
+    await MessSubscription.collection.updateOne(
+      { _id: subscription._id },
+      {
+        $set: {
+          "refund.status": "rejected",
+          "refund.rejectionReason": rejectionReason,
+          "refund.rejectedAt": processedAt,
+          "refund.processedAt": processedAt,
+          "refund.requested": false,
+          "refund.approved": false,
+          updatedAt: processedAt,
+        },
+      }
+    );
+
+    return sendSuccess(res, 200, "Refund request rejected successfully", {
+      subscriptionId: subscription._id,
+      refund: {
+        status: "rejected",
+        reason: rejectionReason,
+        processedAt,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+export const getPendingRefundRequests = asyncHandler(async (req, res) => {
+  const rows = await MessSubscription.aggregate([
+    {
+      $match: {
+        "refund.requested": true,
+        "refund.approved": false,
+      },
+    },
+    { $sort: { updatedAt: -1 } },
+    {
+      $lookup: {
+        from: "users",
+        localField: "studentId",
+        foreignField: "_id",
+        as: "student",
+      },
+    },
+    { $unwind: { path: "$student", preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: "messplans",
+        localField: "planId",
+        foreignField: "_id",
+        as: "plan",
+      },
+    },
+    { $unwind: { path: "$plan", preserveNullAndEmptyArrays: true } },
+    {
+      $project: {
+        _id: 1,
+        studentId: {
+          _id: "$student._id",
+          name: "$student.name",
+          email: "$student.email",
+          enrollmentNo: "$student.enrollmentNo",
+        },
+        planId: {
+          _id: "$plan._id",
+          name: "$plan.name",
+        },
+        status: 1,
+        startDate: 1,
+        endDate: 1,
+        refund: {
+          requested: { $ifNull: ["$refund.requested", false] },
+          approved: { $ifNull: ["$refund.approved", false] },
+          amount: { $ifNull: ["$refund.amount", 0] },
+          reason: { $ifNull: ["$refund.reason", ""] },
+          status: { $ifNull: ["$refund.status", "requested"] },
+          requestedAt: { $ifNull: ["$refund.requestedAt", "$updatedAt"] },
+          processedAt: "$refund.processedAt",
+        },
+        createdAt: 1,
+        updatedAt: 1,
+      },
+    },
+  ]);
+
+  return sendSuccess(res, 200, "Pending refund requests fetched successfully", rows);
+});
 
 export const triggerSubscriptionExpiryNotifications = asyncHandler(async (req, res) => {
   const expiryResult = await expireSubscriptionsAndNotify();
