@@ -13,7 +13,7 @@ function WardenStudents({ searchQuery }) {
     const load = async () => {
       setLoading(true)
       try {
-        const res = await api.get('/reports/students-by-hostel')
+        const res = await api.get('/reports/students-by-hostel/warden')
         setData(res.data?.data || [])
         setError('')
       } catch (err) {

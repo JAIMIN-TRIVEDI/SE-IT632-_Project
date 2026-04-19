@@ -7,17 +7,21 @@ import { CameraAlt, BadgeOutlined, CalendarMonth, Save } from '@mui/icons-materi
 import api from '../../api/api'
 
 const emptyForm = {
-  name: '', email: '', phone: '', gender: '', role: '',
+  name: '',
+  email: '',
+  phone: '',
+  gender: '',
+  role: '',
 }
 
 export default function WardenProfile() {
   const [form, setForm] = useState(emptyForm)
   const [original, setOriginal] = useState(emptyForm)
+  const [profileMeta, setProfileMeta] = useState({ _id: '', isActive: false, createdAt: '', updatedAt: '' })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [snack, setSnack] = useState({ open: false, msg: '', severity: 'success' })
-  const [lastUpdated, setLastUpdated] = useState(null)
 
   const hasChanges = useMemo(() => (
     form.name !== original.name ||
@@ -27,8 +31,9 @@ export default function WardenProfile() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await api.get('/auth/me')
-        const user = res.data || {}
+        const meRes = await api.get('/auth/me')
+
+        const user = meRes.data?.data || meRes.data?.user || meRes.data || {}
         const profile = {
           name: user.name || '',
           email: user.email || '',
@@ -36,9 +41,16 @@ export default function WardenProfile() {
           gender: user.gender || '',
           role: user.role || '',
         }
+
         setForm(profile)
         setOriginal(profile)
-        setLastUpdated(user.updatedAt || null)
+        setProfileMeta({
+          _id: user._id || '',
+          isActive: Boolean(user.isActive),
+          createdAt: user.createdAt || '',
+          updatedAt: user.updatedAt || '',
+        })
+
         setError('')
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load profile.')
@@ -71,7 +83,10 @@ export default function WardenProfile() {
       }
       setForm(updated)
       setOriginal(updated)
-      setLastUpdated(new Date().toISOString())
+      setProfileMeta((prev) => ({
+        ...prev,
+        updatedAt: user.updatedAt || new Date().toISOString(),
+      }))
       setSnack({ open: true, msg: 'Profile updated successfully.', severity: 'success' })
     } catch (err) {
       setSnack({ open: true, msg: err.response?.data?.message || 'Failed to update profile.', severity: 'error' })
@@ -81,9 +96,12 @@ export default function WardenProfile() {
   }
 
   const initials = form.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase() || 'W'
-  const joinedDisplay = lastUpdated
-    ? `Joined ${new Date(lastUpdated).toLocaleString('en-US', { month: 'short', year: 'numeric' })}`
+  const joinedDisplay = profileMeta.createdAt
+    ? `Joined ${new Date(profileMeta.createdAt).toLocaleString('en-US', { month: 'short', year: 'numeric' })}`
     : ''
+  const updatedDisplay = profileMeta.updatedAt
+    ? new Date(profileMeta.updatedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
+    : 'N/A'
 
   if (loading) {
     return (
@@ -119,9 +137,15 @@ export default function WardenProfile() {
                 <BadgeOutlined sx={{ fontSize: 15, color: 'text.secondary' }} />
                 <Typography fontSize={13} color="text.secondary">{form.role || 'warden'}</Typography>
               </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
+                <CalendarMonth sx={{ fontSize: 15, color: 'text.secondary' }} />
+                <Typography fontSize={13} color="text.secondary">Last updated: {updatedDisplay}</Typography>
+              </Box>
             </Box>
           </Box>
-          <Button variant="outlined" sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700 }}>View History</Button>
+          <Button variant="outlined" sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 700 }} disabled>
+            {profileMeta.isActive ? 'Active Account' : 'Inactive Account'}
+          </Button>
         </Box>
       </Card>
 

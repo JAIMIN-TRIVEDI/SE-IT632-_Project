@@ -7,6 +7,7 @@ import {
   complaintReport,
   messReport,
   hostelStudentsReport,
+  wardenHostelStudentsReport,
   hostelAdminAnalytics,
 } from "../controllers/reportController.js";
 
@@ -67,6 +68,13 @@ router.get(
   protect,
   authorizeRoles("hostel_admin", "warden"),
   hostelStudentsReport,
+);
+
+router.get(
+  "/students-by-hostel/warden",
+  protect,
+  authorizeRoles("warden"),
+  wardenHostelStudentsReport,
 );
 
 router.get(

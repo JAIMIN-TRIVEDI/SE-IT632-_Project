@@ -380,24 +380,140 @@ export const messReport = async (req, res) => {
 
 export const hostelStudentsReport = async (req, res) => {
   try {
-    const [hostels, allocations] = await Promise.all([
-      Hostel.find().select("_id name type").sort({ name: 1 }).lean(),
-      RoomAllocation.find({ status: "active" })
-        .populate({
-          path: "studentId",
-          select: "name email phone enrollmentNo gender isActive",
-        })
-        .populate({
-          path: "hostelId",
-          select: "name type",
-        })
-        .populate({
-          path: "roomId",
-          select: "roomNumber roomType status",
-        })
-        .sort({ createdAt: -1 })
-        .lean(),
-    ]);
+    const hostels = await Hostel.find()
+      .select("_id name type")
+      .sort({ name: 1 })
+      .lean();
+
+    const allocations = await RoomAllocation.find({
+      status: "active",
+    })
+      .populate({
+        path: "studentId",
+        select: "name email phone enrollmentNo gender isActive",
+      })
+      .populate({
+        path: "hostelId",
+        select: "name type",
+      })
+      .populate({
+        path: "roomId",
+        select: "roomNumber roomType status",
+      })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const hostelMap = new Map(
+      hostels.map((hostel) => [
+        hostel._id.toString(),
+        {
+          hostelId: hostel._id,
+          hostelName: hostel.name,
+          hostelType: hostel.type,
+          totalStudents: 0,
+          students: [],
+        },
+      ])
+    );
+
+    allocations.forEach((allocation) => {
+      const hostel = allocation.hostelId;
+      const student = allocation.studentId;
+
+      if (!hostel || !student) return;
+
+      const hostelKey = hostel._id.toString();
+      if (!hostelMap.has(hostelKey)) {
+        hostelMap.set(hostelKey, {
+          hostelId: hostel._id,
+          hostelName: hostel.name,
+          hostelType: hostel.type,
+          totalStudents: 0,
+          students: [],
+        });
+      }
+
+      const currentHostel = hostelMap.get(hostelKey);
+      currentHostel.students.push({
+        studentId: student._id,
+        name: student.name,
+        email: student.email,
+        phone: student.phone,
+        enrollmentNo: student.enrollmentNo,
+        gender: student.gender,
+        isActive: student.isActive,
+        roomNumber: allocation.roomId?.roomNumber || null,
+        roomType: allocation.roomId?.roomType || null,
+        roomStatus: allocation.roomId?.status || null,
+        allocatedAt: allocation.allocatedAt,
+      });
+    });
+
+    const data = Array.from(hostelMap.values())
+      .map((hostel) => {
+        const seenStudentIds = new Set();
+        const uniqueStudents = hostel.students.filter((student) => {
+          const studentKey = student.studentId?.toString();
+          if (!studentKey || seenStudentIds.has(studentKey)) return false;
+          seenStudentIds.add(studentKey);
+          return true;
+        });
+
+        return {
+          ...hostel,
+          totalStudents: uniqueStudents.length,
+          students: uniqueStudents.sort((a, b) =>
+            (a.name || "").localeCompare(b.name || "")
+          ),
+        };
+      })
+      .sort((a, b) => a.hostelName.localeCompare(b.hostelName));
+
+    res.json({
+      success: true,
+      data,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+export const wardenHostelStudentsReport = async (req, res) => {
+  try {
+    const wardenId = req.user?._id;
+
+    const hostels = await Hostel.find({ wardenId })
+      .select("_id name type")
+      .sort({ name: 1 })
+      .lean();
+
+    const allowedHostelIds = hostels.map((hostel) => hostel._id);
+
+    if (allowedHostelIds.length === 0) {
+      return res.json({
+        success: true,
+        data: [],
+      });
+    }
+
+    const allocations = await RoomAllocation.find({
+      status: "active",
+      hostelId: { $in: allowedHostelIds },
+    })
+      .populate({
+        path: "studentId",
+        select: "name email phone enrollmentNo gender isActive",
+      })
+      .populate({
+        path: "hostelId",
+        select: "name type",
+      })
+      .populate({
+        path: "roomId",
+        select: "roomNumber roomType status",
+      })
+      .sort({ createdAt: -1 })
+      .lean();
 
     const hostelMap = new Map(
       hostels.map((hostel) => [
