@@ -7,6 +7,8 @@ import WardenActivityTableCard from '../components/dashboard/warden/WardenActivi
 import WardenAnnouncementsCard from '../components/dashboard/warden/WardenAnnouncementsCard.jsx'
 import WardenAvailabilityCard from '../components/dashboard/warden/WardenAvailabilityCard.jsx'
 import WardenRooms from './warden/WardenRooms.jsx'
+import WardenRoomRequests from './warden/WardenRoomRequests.jsx'
+import WardenVacateRequests from './warden/WardenVacateRequests.jsx'
 import WardenComplaints from './warden/WardenComplaints.jsx'
 import WardenStudents from './warden/WardenStudents.jsx'
 import WardenProfile from './warden/WardenProfile.jsx'
@@ -47,6 +49,10 @@ function WardenDashboard() {
         return 'Search hostels, blocks, or room statuses...'
       case 'Complaints':
         return 'Search complaints by student, room or category...'
+      case 'Room Requests':
+        return 'Search room requests by student, room, or hostel...'
+      case 'Vacate Requests':
+        return 'Search vacate requests by student, room, hostel, or reason...'
       case 'Students':
         return 'Search students by name, hostel or room...'
       case 'Notifications':
@@ -64,6 +70,10 @@ function WardenDashboard() {
         return <WardenRooms searchQuery={searchQuery} />
       case 'Complaints':
         return <WardenComplaints searchQuery={searchQuery} />
+      case 'Room Requests':
+        return <WardenRoomRequests searchQuery={searchQuery} />
+      case 'Vacate Requests':
+        return <WardenVacateRequests searchQuery={searchQuery} />
       case 'Students':
         return <WardenStudents searchQuery={searchQuery} />
       case 'Notifications':

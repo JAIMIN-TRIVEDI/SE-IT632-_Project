@@ -7,6 +7,7 @@ import {
   getAllPayments,
   refundPayment,
   getRazorpayKey,
+  markPaymentFailed,
 } from "../controllers/paymentController.js";
 
 import { protect } from "../middlewares/authMiddleware.js";
@@ -19,6 +20,7 @@ router.post("/payments/order", protect, authorizeRoles("student"), createOrder);
 router.get("/payments/key", protect, authorizeRoles("student"), getRazorpayKey);
 
 router.post("/payments/verify", protect, verifyPayment);
+router.post("/payments/fail", protect, markPaymentFailed);
 
 router.get(
   "/payments/history",

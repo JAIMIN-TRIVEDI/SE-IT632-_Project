@@ -9,7 +9,8 @@ function StudentRoommatesCard() {
         flex: 1,
         borderRadius: 4,
         boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-        border: '1px solid #f1f5f9',
+        border: '1px solid',
+        borderColor: 'divider',
         overflow: 'hidden',
       }}
     >
@@ -22,14 +23,15 @@ function StudentRoommatesCard() {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            borderBottom: '1px solid #f1f5f9',
+            borderBottom: '1px solid',
+            borderBottomColor: 'divider',
           }}
         >
           <Box>
-            <Typography fontWeight={800} fontSize={16} color="#0f172a">
+            <Typography fontWeight={800} fontSize={16} color="text.primary">
               Roommates
             </Typography>
-            <Typography fontSize={12} color="#94a3b8" mt={0.2}>
+            <Typography fontSize={12} color="text.secondary" mt={0.2}>
               Room A-204 · 3 members
             </Typography>
           </Box>
@@ -41,10 +43,10 @@ function StudentRoommatesCard() {
               fontSize: 12,
               fontWeight: 700,
               color: '#6366f1',
-              bgcolor: '#e0e7ff',
+              bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99, 102, 241, 0.22)' : '#e0e7ff',
               borderRadius: 2,
               px: 1.5,
-              '&:hover': { bgcolor: '#c7d2fe' },
+              '&:hover': { bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99, 102, 241, 0.32)' : '#c7d2fe' },
             }}
           >
             Add
@@ -59,11 +61,12 @@ function StudentRoommatesCard() {
               display: 'flex',
               alignItems: 'center',
               gap: 1.5,
-              borderBottom: i < roommates.length - 1 ? '1px solid #f8fafc' : 'none',
+              borderBottom: i < roommates.length - 1 ? '1px solid' : 'none',
+              borderBottomColor: i < roommates.length - 1 ? 'divider' : 'transparent',
               cursor: 'pointer',
               transition: 'all 0.2s',
               '&:hover': {
-                bgcolor: '#fafbff',
+                bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.1)' : '#fafbff',
                 transform: 'translateX(4px)',
               },
             }}
@@ -81,7 +84,7 @@ function StudentRoommatesCard() {
               {mate.initials}
             </Avatar>
             <Box flex={1}>
-              <Typography fontSize={13} fontWeight={700} color="#0f172a">
+              <Typography fontSize={13} fontWeight={700} color="text.primary">
                 {mate.name}
               </Typography>
               <Box display="flex" alignItems="center" gap={0.7} mt={0.3}>
@@ -93,7 +96,7 @@ function StudentRoommatesCard() {
                     bgcolor: mate.status === 'In hostel' ? '#22c55e' : '#f59e0b',
                   }}
                 />
-                <Typography fontSize={11} color="#64748b">
+                <Typography fontSize={11} color="text.secondary">
                   {mate.status}
                 </Typography>
               </Box>
@@ -105,15 +108,15 @@ function StudentRoommatesCard() {
                 textTransform: 'none',
                 fontSize: 11,
                 fontWeight: 700,
-                color: '#64748b',
-                borderColor: '#e2e8f0',
+                color: 'text.secondary',
+                borderColor: 'divider',
                 borderRadius: 2,
                 px: 1.5,
                 py: 0.5,
                 '&:hover': {
                   borderColor: '#6366f1',
                   color: '#6366f1',
-                  bgcolor: '#e0e7ff',
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(99, 102, 241, 0.22)' : '#e0e7ff',
                 },
               }}
             >

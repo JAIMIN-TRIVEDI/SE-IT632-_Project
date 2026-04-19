@@ -49,12 +49,14 @@ const sanitizeUser = (user) => ({
   phone: user.phone,
   gender: user.gender,
   enrollmentNo: user.enrollmentNo,
+  course: user.course,
+  studyYear: user.studyYear,
 });
 
 /* ── REGISTER ─────────────────────────────────────────────────────────────── */
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, enrollmentNo, phone, gender, role } = req.body;
+    const { name, email, password, enrollmentNo, phone, gender, role, course, studyYear } = req.body;
     const normalizedEmail = email?.toLowerCase();
 
     if (!gender) return res.status(400).json({ message: "Gender is required for registration." });
@@ -62,7 +64,17 @@ export const registerUser = async (req, res) => {
     const exists = await User.findOne({ email: normalizedEmail });
     if (exists) return res.status(409).json({ message: "Email already exists" });
 
-    const user = await User.create({ name, email, password, enrollmentNo, phone, gender, role: role || "student" });
+    const user = await User.create({
+      name,
+      email: normalizedEmail,
+      password,
+      enrollmentNo,
+      phone,
+      gender,
+      role: role || "student",
+      course,
+      studyYear,
+    });
     const accessToken = generateAccessToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
 

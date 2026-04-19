@@ -8,16 +8,17 @@ function StudentServicesCard() {
         flex: 1.1,
         borderRadius: 4,
         boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-        border: '1px solid #f1f5f9',
+        border: '1px solid',
+        borderColor: 'divider',
         overflow: 'hidden',
       }}
     >
       <CardContent sx={{ p: 0 }}>
         <Box sx={{ px: 3, pt: 3, pb: 2 }}>
-          <Typography fontWeight={800} fontSize={16} color="#0f172a">
+          <Typography fontWeight={800} fontSize={16} color="text.primary">
             Services
           </Typography>
-          <Typography fontSize={12} color="#94a3b8" mt={0.3}>
+          <Typography fontSize={12} color="text.secondary" mt={0.3}>
             Quick booking
           </Typography>
         </Box>
@@ -32,11 +33,12 @@ function StudentServicesCard() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 2,
-                borderTop: i === 0 ? '1px solid #f1f5f9' : '1px solid #f1f5f9',
+                borderTop: '1px solid',
+                borderTopColor: 'divider',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
                 '&:hover': {
-                  bgcolor: '#fafbff',
+                  bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.1)' : '#fafbff',
                   transform: 'translateX(4px)',
                 },
               }}
@@ -57,10 +59,10 @@ function StudentServicesCard() {
                 <Icon sx={{ fontSize: 22 }} />
               </Box>
               <Box flex={1}>
-                <Typography fontSize={14} fontWeight={700} color="#0f172a">
+                <Typography fontSize={14} fontWeight={700} color="text.primary">
                   {service.title}
                 </Typography>
-                <Typography fontSize={12} color="#94a3b8">
+                <Typography fontSize={12} color="text.secondary">
                   {service.desc}
                 </Typography>
               </Box>

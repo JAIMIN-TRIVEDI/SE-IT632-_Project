@@ -56,7 +56,7 @@ function MessStudents() {
             See all students subscribed to the mess service.
           </Typography>
         </Box>
-        <Card sx={{ p: 2, minWidth: 240, bgcolor: '#fff' }}>
+        <Card sx={{ p: 2, minWidth: 240, bgcolor: 'background.paper' }}>
           <CardContent>
             <Typography fontSize={12} color="text.secondary" gutterBottom>
               Total students

@@ -56,17 +56,24 @@ router.get("/student/dashboard", protect, async (req, res) => {
     const notifications = await Notification.find({ userId: user._id }).sort({ createdAt: -1 }).limit(5).lean();
     const openComplaints = await Complaint.countDocuments({ studentId: user._id, status: { $ne: 'resolved' } });
     const roomRequest = await RoomRequest.findOne({ studentId: user._id }).sort({ createdAt: -1 }).populate({ path: 'roomId', select: 'roomNumber roomType price status hostelId' }).populate({ path: 'hostelId', select: 'name type' }).lean();
-    const vacateRequest = await VacateRequest.findOne({ studentId: user._id }).sort({ createdAt: -1 }).lean();
+    const vacateRequest = await VacateRequest.findOne({ studentId: user._id })
+      .sort({ createdAt: -1 })
+      .populate({ path: 'processedBy', select: 'name role' })
+      .lean();
 
     let roommates = [];
     if (allocation) {
       const roomId = allocation.roomId?._id || allocation.roomId;
-      const roomAllocations = await RoomAllocation.find({ roomId, status: 'active' }).populate({ path: 'studentId', select: 'name email' }).lean();
+      const roomAllocations = await RoomAllocation.find({ roomId, status: 'active' }).populate({ path: 'studentId', select: 'name email course studyYear enrollmentNo' }).lean();
       roommates = roomAllocations
         .filter((item) => item.studentId._id.toString() !== user._id.toString())
         .map((item) => ({
           id: item._id,
           name: item.studentId.name,
+          email: item.studentId.email,
+          enrollmentNo: item.studentId.enrollmentNo,
+          course: item.studentId.course || '',
+          studyYear: item.studentId.studyYear || null,
           initials: item.studentId.name
             .split(' ')
             .map((word) => word[0])
@@ -96,6 +103,8 @@ router.get("/student/dashboard", protect, async (req, res) => {
         enrollmentNo: user.enrollmentNo,
         gender: user.gender,
         role: user.role,
+        course: user.course,
+        studyYear: user.studyYear,
       },
       room,
       payments,

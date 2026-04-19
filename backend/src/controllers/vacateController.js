@@ -3,6 +3,12 @@ import RoomAllocation from "../models/RoomAllocation.js";
 import Room from "../models/Room.js";
 import Hostel from "../models/Hostel.js";
 import Notification from "../models/Notification.js";
+import mongoose from "mongoose";
+
+const getManagedHostelQuery = (req, extra = {}) => ({
+  ...extra,
+  wardenId: req.user._id,
+});
 
 export const requestVacate = async (req, res) => {
   try {
@@ -39,13 +45,13 @@ export const requestVacate = async (req, res) => {
       status: "pending",
     });
 
-    const hostel = await Hostel.findById(allocation.hostelId).select("createdBy").lean();
+    const hostel = await Hostel.findById(allocation.hostelId).select("wardenId name type").lean();
 
-    if (hostel?.createdBy) {
+    if (hostel?.wardenId) {
       await Notification.create({
-        userId: hostel.createdBy,
+        userId: hostel.wardenId,
         type: "vacate_request",
-        message: `${req.user.name} submitted a vacate request for approval.`,
+        message: `${req.user.name} submitted a vacate request for approval in ${hostel.name}.`,
       });
     }
 
@@ -77,7 +83,7 @@ export const getMyVacateRequest = async (req, res) => {
 
 export const getHostelAdminVacateRequests = async (req, res) => {
   try {
-    const hostels = await Hostel.find({ createdBy: req.user._id }).select("_id").lean();
+    const hostels = await Hostel.find(getManagedHostelQuery(req)).select("_id").lean();
     const hostelIds = hostels.map((h) => h._id);
 
     if (!hostelIds.length) {
@@ -87,7 +93,7 @@ export const getHostelAdminVacateRequests = async (req, res) => {
     const requests = await VacateRequest.find({ hostelId: { $in: hostelIds } })
       .sort({ createdAt: -1 })
       .populate({ path: "studentId", select: "name email enrollmentNo" })
-      .populate({ path: "roomId", select: "roomNumber" })
+      .populate({ path: "roomId", select: "roomNumber roomType capacity occupiedCount status" })
       .populate({ path: "hostelId", select: "name type" })
       .populate({ path: "processedBy", select: "name role" })
       .lean();
@@ -100,53 +106,94 @@ export const getHostelAdminVacateRequests = async (req, res) => {
 
 export const approveVacate = async (req, res) => {
   try {
-    const request = await VacateRequest.findById(req.params.id);
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    if (!request) {
-      return res.status(404).json({ message: "Vacate request not found." });
-    }
+    try {
+      const request = await VacateRequest.findById(req.params.id).session(session);
 
-    const managedHostel = await Hostel.findOne({
-      _id: request.hostelId,
-      createdBy: req.user._id,
-    }).lean();
+      if (!request) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(404).json({ message: "Vacate request not found." });
+      }
 
-    if (!managedHostel) {
-      return res.status(403).json({ message: "You are not authorized to approve this request." });
-    }
+      const managedHostel = await Hostel.findOne({
+        _id: request.hostelId,
+        wardenId: req.user._id,
+      }).session(session);
 
-    if (request.status !== "pending") {
-      return res.status(400).json({ message: `Request is already ${request.status}.` });
-    }
+      if (!managedHostel) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(403).json({ message: "You are not authorized to approve this request." });
+      }
 
-    request.status = "approved";
-    request.processedBy = req.user._id;
-    request.processedAt = new Date();
-    await request.save();
+      if (request.status !== "pending") {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: `Request is already ${request.status}.` });
+      }
 
-    const allocation = await RoomAllocation.findById(request.allocationId);
-    if (allocation && allocation.status !== "vacated") {
+      const allocation = await RoomAllocation.findById(request.allocationId).session(session);
+      if (!allocation) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(404).json({ message: "Room allocation not found for this request." });
+      }
+
+      const room = await Room.findById(request.roomId).session(session);
+      if (!room) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(404).json({ message: "Room not found for this request." });
+      }
+
+      if (allocation.status === "vacated") {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: "This allocation is already vacated." });
+      }
+
+      request.status = "approved";
+      request.processedBy = req.user._id;
+      request.processedAt = new Date();
+      await request.save({ session });
+
       allocation.status = "vacated";
       allocation.vacatedAt = new Date();
-      await allocation.save();
-    }
+      await allocation.save({ session });
 
-    const room = await Room.findById(request.roomId);
-    if (room) {
       room.occupiedCount = Math.max((room.occupiedCount || 0) - 1, 0);
-      if (room.status !== "maintenance" && room.occupiedCount < room.capacity) {
-        room.status = "available";
+      if (room.status !== "maintenance") {
+        room.status = room.occupiedCount >= room.capacity ? "full" : "available";
       }
-      await room.save();
+      await room.save({ session });
+
+      await Notification.create([
+        {
+          userId: request.studentId,
+          type: "vacate_request",
+          message: `Your vacate request has been approved by the warden for ${managedHostel.name}. Your room has been released.`,
+        },
+      ], { session });
+
+      await session.commitTransaction();
+      session.endSession();
+
+      const refreshed = await VacateRequest.findById(request._id)
+        .populate({ path: "studentId", select: "name email enrollmentNo" })
+        .populate({ path: "roomId", select: "roomNumber roomType capacity occupiedCount status" })
+        .populate({ path: "hostelId", select: "name type" })
+        .populate({ path: "processedBy", select: "name role" })
+        .lean();
+
+      return res.json({ success: true, message: "Vacate request approved and room released.", data: refreshed });
+    } catch (innerErr) {
+      await session.abortTransaction();
+      session.endSession();
+      throw innerErr;
     }
-
-    await Notification.create({
-      userId: request.studentId,
-      type: "vacate_request",
-      message: "Your vacate request has been approved. Your room has been marked as vacated.",
-    });
-
-    return res.json({ success: true, message: "Vacate request approved and room released." });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -154,6 +201,7 @@ export const approveVacate = async (req, res) => {
 
 export const rejectVacate = async (req, res) => {
   try {
+    const { reason } = req.body;
     const request = await VacateRequest.findById(req.params.id);
 
     if (!request) {
@@ -162,7 +210,7 @@ export const rejectVacate = async (req, res) => {
 
     const managedHostel = await Hostel.findOne({
       _id: request.hostelId,
-      createdBy: req.user._id,
+      wardenId: req.user._id,
     }).lean();
 
     if (!managedHostel) {
@@ -176,12 +224,13 @@ export const rejectVacate = async (req, res) => {
     request.status = "rejected";
     request.processedBy = req.user._id;
     request.processedAt = new Date();
+    request.rejectionReason = reason ? String(reason).trim() : "";
     await request.save();
 
     await Notification.create({
       userId: request.studentId,
       type: "vacate_request",
-      message: "Your vacate request was rejected. Please contact hostel administration for details.",
+      message: `Your vacate request was rejected by the warden of ${managedHostel.name}.${request.rejectionReason ? ` Reason: ${request.rejectionReason}` : ''}`,
     });
 
     return res.json({ success: true, message: "Vacate request rejected." });

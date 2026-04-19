@@ -32,6 +32,22 @@ const RoomRequestSchema = new mongoose.Schema({
         type: String,
         enum: ["pending", "paid"],
         default: "pending"
+    },
+    requestMode: {
+        type: String,
+        enum: ["random", "specific"],
+        default: "random"
+    },
+    reviewedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    },
+    reviewedAt: {
+        type: Date
+    },
+    rejectionReason: {
+        type: String,
+        default: ""
     }
 }, { timestamps: true });
 

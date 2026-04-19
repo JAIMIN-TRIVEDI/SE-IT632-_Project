@@ -102,8 +102,30 @@ export default function PaymentRecordsTable({ payments = [], searchQuery = '' })
                 const displayStatus = isHostelPayment
                   ? payment.status === 'success'
                     ? 'Paid'
-                    : payment.status || 'Pending'
+                    : payment.status === 'failed'
+                      ? 'Failed'
+                      : payment.status === 'refunded'
+                        ? 'Refunded'
+                        : payment.status || 'Pending'
                   : 'N/A'
+                const statusColor = displayStatus === 'Paid'
+                  ? 'rgba(34, 197, 94, 0.1)'
+                  : displayStatus === 'Failed'
+                    ? 'rgba(239, 68, 68, 0.1)'
+                    : displayStatus === 'Refunded'
+                      ? 'rgba(59, 130, 246, 0.1)'
+                      : displayStatus === 'N/A'
+                        ? 'rgba(107, 114, 128, 0.12)'
+                        : 'rgba(234, 179, 8, 0.1)'
+                const statusTextColor = displayStatus === 'Paid'
+                  ? 'success.main'
+                  : displayStatus === 'Failed'
+                    ? 'error.main'
+                    : displayStatus === 'Refunded'
+                      ? 'primary.main'
+                      : displayStatus === 'N/A'
+                        ? 'text.secondary'
+                        : 'warning.main'
                 return (
                   <TableRow
                     key={payment._id || payment.orderId}
@@ -137,18 +159,8 @@ export default function PaymentRecordsTable({ payments = [], searchQuery = '' })
                         label={displayStatus}
                         size="small"
                         sx={{
-                          bgcolor:
-                            displayStatus === 'Paid'
-                              ? 'rgba(34, 197, 94, 0.1)'
-                              : displayStatus === 'N/A'
-                              ? 'rgba(107, 114, 128, 0.12)'
-                              : 'rgba(234, 179, 8, 0.1)',
-                          color:
-                            displayStatus === 'Paid'
-                              ? 'success.main'
-                              : displayStatus === 'N/A'
-                              ? 'text.secondary'
-                              : 'warning.main',
+                          bgcolor: statusColor,
+                          color: statusTextColor,
                           fontWeight: 600,
                           fontSize: '0.75rem',
                           borderRadius: 4,

@@ -1,6 +1,8 @@
 import {
   Dashboard as DashboardIcon,
   MeetingRoom,
+  FactCheck,
+  Logout,
   Warning,
   People,
   Notifications,
@@ -14,6 +16,8 @@ import {
 export const navItems = [
   { label: 'Dashboard', icon: DashboardIcon },
   { label: 'Rooms', icon: MeetingRoom },
+  { label: 'Room Requests', icon: FactCheck },
+  { label: 'Vacate Requests', icon: Logout },
   { label: 'Complaints', icon: Warning, badge: 5 },
   { label: 'Students', icon: People },
   { label: 'Notifications', icon: Notifications },

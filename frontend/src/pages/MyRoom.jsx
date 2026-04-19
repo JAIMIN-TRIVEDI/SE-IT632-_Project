@@ -56,6 +56,26 @@ function MyRoom({ dashboardData, searchQuery = '', onVacateRequested }) {
               </Typography>
             </Box>
           ) : null}
+
+          {vacateRequest ? (
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="body2" fontWeight={600}>
+                Vacate request status
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Status: {vacateRequest.status}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Reason: {vacateRequest.reason || 'N/A'}
+              </Typography>
+              {vacateRequest.processedBy?.name ? (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  Reviewed by: {vacateRequest.processedBy.name}
+                </Typography>
+              ) : null}
+            </Box>
+          ) : null}
+
           <Button variant="contained" onClick={() => navigate('/student/apply-room')}>
             Request a Room
           </Button>

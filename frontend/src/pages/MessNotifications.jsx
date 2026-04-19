@@ -41,7 +41,7 @@ function MessNotifications() {
             Stay updated with mess-related announcements and updates.
           </Typography>
         </Box>
-        <Card sx={{ p: 2, minWidth: 240, bgcolor: '#fff' }}>
+        <Card sx={{ p: 2, minWidth: 240, bgcolor: 'background.paper' }}>
           <Typography fontSize={12} color="text.secondary" gutterBottom>
             Total notifications
           </Typography>

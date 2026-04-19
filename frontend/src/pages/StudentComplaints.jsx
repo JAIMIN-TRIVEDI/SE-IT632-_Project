@@ -72,8 +72,8 @@ function ComplaintRow({ complaint, query = '' }) {
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-export default function StudentComplaints({ searchQuery = '' }) {
-  const [view, setView] = useState('new') // 'new' | 'list'
+export default function StudentComplaints({ searchQuery = '', onOpenComplaintsChange }) {
+  const [view, setView] = useState('list') // 'new' | 'list'
   const [form, setForm] = useState({ category: '', urgency: 'normal', title: '', description: '' })
   const [files, setFiles] = useState([])
   const [submitting, setSubmitting] = useState(false)
@@ -97,11 +97,16 @@ export default function StudentComplaints({ searchQuery = '' }) {
     if (view === 'list') {
       setLoadingList(true)
       api.get('/complaints')
-        .then((r) => setComplaints(r.data?.data || []))
+        .then((r) => {
+          const nextComplaints = r.data?.data || []
+          setComplaints(nextComplaints)
+          const openCount = nextComplaints.filter((complaint) => complaint.status !== 'resolved').length
+          onOpenComplaintsChange?.(openCount)
+        })
         .catch(() => notify('Failed to load complaints.', 'error'))
         .finally(() => setLoadingList(false))
     }
-  }, [view])
+  }, [view, onOpenComplaintsChange])
 
   const filteredComplaints = useMemo(() => {
     if (!searchQuery.trim()) {

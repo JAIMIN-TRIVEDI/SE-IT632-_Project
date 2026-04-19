@@ -12,11 +12,11 @@ export default function PaymentSummaryCards({ payments = [] }) {
       .reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
 
     const pendingTotal = hostelPayments
-      .filter((payment) => payment.status !== 'success')
+      .filter((payment) => payment.status === 'pending' || payment.status === 'failed')
       .reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
 
     const nextPending = hostelPayments
-      .filter((payment) => payment.status !== 'success')
+      .filter((payment) => payment.status === 'pending' || payment.status === 'failed')
       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0]
 
     return {

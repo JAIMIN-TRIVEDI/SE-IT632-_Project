@@ -45,7 +45,7 @@ const PAYMENT_STATUS_OPTIONS = ['all', 'success', 'pending', 'failed', 'refunded
 
 function StatsCard({ label, value }) {
   return (
-    <Card sx={{ minWidth: 200, bgcolor: '#fff' }}>
+    <Card sx={{ minWidth: 200, bgcolor: 'background.paper' }}>
       <CardContent>
         <Typography fontSize={12} color="text.secondary" gutterBottom>
           {label}

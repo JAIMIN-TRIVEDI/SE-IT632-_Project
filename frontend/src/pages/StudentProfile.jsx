@@ -39,6 +39,8 @@ const emptyForm = {
   email: "",
   phone: "",
   enrollmentNo: "",
+  course: "",
+  studyYear: "",
   gender: "",
   role: "",
   emergencyName: "",
@@ -78,6 +80,8 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
       form.name !== original.name ||
       form.phone !== original.phone ||
       form.enrollmentNo !== original.enrollmentNo ||
+      form.course !== original.course ||
+      String(form.studyYear || "") !== String(original.studyYear || "") ||
       form.emergencyName !== original.emergencyName ||
       form.emergencyRelationship !== original.emergencyRelationship ||
       form.emergencyPhone !== original.emergencyPhone ||
@@ -91,7 +95,7 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
         setError("");
         // fetch real profile
         const res = await api.get("/auth/me");
-        const u = res.data || {};
+        const u = res.data?.data || res.data?.user || res.data || {};
         // also try dashboard for room info
         try {
           const dash = await api.get("/user/student/dashboard");
@@ -106,6 +110,8 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
           email: u.email || "",
           phone: u.phone || "",
           enrollmentNo: u.enrollmentNo || "",
+          course: u.course || "",
+          studyYear: u.studyYear || "",
           gender: u.gender || "",
           role: u.role || "",
           emergencyName: u.emergencyName || "",
@@ -124,6 +130,8 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
             email: initialUser.email || "",
             phone: initialUser.phone || "",
             enrollmentNo: initialUser.enrollmentNo || "",
+            course: initialUser.course || "",
+            studyYear: initialUser.studyYear || "",
             gender: initialUser.gender || "",
             role: initialUser.role || "",
             emergencyName: "",
@@ -158,6 +166,8 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
         name: form.name,
         phone: form.phone,
         enrollmentNo: form.enrollmentNo,
+        course: form.course,
+        studyYear: form.studyYear ? Number(form.studyYear) : null,
         emergencyName: form.emergencyName,
         emergencyRelationship: form.emergencyRelationship,
         emergencyPhone: form.emergencyPhone,
@@ -168,6 +178,8 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
         ...form,
         name: u.name || form.name,
         phone: u.phone || form.phone,
+        course: u.course ?? form.course,
+        studyYear: u.studyYear ?? form.studyYear,
       };
       setForm(updated);
       setOriginal(updated);
@@ -335,17 +347,6 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
             </Box>
           </Box>
 
-          <Button
-            variant="outlined"
-            sx={{
-              borderRadius: 2,
-              fontWeight: 600,
-              textTransform: "none",
-              flexShrink: 0,
-            }}
-          >
-            View History
-          </Button>
         </Box>
       </Card>
 
@@ -382,6 +383,7 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
                 value={form.name}
                 onChange={handleChange("name")}
                 required
+                disabled
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
               />
             </Grid>
@@ -419,6 +421,49 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
                 value={form.email}
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
               />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography
+                fontSize={13}
+                fontWeight={600}
+                color="text.secondary"
+                mb={0.8}
+              >
+                Course
+              </Typography>
+              <TextField
+                fullWidth
+                value={form.course}
+                onChange={handleChange("course")}
+                placeholder="e.g. B.Tech CSE"
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography
+                fontSize={13}
+                fontWeight={600}
+                color="text.secondary"
+                mb={0.8}
+              >
+                Study Year
+              </Typography>
+              <TextField
+                select
+                fullWidth
+                value={String(form.studyYear || "")}
+                onChange={handleChange("studyYear")}
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+              >
+                <MenuItem value="">
+                  <em>Select year</em>
+                </MenuItem>
+                {[1, 2, 3, 4].map((year) => (
+                  <MenuItem key={year} value={String(year)}>
+                    Year {year}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Grid>
           </Grid>
         </Card>

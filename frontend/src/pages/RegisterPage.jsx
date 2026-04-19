@@ -9,6 +9,7 @@ import {
   Stack,
   Grid,
   TextField,
+  MenuItem,
   Radio,
   RadioGroup,
   InputAdornment,
@@ -28,6 +29,8 @@ function RegisterPage() {
     email: "",
     phone: "",
     studentId: "",
+    course: "",
+    studyYear: "",
     gender: "",
     password: "",
     confirmPassword: "",
@@ -84,6 +87,8 @@ function RegisterPage() {
         email: formData.email,
         phone: formData.phone,
         enrollmentNo: formData.studentId,
+        course: formData.course,
+        studyYear: formData.studyYear ? Number(formData.studyYear) : undefined,
         gender: formData.gender,
         password: formData.password,
         role: "student",
@@ -186,6 +191,32 @@ function RegisterPage() {
                   value={formData.studentId}
                   onChange={handleChange}
                   icon="🎓"
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Year"
+                  name="studyYear"
+                  value={formData.studyYear}
+                  onChange={handleChange}
+                >
+                  {[1, 2, 3, 4].map((year) => (
+                    <MenuItem key={year} value={String(year)}>
+                      Year {year}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <TextField
+                  fullWidth
+                  label="Course"
+                  name="course"
+                  placeholder="B.Tech CSE"
+                  value={formData.course}
+                  onChange={handleChange}
                 />
               </Grid>
             </Grid>

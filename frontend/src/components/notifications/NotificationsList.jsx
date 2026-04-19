@@ -48,7 +48,20 @@ function NotificationsList({
           />
         </Box>
       )}
-
+         {/* Mark all read button */}
+      {showMarkAllButton && onMarkAllRead && unreadCount > 0 && !loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+          <Button
+            variant="outlined"
+            disabled={markingAll}
+            onClick={onMarkAllRead}
+            startIcon={<DoneAll fontSize="small" />}
+            sx={{ textTransform: 'none', borderRadius: 2 }}
+          >
+            {markingAll ? 'Marking...' : 'Mark All as Read'}
+          </Button>
+        </Box>
+      ) : null}
       {/* Loading state */}
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
@@ -91,20 +104,7 @@ function NotificationsList({
         </Stack>
       ) : null}
 
-      {/* Mark all read button */}
-      {showMarkAllButton && onMarkAllRead && unreadCount > 0 && !loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-          <Button
-            variant="outlined"
-            disabled={markingAll}
-            onClick={onMarkAllRead}
-            startIcon={<DoneAll fontSize="small" />}
-            sx={{ textTransform: 'none', borderRadius: 2 }}
-          >
-            {markingAll ? 'Marking...' : 'Mark All as Read'}
-          </Button>
-        </Box>
-      ) : null}
+   
     </Box>
   )
 }

@@ -44,6 +44,12 @@ const VacateRequestSchema = new mongoose.Schema({
   },
 
   processedAt: Date
+  ,
+
+  rejectionReason: {
+    type: String,
+    default: ""
+  }
 
 }, { timestamps: true });
 

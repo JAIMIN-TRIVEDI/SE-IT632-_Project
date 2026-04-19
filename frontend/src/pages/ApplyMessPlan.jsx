@@ -572,6 +572,16 @@ export default function ApplyMessPlan() {
     setPaying(true);
     setError(null);
 
+    const markPaymentFailed = async (orderId, reason) => {
+      if (!orderId) return;
+
+      try {
+        await api.post('/payments/fail', { orderId, reason });
+      } catch (_) {
+        // Failure state persistence is best-effort.
+      }
+    };
+
     try {
       // 1. Create Razorpay order
       const orderRes = await api.post("/mess/order", { planId: plan._id });
@@ -583,10 +593,12 @@ export default function ApplyMessPlan() {
 
       // 3. Load Razorpay script
       const loaded = await loadRazorpay();
-      if (!loaded)
+      if (!loaded) {
+        await markPaymentFailed(order.id, 'Unable to load Razorpay checkout script');
         throw new Error(
           "Could not load Razorpay. Check your internet connection.",
         );
+      }
 
       // 4. Open Razorpay checkout
       const options = {
@@ -601,6 +613,7 @@ export default function ApplyMessPlan() {
         theme: { color: "#2f61ff" },
         modal: {
           ondismiss: () => {
+            markPaymentFailed(order.id, 'Checkout dismissed by user');
             setPaying(false);
             setSelectedPlan(null);
             notify("Payment cancelled.", "warning");
@@ -633,6 +646,10 @@ export default function ApplyMessPlan() {
 
       const razorpayInstance = new window.Razorpay(options);
       razorpayInstance.on("payment.failed", (resp) => {
+        markPaymentFailed(
+          resp?.error?.metadata?.order_id || order.id,
+          resp?.error?.description || 'Payment failed',
+        );
         setError(`Payment failed: ${resp.error.description}`);
         notify("Payment failed. Please try again.", "error");
         setPaying(false);

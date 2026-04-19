@@ -43,6 +43,15 @@ function StudentDashboard({ mode = 'light', onToggleTheme }) {
     setSearchQuery('')
   }, [activeNav])
 
+  const handleOpenComplaintsChange = useCallback((openCount) => {
+    setDashboardData((prev) => {
+      if (!prev || prev.openComplaints === openCount) {
+        return prev
+      }
+      return { ...prev, openComplaints: openCount }
+    })
+  }, [])
+
   const getSearchPlaceholder = () => {
     switch (activeNav) {
       case 'Payments':
@@ -117,7 +126,12 @@ function StudentDashboard({ mode = 'light', onToggleTheme }) {
       case 'Mess Subscription':
         return <ApplyMessPlan />
       case 'Complaints':
-        return <StudentComplaints searchQuery={searchQuery} />
+        return (
+          <StudentComplaints
+            searchQuery={searchQuery}
+            onOpenComplaintsChange={handleOpenComplaintsChange}
+          />
+        )
       case 'Notifications':
         return <StudentNotifications searchQuery={searchQuery} />
       case 'Profile':
