@@ -64,6 +64,10 @@ function MyRoom({ dashboardData, searchQuery = '', onVacateRequested }) {
     return `${request.status.charAt(0).toUpperCase() + request.status.slice(1)} / ${request.paymentStatus.charAt(0).toUpperCase() + request.paymentStatus.slice(1)}`
   }, [request])
 
+  const shouldShowCurrentRequest = Boolean(
+    request && request.paymentStatus !== 'paid' && request.status !== 'rejected',
+  )
+
   const markPaymentFailed = async (orderId, reason) => {
     if (!orderId) return
     try {
@@ -159,7 +163,7 @@ function MyRoom({ dashboardData, searchQuery = '', onVacateRequested }) {
           <Typography color="text.secondary" sx={{ mb: 3 }}>
             You do not have an assigned room yet. Please request a room and complete payment to get assigned.
           </Typography>
-          {request ? (
+          {shouldShowCurrentRequest ? (
             <Box sx={{ mb: 3 }}>
               <Typography variant="body2" fontWeight={600}>
                 Current request status
@@ -195,9 +199,14 @@ function MyRoom({ dashboardData, searchQuery = '', onVacateRequested }) {
             </Box>
           ) : null}
 
-          <Button variant="contained" onClick={() => navigate('/student/apply-room')}>
-            Request a Room
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+            <Button variant="contained" onClick={() => navigate('/student/apply-room')}>
+              Choose Specific Room
+            </Button>
+            <Button variant="outlined" onClick={() => navigate('/student/apply-room')}>
+              Request Random Room
+            </Button>
+          </Box>
         </Card>
       </Box>
     )

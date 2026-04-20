@@ -9,7 +9,7 @@ const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
 export const registerUserService = async (payload) => {
-  const { name, email, password, enrollmentNo, phone, gender, role, course, studyYear } = payload;
+  const { name, email, password, enrollmentNo, phone, gender, role, course, studyYear, admissionYear } = payload;
   const normalizedEmail = email?.toLowerCase();
   const normalizedRole = role || "student";
 
@@ -41,6 +41,9 @@ export const registerUserService = async (payload) => {
     role: normalizedRole,
     course: validatedCourse,
     studyYear: validatedStudyYear,
+    admissionYear: normalizedRole === "student"
+      ? Number(admissionYear || new Date().getFullYear())
+      : undefined,
   });
 
   return {
@@ -74,6 +77,8 @@ export const loginUserService = async (email, password) => {
       enrollmentNo: user.enrollmentNo,
       course: user.course,
       studyYear: user.studyYear,
+      admissionYear: user.admissionYear,
+      isActive: user.isActive,
     },
   };
 };
@@ -126,6 +131,9 @@ export const updateProfileService = async (userId, payload) => {
   if (payload.name !== undefined) user.name = payload.name;
   if (payload.phone !== undefined) user.phone = payload.phone;
   if (payload.enrollmentNo !== undefined) user.enrollmentNo = payload.enrollmentNo;
+  if (payload.admissionYear !== undefined && user.role === "student") {
+    user.admissionYear = Number(payload.admissionYear);
+  }
   const shouldValidateAcademic =
     user.role === "student" &&
     (payload.course !== undefined || payload.studyYear !== undefined);

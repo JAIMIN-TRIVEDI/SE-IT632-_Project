@@ -665,9 +665,7 @@ export const hostelStudentsReport = async (req, res) => {
       .sort({ name: 1 })
       .lean();
 
-    const allocations = await RoomAllocation.find({
-      status: "active",
-    })
+    const allocations = await RoomAllocation.find({})
       .populate({
         path: "studentId",
         select: "name email phone enrollmentNo gender isActive",
@@ -722,6 +720,7 @@ export const hostelStudentsReport = async (req, res) => {
         enrollmentNo: student?.enrollmentNo || "",
         gender: student?.gender || "",
         isActive: student?.isActive ?? true,
+        allocationStatus: allocation.status || "unknown",
         roomId: allocation.roomId?._id || null,
         roomNumber: allocation.roomId?.roomNumber || null,
         roomType: allocation.roomId?.roomType || null,
@@ -778,7 +777,6 @@ export const wardenHostelStudentsReport = async (req, res) => {
     }
 
     const allocations = await RoomAllocation.find({
-      status: "active",
       hostelId: { $in: allowedHostelIds },
     })
       .populate({
@@ -835,6 +833,7 @@ export const wardenHostelStudentsReport = async (req, res) => {
         enrollmentNo: student?.enrollmentNo || "",
         gender: student?.gender || "",
         isActive: student?.isActive ?? true,
+        allocationStatus: allocation.status || "unknown",
         roomId: allocation.roomId?._id || null,
         roomNumber: allocation.roomId?.roomNumber || null,
         roomType: allocation.roomId?.roomType || null,

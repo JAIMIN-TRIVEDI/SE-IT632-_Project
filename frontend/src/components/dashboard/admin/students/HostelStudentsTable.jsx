@@ -121,8 +121,9 @@ function HostelStudentsTable({ selectedHostelName, rows }) {
                   <TableCell>
                     <Chip
                       size="small"
-                      label={student.isActive ? 'Active' : 'Inactive'}
-                      color={student.isActive ? 'success' : 'default'}
+                      label={student.allocationStatus || (student.isActive ? 'active' : 'inactive')}
+                      color={student.allocationStatus === 'active' ? 'success' : 'default'}
+                      sx={{ textTransform: 'capitalize' }}
                     />
                   </TableCell>
                 </TableRow>

@@ -25,6 +25,24 @@ const RoomAllocationSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    currentSemester: {
+        type: Number,
+        min: 1,
+        default: 1,
+    },
+    totalSemesters: {
+        type: Number,
+        min: 1,
+        default: 1,
+    },
+    admissionYear: {
+        type: Number,
+        min: 2000,
+    },
+    courseName: {
+        type: String,
+        trim: true,
+    },
     semesterStartDate: {
         type: Date,
         default: Date.now,

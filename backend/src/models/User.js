@@ -8,8 +8,9 @@ const UserSchema = new mongoose.Schema({
   phone: { type: String },
   enrollmentNo: { type: String, trim: true },
   course: { type: String, trim: true },
-  studyYear: { type: Number, min: 1, max: 8 },
-  gender: { type: String, enum: ["male", "female"], required: true },
+  studyYear: { type: Number, min: 1, max: 12 },
+  admissionYear: { type: Number, min: 2000, max: 2100 },
+  gender: { type: String, enum: ["male", "female", "other"], required: true, default: "other" },
   role: { type: String, enum: ["student", "warden", "hostel_admin", "mess_admin"], required: true },
   isActive: { type: Boolean, default: true },
 

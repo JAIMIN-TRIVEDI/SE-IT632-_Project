@@ -13,7 +13,14 @@ import {
   updateAcademicSettings,
 } from '../../../services/hostelService'
 
-const createEmptyCourse = () => ({ name: '', totalSemesters: '' })
+const createEmptyCourse = () => ({
+  name: '',
+  totalSemesters: '',
+  oddSemesterStartDate: '',
+  oddSemesterEndDate: '',
+  evenSemesterStartDate: '',
+  evenSemesterEndDate: '',
+})
 
 const toDateInput = (value) => {
   if (!value) return ''
@@ -32,8 +39,7 @@ function HostelsView() {
   const [editingHostel, setEditingHostel] = useState(null)
   const [academicSaving, setAcademicSaving] = useState(false)
   const [academicForm, setAcademicForm] = useState({
-    semesterStartDate: '',
-    semesterEndDate: '',
+    renewalWindowDays: 7,
     courses: [createEmptyCourse()],
   })
 
@@ -49,12 +55,15 @@ function HostelsView() {
 
         if (settings) {
           setAcademicForm({
-            semesterStartDate: toDateInput(settings.semesterStartDate),
-            semesterEndDate: toDateInput(settings.semesterEndDate),
+            renewalWindowDays: Number(settings.renewalWindowDays || 7),
             courses: Array.isArray(settings.courses) && settings.courses.length > 0
               ? settings.courses.map((course) => ({
                 name: course.name || '',
                 totalSemesters: String(course.totalSemesters || ''),
+                oddSemesterStartDate: toDateInput(course.oddSemesterStartDate),
+                oddSemesterEndDate: toDateInput(course.oddSemesterEndDate),
+                evenSemesterStartDate: toDateInput(course.evenSemesterStartDate),
+                evenSemesterEndDate: toDateInput(course.evenSemesterEndDate),
               }))
               : [createEmptyCourse()],
           })
@@ -133,10 +142,6 @@ function HostelsView() {
     }
   }
 
-  const handleAcademicFieldChange = (field, value) => {
-    setAcademicForm((prev) => ({ ...prev, [field]: value }))
-  }
-
   const handleCourseChange = (index, field, value) => {
     setAcademicForm((prev) => ({
       ...prev,
@@ -169,33 +174,46 @@ function HostelsView() {
         .map((course) => ({
           name: String(course.name || '').trim(),
           totalSemesters: Number(course.totalSemesters),
+          oddSemesterStartDate: course.oddSemesterStartDate,
+          oddSemesterEndDate: course.oddSemesterEndDate,
+          evenSemesterStartDate: course.evenSemesterStartDate,
+          evenSemesterEndDate: course.evenSemesterEndDate,
           isActive: true,
         }))
         .filter((course) => course.name)
-
-      if (!academicForm.semesterStartDate || !academicForm.semesterEndDate) {
-        setError('Please configure semester start and end dates.')
-        return
-      }
 
       if (courses.length === 0) {
         setError('Please add at least one course with semester count.')
         return
       }
 
+      const hasMissingDates = courses.some(
+        (course) =>
+          !course.oddSemesterStartDate ||
+          !course.oddSemesterEndDate ||
+          !course.evenSemesterStartDate ||
+          !course.evenSemesterEndDate,
+      )
+
+      if (hasMissingDates) {
+        setError('Each course must include odd/even semester start and end dates.')
+        return
+      }
+
       const updated = await updateAcademicSettings({
-        semesterStartDate: academicForm.semesterStartDate,
-        semesterEndDate: academicForm.semesterEndDate,
-        renewalWindowDays: 7,
+        renewalWindowDays: Number(academicForm.renewalWindowDays || 7),
         courses,
       })
 
       setAcademicForm({
-        semesterStartDate: toDateInput(updated.semesterStartDate),
-        semesterEndDate: toDateInput(updated.semesterEndDate),
+        renewalWindowDays: Number(updated.renewalWindowDays || 7),
         courses: (updated.courses || []).map((course) => ({
           name: course.name || '',
           totalSemesters: String(course.totalSemesters || ''),
+          oddSemesterStartDate: toDateInput(course.oddSemesterStartDate),
+          oddSemesterEndDate: toDateInput(course.oddSemesterEndDate),
+          evenSemesterStartDate: toDateInput(course.evenSemesterStartDate),
+          evenSemesterEndDate: toDateInput(course.evenSemesterEndDate),
         })),
       })
     } catch (err) {
@@ -228,75 +246,7 @@ function HostelsView() {
         </Alert>
       )}
 
-      <Card sx={{ p: 3, mb: 3, border: '1px solid', borderColor: 'divider' }}>
-        <Typography variant="h6" fontWeight={800} sx={{ mb: 1 }}>
-          Academic Rules
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Set semester dates and allowed courses. Only listed courses can be selected by students.
-          Students above course semester limit will be blocked from room allocation.
-        </Typography>
-
-        <Grid container spacing={2} sx={{ mb: 2 }}>
-          <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              type="date"
-              label="Semester Start Date"
-              value={academicForm.semesterStartDate}
-              onChange={(event) => handleAcademicFieldChange('semesterStartDate', event.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              type="date"
-              label="Semester End Date"
-              value={academicForm.semesterEndDate}
-              onChange={(event) => handleAcademicFieldChange('semesterEndDate', event.target.value)}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Grid>
-        </Grid>
-
-        <Divider sx={{ my: 2 }} />
-
-        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
-          Course List
-        </Typography>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {academicForm.courses.map((course, index) => (
-            <Box key={`course-${index}`} sx={{ display: 'grid', gridTemplateColumns: '1fr 220px 48px', gap: 1.5 }}>
-              <TextField
-                label="Course Name"
-                value={course.name}
-                onChange={(event) => handleCourseChange(index, 'name', event.target.value)}
-              />
-              <TextField
-                type="number"
-                label="Total Semesters"
-                value={course.totalSemesters}
-                onChange={(event) => handleCourseChange(index, 'totalSemesters', event.target.value)}
-                inputProps={{ min: 1, max: 20 }}
-              />
-              <IconButton color="error" onClick={() => handleRemoveCourse(index)}>
-                <DeleteOutline />
-              </IconButton>
-            </Box>
-          ))}
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
-          <Button variant="outlined" onClick={handleAddCourse}>
-            Add Course
-          </Button>
-          <Button variant="contained" onClick={handleSaveAcademicSettings} disabled={academicSaving}>
-            {academicSaving ? 'Saving...' : 'Save Academic Settings'}
-          </Button>
-        </Box>
-      </Card>
+    
 
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -342,6 +292,107 @@ function HostelsView() {
           ))}
         </Grid>
       )}
+      <br />
+        <Card sx={{ p: 3, mb: 3, border: '1px solid', borderColor: 'divider' }}>
+        <Typography variant="h6" fontWeight={800} sx={{ mb: 1 }}>
+          Academic Rules
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Configure allowed courses and odd/even semester date windows.
+          Students above course semester limit will be blocked from room allocation.
+        </Typography>
+
+        <Box sx={{ mb: 2, maxWidth: 500 }}>
+          <TextField
+            fullWidth
+            type="number"
+            label="Renewal Window (Days Before Next Semester Start)"
+            value={academicForm.renewalWindowDays}
+            onChange={(event) => setAcademicForm((prev) => ({
+              ...prev,
+              renewalWindowDays: event.target.value,
+            }))}
+            inputProps={{ min: 1, max: 60 }}
+          />
+        </Box>
+
+        <Divider sx={{ my: 2 }} />
+
+        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
+          Course List
+        </Typography>
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {academicForm.courses.map((course, index) => (
+            <Box
+              key={`course-${index}`}
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: '1fr 180px 1fr 1fr 1fr 1fr 48px' },
+                gap: 1.5,
+                alignItems: 'center',
+              }}
+            >
+              <TextField
+                label="Course Name"
+                value={course.name}
+                onChange={(event) => handleCourseChange(index, 'name', event.target.value)}
+              />
+              <TextField
+                type="number"
+                label="Total Semesters"
+                value={course.totalSemesters}
+                onChange={(event) => handleCourseChange(index, 'totalSemesters', event.target.value)}
+                inputProps={{ min: 1, max: 20 }}
+              />
+              <TextField
+                fullWidth
+                type="date"
+                label="Odd Sem Start"
+                value={course.oddSemesterStartDate}
+                onChange={(event) => handleCourseChange(index, 'oddSemesterStartDate', event.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                fullWidth
+                type="date"
+                label="Odd Sem End"
+                value={course.oddSemesterEndDate}
+                onChange={(event) => handleCourseChange(index, 'oddSemesterEndDate', event.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                fullWidth
+                type="date"
+                label="Even Sem Start"
+                value={course.evenSemesterStartDate}
+                onChange={(event) => handleCourseChange(index, 'evenSemesterStartDate', event.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                fullWidth
+                type="date"
+                label="Even Sem End"
+                value={course.evenSemesterEndDate}
+                onChange={(event) => handleCourseChange(index, 'evenSemesterEndDate', event.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+              <IconButton color="error" onClick={() => handleRemoveCourse(index)}>
+                <DeleteOutline />
+              </IconButton>
+            </Box>
+          ))}
+        </Box>
+
+        <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
+          <Button variant="outlined" onClick={handleAddCourse}>
+            Add Course
+          </Button>
+          <Button variant="contained" onClick={handleSaveAcademicSettings} disabled={academicSaving}>
+            {academicSaving ? 'Saving...' : 'Save Academic Settings'}
+          </Button>
+        </Box>
+      </Card>
 
       {/* Reusable dialog for Create/Edit */}
       <HostelFormDialog
@@ -351,7 +402,10 @@ function HostelsView() {
         initialData={editingHostel}
         loading={saving}
       />
+
+      
     </Box>
+    
   )
 }
 

@@ -83,16 +83,27 @@ function ApplyRoom() {
   useEffect(() => {
     const bootstrap = async () => {
       try {
-        const [requestRes, roomsRes, dashboardRes] = await Promise.all([
+        const [requestRes, roomsRes, dashboardRes] = await Promise.allSettled([
           api.get("/room-requests/me"),
           api.get("/room-requests/available"),
           api.get("/user/student/dashboard"),
         ]);
-        const request = requestRes.data?.data || null;
-        setCurrentRequest(request);
-        setAvailableRooms(roomsRes.data?.data || []);
-        setActiveRoom(dashboardRes.data?.data?.room || null);
 
+        if (requestRes.status === "fulfilled") {
+          setCurrentRequest(requestRes.value.data?.data || null);
+        }
+
+        if (dashboardRes.status === "fulfilled") {
+          setActiveRoom(dashboardRes.value.data?.data?.room || null);
+        }
+
+        if (roomsRes.status === "fulfilled") {
+          setAvailableRooms(roomsRes.value.data?.data || []);
+        } else if (roomsRes.reason?.response?.status !== 403) {
+          throw roomsRes.reason;
+        }
+
+        const request = requestRes.status === "fulfilled" ? requestRes.value.data?.data || null : null;
         if (request?.status === "rejected") {
           setAllowNewRequestAfterRejection(false);
         }
@@ -193,6 +204,7 @@ function ApplyRoom() {
     !activeRoom && (
       !currentRequest ||
       currentRequest.status === "rejected" ||
+      currentRequest.paymentStatus === "paid" ||
       allowNewRequestAfterRejection
     );
 
@@ -201,10 +213,14 @@ function ApplyRoom() {
     currentRequest.status === "approved" &&
     currentRequest.paymentStatus === "pending";
 
-  const hasCompletedRequest =
-    currentRequest && currentRequest.paymentStatus === "paid";
-
   const hasActiveRoom = Boolean(activeRoom);
+
+  const shouldShowRequestStatusCard =
+    Boolean(currentRequest) &&
+    !hasActiveRoom &&
+    !allowNewRequestAfterRejection &&
+    currentRequest.status !== "rejected" &&
+    currentRequest.paymentStatus !== "paid";
 
   const startRazorpayPayment = async (requestData) => {
     const orderResponse = await api.post("/payments/order", {
@@ -357,39 +373,6 @@ function ApplyRoom() {
     );
   }
 
-  if (hasCompletedRequest) {
-    return (
-      <Box sx={{ p: { xs: 2, md: 4 } }}>
-        <Card sx={{ p: 3, border: "1px solid", borderColor: "divider" }}>
-          <Typography variant="h5" fontWeight="bold" gutterBottom>
-            Room Request Status
-          </Typography>
-          <Typography sx={{ mb: 1 }}>
-            Request status: <strong>{currentRequest.status}</strong>
-          </Typography>
-          <Typography sx={{ mb: 1 }}>
-            Payment status: <strong>{currentRequest.paymentStatus}</strong>
-          </Typography>
-          <Typography sx={{ mb: 1 }}>
-            Requested room type: <strong>{currentRequest.roomType}</strong>
-          </Typography>
-          <Typography sx={{ mb: 1 }}>
-            Amount: <strong>₹{currentRequest.amount}</strong>
-          </Typography>
-          <Typography color="text.secondary" sx={{ mb: 3 }}>
-            Payment has been completed. Your room allocation is now confirmed.
-          </Typography>
-          <Button
-            variant="contained"
-            onClick={() => navigate("/student/dashboard")}
-          >
-            Go to Dashboard
-          </Button>
-        </Card>
-      </Box>
-    );
-  }
-
   return (
     <Box
       sx={{
@@ -427,7 +410,7 @@ function ApplyRoom() {
         </Alert>
       )}
 
-      {currentRequest && !canCreateNewRequest && (
+      {shouldShowRequestStatusCard && (
         <Card sx={{ p: 3, mb: 3, borderRadius: 3 }}>
           <Box
             sx={{
@@ -502,6 +485,12 @@ function ApplyRoom() {
               {currentRequest.rejectionReason
                 ? `Request rejected: ${currentRequest.rejectionReason}`
                 : "Your request was rejected. You can submit a new one."}
+            </Alert>
+          )}
+
+          {currentRequest.paymentStatus === "paid" && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Payment is completed. If your room is not assigned yet, please wait for the allocation process to finish.
             </Alert>
           )}
 

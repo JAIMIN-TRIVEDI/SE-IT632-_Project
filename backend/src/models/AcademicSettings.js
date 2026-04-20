@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const AcademicCourseSchema = new mongoose.Schema(
     {
         name: {
-            type: String, enum: ["B.Tech", "M.Tech", "PhD", "MBA", "MCA", "BBA", "BCA"],
+            type: String,
             required: true,
             trim: true,
         },
@@ -12,6 +12,22 @@ const AcademicCourseSchema = new mongoose.Schema(
             required: true,
             min: 1,
             max: 10,
+        },
+        oddSemesterStartDate: {
+            type: Date,
+            required: true,
+        },
+        oddSemesterEndDate: {
+            type: Date,
+            required: true,
+        },
+        evenSemesterStartDate: {
+            type: Date,
+            required: true,
+        },
+        evenSemesterEndDate: {
+            type: Date,
+            required: true,
         },
         isActive: {
             type: Boolean,

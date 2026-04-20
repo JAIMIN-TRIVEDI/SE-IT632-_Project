@@ -172,6 +172,32 @@ export function AuthProvider({ children }) {
     [applyAuthState],
   );
 
+  const googleLogin = useCallback(
+    async ({ accessToken, email, name }) => {
+      const { data } = await api.post("/auth/google", {
+        accessToken,
+        email,
+        name,
+      });
+      const authData = normalizeAuthPayload(data);
+
+      applyAuthState(
+        authData?.user,
+        authData?.token,
+        authData?.sessionExpiresAt,
+      );
+
+      if (authData?.refreshToken) {
+        setStoredRefreshToken(authData.refreshToken);
+      }
+
+      return authData;
+    },
+    [applyAuthState],
+  );
+
+  const socialLogin = googleLogin;
+
   const logout = useCallback(async () => {
     try {
       await api.post("/auth/logout");
@@ -202,6 +228,8 @@ export function AuthProvider({ children }) {
       isInitializing,
       authLoading: isInitializing,
       login,
+      googleLogin,
+      socialLogin,
       logout,
       refreshMe,
       refreshAuth: refreshMe,
@@ -212,6 +240,8 @@ export function AuthProvider({ children }) {
       isAuthenticated,
       isInitializing,
       login,
+      googleLogin,
+      socialLogin,
       logout,
       refreshMe,
       applyAuthState,

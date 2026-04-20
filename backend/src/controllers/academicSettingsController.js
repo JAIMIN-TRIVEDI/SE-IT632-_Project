@@ -24,6 +24,10 @@ const toApiPayload = (settings) => {
             ? settings.courses.map((course) => ({
                 name: course.name,
                 totalSemesters: Number(course.totalSemesters || 0),
+                oddSemesterStartDate: course.oddSemesterStartDate,
+                oddSemesterEndDate: course.oddSemesterEndDate,
+                evenSemesterStartDate: course.evenSemesterStartDate,
+                evenSemesterEndDate: course.evenSemesterEndDate,
                 isActive: course.isActive !== false,
             }))
             : [],

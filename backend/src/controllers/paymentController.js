@@ -7,13 +7,15 @@ import RoomAllocation from "../models/RoomAllocation.js";
 import User from "../models/User.js";
 import { sendPaymentSuccessNotification } from "../services/notificationService.js";
 import {
-  getConfiguredCycleDates,
   getAllocationRenewalCycleKey,
   isRenewalWindowOpen,
   renewAllocationForNextSemester,
   syncAllocationRenewalStatus,
 } from "../services/roomRenewalService.js";
-import { validateStudentCourseAndSemester } from "../services/academicPolicyService.js";
+import {
+  getSemesterTimelineForStudent,
+  validateStudentCourseAndSemester,
+} from "../services/academicPolicyService.js";
 
 const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -47,7 +49,19 @@ export const createOrder = async (req, res) => {
 
   const { amount, purpose, subscriptionId, type } = req.body;
   const normalizedType = type || "room_request";
-  const student = await User.findById(req.user._id).select("course studyYear").lean();
+  const student = await User.findById(req.user._id)
+    .select("course studyYear admissionYear isActive")
+    .lean();
+
+  if (!student) {
+    return res.status(404).json({ message: "Student profile not found." });
+  }
+
+  if (!student?.isActive) {
+    return res.status(403).json({
+      message: "Only active college students are eligible for hostel room allocation and renewal.",
+    });
+  }
 
   let payableAmount = Number(amount);
   let payablePurpose = purpose;
@@ -134,7 +148,7 @@ export const createOrder = async (req, res) => {
 
     if (!isRenewalWindowOpen(allocation)) {
       return res.status(400).json({
-        message: "Hostel renewal payment is allowed only during the 1-week window after semester start.",
+        message: "Hostel renewal payment is allowed only during the admin-configured window before next semester starts.",
         data: {
           paymentWindowStart: allocation.renewalWindowStart,
           paymentWindowEnd: allocation.renewalWindowEnd,
@@ -257,7 +271,7 @@ export const verifyPayment = async (req, res) => {
 
     if (!isRenewalWindowOpen(allocation)) {
       return res.status(400).json({
-        message: "Renewal payment verification is outside the semester payment window.",
+        message: "Renewal payment verification is outside the configured pre-semester payment window.",
       });
     }
 
@@ -302,17 +316,39 @@ export const verifyPayment = async (req, res) => {
       }
       await room.save();
 
-      const cycle = await getConfiguredCycleDates(new Date());
+      const studentProfile = await User.findById(payment.userId)
+        .select("course studyYear admissionYear isActive")
+        .lean();
+
+      if (!studentProfile) {
+        return res.status(404).json({ message: "Student profile not found for allocation." });
+      }
+
+      if (!studentProfile?.isActive) {
+        return res.status(403).json({
+          message: "Only active college students are eligible for hostel room allocation.",
+        });
+      }
+
+      const timeline = await getSemesterTimelineForStudent({
+        course: studentProfile?.course,
+        semesterNumber: studentProfile?.studyYear,
+        admissionYear: studentProfile?.admissionYear,
+      });
 
       await RoomAllocation.create({
         studentId: payment.userId,
         roomId: room._id,
         hostelId: room.hostelId,
         status: "active",
-        semesterStartDate: cycle.semesterStartDate,
-        semesterEndDate: cycle.semesterEndDate,
-        renewalWindowStart: cycle.renewalWindowStart,
-        renewalWindowEnd: cycle.renewalWindowEnd,
+        courseName: timeline.course,
+        admissionYear: Number(studentProfile?.admissionYear || new Date().getFullYear()),
+        currentSemester: Number(timeline.semesterNumber || studentProfile?.studyYear || 1),
+        totalSemesters: Number(timeline.totalSemesters || 1),
+        semesterStartDate: timeline.semesterStartDate,
+        semesterEndDate: timeline.semesterEndDate,
+        renewalWindowStart: timeline.renewalWindowStart,
+        renewalWindowEnd: timeline.renewalWindowEnd,
         renewalStatus: "not_due",
       });
 

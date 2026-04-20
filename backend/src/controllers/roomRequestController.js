@@ -5,6 +5,7 @@ import Hostel from "../models/Hostel.js";
 import User from "../models/User.js";
 import { createNotification } from "../services/notificationService.js";
 import { validateStudentCourseAndSemester } from "../services/academicPolicyService.js";
+import { isRenewalWindowOpen, syncAllocationRenewalStatus } from "../services/roomRenewalService.js";
 
 const DEFAULT_ROOM_PRICING = {
     double: 30000,
@@ -97,7 +98,10 @@ const getRoomWithResidents = async ({ hostelIds, roomType }) => {
 
 export const getAvailableRooms = async (req, res) => {
     try {
-        const student = await User.findById(req.user._id).select("course studyYear").lean();
+        const student = await User.findById(req.user._id).select("course studyYear isActive").lean();
+        if (!student?.isActive) {
+            return res.status(403).json({ message: "Only active college students are eligible for hostel room allocation." });
+        }
         await validateStudentCourseAndSemester({
             course: student?.course,
             studyYear: student?.studyYear,
@@ -147,7 +151,10 @@ export const createRoomRequest = async (req, res) => {
     try {
         const { roomType, roomId, requestMode = "random" } = req.body;
 
-        const student = await User.findById(req.user._id).select("course studyYear").lean();
+        const student = await User.findById(req.user._id).select("course studyYear isActive").lean();
+        if (!student?.isActive) {
+            return res.status(403).json({ message: "Only active college students are eligible for hostel room allocation." });
+        }
         await validateStudentCourseAndSemester({
             course: student?.course,
             studyYear: student?.studyYear,
@@ -169,7 +176,19 @@ export const createRoomRequest = async (req, res) => {
 
         const activeAllocation = await getActiveAllocation(req.user._id);
         if (activeAllocation) {
-            return res.status(400).json({ message: "You already have an assigned room." });
+            // Student has an active room - only allow renewal during the renewal window
+            await syncAllocationRenewalStatus(activeAllocation, { autoVacateIfExpired: true });
+
+            if (!isRenewalWindowOpen(activeAllocation)) {
+                return res.status(403).json({
+                    message: "You can only renew your hostel room during the admin-configured renewal window before the next semester starts.",
+                    data: {
+                        renewalWindowStart: activeAllocation.renewalWindowStart,
+                        renewalWindowEnd: activeAllocation.renewalWindowEnd,
+                        currentTime: new Date(),
+                    },
+                });
+            }
         }
 
         const existingOpen = await hasActiveOrPendingRequest(req.user._id);

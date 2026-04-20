@@ -4,6 +4,7 @@ import User from "../models/User.js";
 import { createNotification } from "./notificationService.js";
 import {
   getAcademicCycleDates,
+  getSemesterTimelineForStudent,
   isStudentCourseCompleted,
 } from "./academicPolicyService.js";
 
@@ -36,11 +37,17 @@ const toCycleKey = (date) => {
   return `${year}-${month}-${day}`;
 };
 
+const getStudentAcademicSnapshot = async (studentId) => {
+  return User.findById(studentId)
+    .select("course studyYear admissionYear isActive")
+    .lean();
+};
+
 export const getDefaultCycleDates = (seedDate = new Date()) => {
   const semesterStartDate = startOfDay(seedDate);
   const semesterEndDate = endOfDay(addDays(semesterStartDate, SEMESTER_DURATION_DAYS - 1));
-  const renewalWindowStart = startOfDay(addDays(semesterEndDate, 1));
-  const renewalWindowEnd = endOfDay(addDays(renewalWindowStart, RENEWAL_WINDOW_DAYS - 1));
+  const renewalWindowStart = startOfDay(addDays(semesterStartDate, -RENEWAL_WINDOW_DAYS));
+  const renewalWindowEnd = endOfDay(addDays(semesterStartDate, -1));
 
   return {
     semesterStartDate,
@@ -64,38 +71,73 @@ export const getConfiguredCycleDates = async (seedDate = new Date()) => {
   return getDefaultCycleDates(seedDate);
 };
 
+const buildAllocationCycleFromStudent = async ({ allocationDoc, student }) => {
+  if (!student?.course) {
+    return null;
+  }
+
+  const semesterNumber = Number(allocationDoc.currentSemester || student.studyYear || 1);
+  const timeline = await getSemesterTimelineForStudent({
+    course: student.course,
+    semesterNumber,
+    admissionYear: student.admissionYear,
+  });
+
+  return {
+    ...timeline,
+    admissionYear: Number(student.admissionYear) || new Date().getFullYear(),
+    courseName: timeline.course,
+  };
+};
+
 export const ensureAllocationCycle = async (allocationDoc, { session } = {}) => {
   if (!allocationDoc) return null;
 
   let mutated = false;
-  const configuredCycle = await getConfiguredCycleDates(
+  const student = await getStudentAcademicSnapshot(allocationDoc.studentId);
+  let computedCycle = null;
+
+  if (student?.course) {
+    try {
+      computedCycle = await buildAllocationCycleFromStudent({ allocationDoc, student });
+    } catch {
+      computedCycle = null;
+    }
+  }
+
+  const fallbackCycle = await getConfiguredCycleDates(
     allocationDoc.allocatedAt || allocationDoc.createdAt || new Date(),
   );
 
-  if (!allocationDoc.semesterStartDate || !allocationDoc.semesterEndDate || !allocationDoc.renewalWindowStart || !allocationDoc.renewalWindowEnd) {
-    allocationDoc.semesterStartDate = configuredCycle.semesterStartDate;
-    allocationDoc.semesterEndDate = configuredCycle.semesterEndDate;
-    allocationDoc.renewalWindowStart = configuredCycle.renewalWindowStart;
-    allocationDoc.renewalWindowEnd = configuredCycle.renewalWindowEnd;
-    mutated = true;
-  }
+  const target = computedCycle || {
+    semesterStartDate: fallbackCycle.semesterStartDate,
+    semesterEndDate: fallbackCycle.semesterEndDate,
+    renewalWindowStart: fallbackCycle.renewalWindowStart,
+    renewalWindowEnd: fallbackCycle.renewalWindowEnd,
+    semesterNumber: Number(allocationDoc.currentSemester || student?.studyYear || 1),
+    totalSemesters: Number(allocationDoc.totalSemesters || student?.studyYear || 1),
+    admissionYear: Number(student?.admissionYear || new Date().getFullYear()),
+    courseName: student?.course || allocationDoc.courseName || "",
+  };
 
-  const currentStart = allocationDoc.semesterStartDate ? new Date(allocationDoc.semesterStartDate).getTime() : null;
-  const currentEnd = allocationDoc.semesterEndDate ? new Date(allocationDoc.semesterEndDate).getTime() : null;
-  const currentWindowStart = allocationDoc.renewalWindowStart ? new Date(allocationDoc.renewalWindowStart).getTime() : null;
-  const currentWindowEnd = allocationDoc.renewalWindowEnd ? new Date(allocationDoc.renewalWindowEnd).getTime() : null;
+  const fields = [
+    ["semesterStartDate", target.semesterStartDate],
+    ["semesterEndDate", target.semesterEndDate],
+    ["renewalWindowStart", target.renewalWindowStart || null],
+    ["renewalWindowEnd", target.renewalWindowEnd || null],
+    ["currentSemester", Number(target.semesterNumber || allocationDoc.currentSemester || 1)],
+    ["totalSemesters", Number(target.totalSemesters || allocationDoc.totalSemesters || 1)],
+    ["admissionYear", Number(target.admissionYear || allocationDoc.admissionYear || new Date().getFullYear())],
+    ["courseName", target.courseName || allocationDoc.courseName || ""],
+  ];
 
-  if (
-    currentStart !== new Date(configuredCycle.semesterStartDate).getTime() ||
-    currentEnd !== new Date(configuredCycle.semesterEndDate).getTime() ||
-    currentWindowStart !== new Date(configuredCycle.renewalWindowStart).getTime() ||
-    currentWindowEnd !== new Date(configuredCycle.renewalWindowEnd).getTime()
-  ) {
-    allocationDoc.semesterStartDate = configuredCycle.semesterStartDate;
-    allocationDoc.semesterEndDate = configuredCycle.semesterEndDate;
-    allocationDoc.renewalWindowStart = configuredCycle.renewalWindowStart;
-    allocationDoc.renewalWindowEnd = configuredCycle.renewalWindowEnd;
-    mutated = true;
+  for (const [key, value] of fields) {
+    const current = allocationDoc[key] instanceof Date ? allocationDoc[key]?.getTime() : allocationDoc[key];
+    const next = value instanceof Date ? value?.getTime() : value;
+    if (current !== next) {
+      allocationDoc[key] = value;
+      mutated = true;
+    }
   }
 
   if (!allocationDoc.renewalStatus) {
@@ -152,7 +194,7 @@ const autoVacateAllocation = async (allocationDoc, reason, { session } = {}) => 
   await createNotification({
     userId: allocationDoc.studentId,
     type: "room_auto_vacated",
-    message: "Your room allocation was auto-vacated because the next semester hostel rent was not paid within the 1-week payment window.",
+    message: reason || "Your room allocation was auto-vacated due to academic eligibility or renewal policy.",
   });
 
   return allocationDoc;
@@ -170,13 +212,19 @@ export const syncAllocationRenewalStatus = async (
     return allocationDoc;
   }
 
+  if (!allocationDoc.renewalWindowStart || !allocationDoc.renewalWindowEnd) {
+    allocationDoc.renewalStatus = "not_due";
+    await allocationDoc.save({ session });
+    return allocationDoc;
+  }
+
   const current = new Date(now);
-  const semesterEndDate = new Date(allocationDoc.semesterEndDate);
+  const renewalWindowStart = new Date(allocationDoc.renewalWindowStart);
   const renewalWindowEnd = new Date(allocationDoc.renewalWindowEnd);
 
   let nextStatus = allocationDoc.renewalStatus || "not_due";
 
-  if (current < semesterEndDate) {
+  if (current < renewalWindowStart) {
     nextStatus = "not_due";
   } else if (current <= renewalWindowEnd) {
     nextStatus = "due";
@@ -192,7 +240,7 @@ export const syncAllocationRenewalStatus = async (
   if (autoVacateIfExpired && allocationDoc.renewalStatus === "overdue" && current > renewalWindowEnd) {
     await autoVacateAllocation(
       allocationDoc,
-      "Renewal payment not completed within one-week window after semester start.",
+      "Hostel renewal was not paid within the admin-configured semester renewal window.",
       { session },
     );
   }
@@ -205,22 +253,50 @@ export const renewAllocationForNextSemester = async (allocationDoc, { session } 
 
   await ensureAllocationCycle(allocationDoc, { session });
 
-  const nextCycle = await getConfiguredCycleDates(
-    allocationDoc.renewalWindowStart || addDays(new Date(), 1),
-  );
+  const student = await getStudentAcademicSnapshot(allocationDoc.studentId);
+  if (!student?.course) {
+    throw new Error("Student academic course is missing for renewal.");
+  }
 
-  allocationDoc.semesterStartDate = nextCycle.semesterStartDate;
-  allocationDoc.semesterEndDate = nextCycle.semesterEndDate;
-  allocationDoc.renewalWindowStart = nextCycle.renewalWindowStart;
-  allocationDoc.renewalWindowEnd = nextCycle.renewalWindowEnd;
-  allocationDoc.renewalStatus = "paid";
+  if (student.isActive === false) {
+    await autoVacateAllocation(
+      allocationDoc,
+      "Student is inactive in college and not eligible for hostel continuation.",
+      { session },
+    );
+    return allocationDoc;
+  }
+
+  const nextSemesterNumber = Number(allocationDoc.currentSemester || student.studyYear || 1) + 1;
+  const totalSemesters = Number(allocationDoc.totalSemesters || 0);
+
+  if (totalSemesters > 0 && nextSemesterNumber > totalSemesters) {
+    await autoVacateAllocation(
+      allocationDoc,
+      "Course completed. Student is no longer eligible for hostel continuation.",
+      { session },
+    );
+    return allocationDoc;
+  }
+
+  const timeline = await getSemesterTimelineForStudent({
+    course: student.course,
+    semesterNumber: nextSemesterNumber,
+    admissionYear: student.admissionYear,
+  });
+
+  allocationDoc.currentSemester = Number(timeline.semesterNumber);
+  allocationDoc.totalSemesters = Number(timeline.totalSemesters);
+  allocationDoc.courseName = timeline.course;
+  allocationDoc.admissionYear = Number(student.admissionYear || allocationDoc.admissionYear || new Date().getFullYear());
+  allocationDoc.semesterStartDate = timeline.semesterStartDate;
+  allocationDoc.semesterEndDate = timeline.semesterEndDate;
+  allocationDoc.renewalWindowStart = timeline.renewalWindowStart;
+  allocationDoc.renewalWindowEnd = timeline.renewalWindowEnd;
+  allocationDoc.renewalStatus = "not_due";
   allocationDoc.lastRenewedAt = new Date();
   allocationDoc.autoVacatedReason = "";
 
-  await allocationDoc.save({ session });
-
-  // Once this request lifecycle is completed, mark next cycle as not due.
-  allocationDoc.renewalStatus = "not_due";
   await allocationDoc.save({ session });
 
   return allocationDoc;
@@ -250,6 +326,8 @@ export const getRenewalInfoFromAllocation = ({ allocation, roomPrice, now = new 
     windowOpen,
     amount: Number(roomPrice || 0),
     billingCycleKey: getAllocationRenewalCycleKey(allocation),
+    currentSemester: Number(allocation.currentSemester || 0),
+    totalSemesters: Number(allocation.totalSemesters || 0),
   };
 };
 
@@ -262,10 +340,19 @@ export const processRoomRenewalLifecycle = async ({ studentId } = {}) => {
   const allocations = await RoomAllocation.find(query);
 
   for (const allocation of allocations) {
-    const student = await User.findById(allocation.studentId).select("course studyYear").lean();
+    const student = await getStudentAcademicSnapshot(allocation.studentId);
+
+    if (!student || student.isActive === false) {
+      await autoVacateAllocation(
+        allocation,
+        "Student is inactive in college and not eligible for hostel room occupancy.",
+      );
+      continue;
+    }
+
     const completedCourse = await isStudentCourseCompleted({
       course: student?.course,
-      studyYear: student?.studyYear,
+      studyYear: allocation.currentSemester || student?.studyYear,
     });
 
     if (completedCourse) {

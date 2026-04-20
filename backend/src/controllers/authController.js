@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import asyncHandler from "../utils/asyncHandler.js";
 import { sendSuccess } from "../utils/apiResponse.js";
 import {
@@ -52,12 +53,14 @@ const sanitizeUser = (user) => ({
   enrollmentNo: user.enrollmentNo,
   course: user.course,
   studyYear: user.studyYear,
+  admissionYear: user.admissionYear,
+  isActive: user.isActive,
 });
 
 /* ── REGISTER ─────────────────────────────────────────────────────────────── */
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, enrollmentNo, phone, gender, role, course, studyYear } = req.body;
+    const { name, email, password, enrollmentNo, phone, gender, role, course, studyYear, admissionYear } = req.body;
     const normalizedEmail = email?.toLowerCase();
     const normalizedRole = role || "student";
 
@@ -88,6 +91,9 @@ export const registerUser = async (req, res) => {
       role: normalizedRole,
       course: validatedCourse,
       studyYear: validatedStudyYear,
+      admissionYear: normalizedRole === "student"
+        ? Number(admissionYear || new Date().getFullYear())
+        : undefined,
     });
     const accessToken = generateAccessToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
@@ -129,6 +135,57 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+/* ── GOOGLE LOGIN ────────────────────────────────────────────────────────── */
+export const googleLogin = asyncHandler(async (req, res) => {
+  const { accessToken, email, name } = req.body || {};
+
+  if (!accessToken) {
+    return res.status(400).json({ message: "Google access token is required" });
+  }
+
+  const profileResponse = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!profileResponse.ok) {
+    return res.status(401).json({ message: "Invalid Google access token" });
+  }
+
+  const profile = await profileResponse.json();
+  const normalizedEmail = profile?.email?.toLowerCase()?.trim() || email?.toLowerCase()?.trim();
+
+  if (!normalizedEmail) {
+    return res.status(400).json({ message: "Google account email is required" });
+  }
+
+  let user = await User.findOne({ email: normalizedEmail });
+
+  if (!user) {
+    user = await User.create({
+      name: profile?.name?.trim() || name?.trim() || normalizedEmail.split("@")[0],
+      email: normalizedEmail,
+      password: crypto.randomBytes(24).toString("hex"),
+      role: "student",
+      gender: "other",
+      enrollmentNo: `GOOGLE-${Date.now()}`,
+    });
+  }
+
+  const access = generateAccessToken(user._id);
+  const refresh = generateRefreshToken(user._id);
+
+  setAuthCookies(res, access, refresh);
+
+  return res.status(200).json({
+    success: true,
+    token: access,
+    user: sanitizeUser(user),
+    sessionExpiresAt: getTokenExpiresAt(refresh),
+  });
+});
 
 /* ── REFRESH ACCESS TOKEN ─────────────────────────────────────────────────── */
 export const refreshToken = async (req, res) => {

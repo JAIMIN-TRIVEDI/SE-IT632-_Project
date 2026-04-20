@@ -42,6 +42,7 @@ const emptyForm = {
   enrollmentNo: "",
   course: "",
   studyYear: "",
+  admissionYear: "",
   gender: "",
   role: "",
   emergencyName: "",
@@ -84,6 +85,7 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
       form.enrollmentNo !== original.enrollmentNo ||
       form.course !== original.course ||
       String(form.studyYear || "") !== String(original.studyYear || "") ||
+      String(form.admissionYear || "") !== String(original.admissionYear || "") ||
       form.emergencyName !== original.emergencyName ||
       form.emergencyRelationship !== original.emergencyRelationship ||
       form.emergencyPhone !== original.emergencyPhone ||
@@ -114,6 +116,7 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
           enrollmentNo: u.enrollmentNo || "",
           course: u.course || "",
           studyYear: u.studyYear || "",
+          admissionYear: u.admissionYear || "",
           gender: u.gender || "",
           role: u.role || "",
           emergencyName: u.emergencyName || "",
@@ -134,6 +137,7 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
             enrollmentNo: initialUser.enrollmentNo || "",
             course: initialUser.course || "",
             studyYear: initialUser.studyYear || "",
+            admissionYear: initialUser.admissionYear || "",
             gender: initialUser.gender || "",
             role: initialUser.role || "",
             emergencyName: "",
@@ -216,6 +220,7 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
         enrollmentNo: form.enrollmentNo,
         course: form.course,
         studyYear: form.studyYear ? Number(form.studyYear) : null,
+        admissionYear: form.admissionYear ? Number(form.admissionYear) : null,
         emergencyName: form.emergencyName,
         emergencyRelationship: form.emergencyRelationship,
         emergencyPhone: form.emergencyPhone,
@@ -228,6 +233,7 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
         phone: u.phone || form.phone,
         course: u.course ?? form.course,
         studyYear: u.studyYear ?? form.studyYear,
+        admissionYear: u.admissionYear ?? form.admissionYear,
       };
       setForm(updated);
       setOriginal(updated);
@@ -532,6 +538,25 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
                   </MenuItem>
                 ))}
               </TextField>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Typography
+                fontSize={13}
+                fontWeight={600}
+                color="text.secondary"
+                mb={0.8}
+              >
+                Admission Year
+              </Typography>
+              <TextField
+                type="number"
+                fullWidth
+                value={String(form.admissionYear || "")}
+                onChange={handleChange("admissionYear")}
+                inputProps={{ min: 2000, max: 2100 }}
+                placeholder="e.g. 2025"
+                sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+              />
             </Grid>
           </Grid>
         </Card>
