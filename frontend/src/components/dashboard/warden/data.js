@@ -18,7 +18,7 @@ export const navItems = [
   { label: 'Rooms', icon: MeetingRoom },
   { label: 'Room Requests', icon: FactCheck },
   { label: 'Vacate Requests', icon: Logout },
-  { label: 'Complaints', icon: Warning, badge: 5 },
+  { label: 'Complaints', icon: Warning },
   { label: 'Students', icon: People },
   { label: 'Notifications', icon: Notifications },
   { label: 'Profile', icon: Person },
