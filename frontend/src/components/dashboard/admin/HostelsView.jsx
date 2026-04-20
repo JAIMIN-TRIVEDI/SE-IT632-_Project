@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Box, Button, Typography, Grid, CircularProgress, Alert } from '@mui/material'
+import { Box, Button, Typography, Grid, CircularProgress, Alert, Card, Divider, IconButton, TextField } from '@mui/material'
 import { Add, DomainAdd } from '@mui/icons-material'
+import { DeleteOutline } from '@mui/icons-material'
 import HostelCard from './HostelCard.jsx'
 import HostelFormDialog from './HostelFormDialog.jsx'
 import {
@@ -8,7 +9,18 @@ import {
   createHostel,
   updateHostel,
   deleteHostel,
+  getAcademicSettings,
+  updateAcademicSettings,
 } from '../../../services/hostelService'
+
+const createEmptyCourse = () => ({ name: '', totalSemesters: '' })
+
+const toDateInput = (value) => {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toISOString().slice(0, 10)
+}
 
 function HostelsView() {
   const [hostels, setHostels] = useState([])
@@ -18,13 +30,35 @@ function HostelsView() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingHostel, setEditingHostel] = useState(null)
+  const [academicSaving, setAcademicSaving] = useState(false)
+  const [academicForm, setAcademicForm] = useState({
+    semesterStartDate: '',
+    semesterEndDate: '',
+    courses: [createEmptyCourse()],
+  })
 
   useEffect(() => {
     const fetchHostels = async () => {
       try {
         setError('')
-        const data = await getHostels()
+        const [data, settings] = await Promise.all([
+          getHostels(),
+          getAcademicSettings().catch(() => null),
+        ])
         setHostels(data)
+
+        if (settings) {
+          setAcademicForm({
+            semesterStartDate: toDateInput(settings.semesterStartDate),
+            semesterEndDate: toDateInput(settings.semesterEndDate),
+            courses: Array.isArray(settings.courses) && settings.courses.length > 0
+              ? settings.courses.map((course) => ({
+                name: course.name || '',
+                totalSemesters: String(course.totalSemesters || ''),
+              }))
+              : [createEmptyCourse()],
+          })
+        }
       } catch (err) {
         setError(err.response?.data?.message || err.message || 'Failed to load hostels.')
       } finally {
@@ -99,6 +133,78 @@ function HostelsView() {
     }
   }
 
+  const handleAcademicFieldChange = (field, value) => {
+    setAcademicForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleCourseChange = (index, field, value) => {
+    setAcademicForm((prev) => ({
+      ...prev,
+      courses: prev.courses.map((course, idx) => (idx === index ? { ...course, [field]: value } : course)),
+    }))
+  }
+
+  const handleAddCourse = () => {
+    setAcademicForm((prev) => ({
+      ...prev,
+      courses: [...prev.courses, createEmptyCourse()],
+    }))
+  }
+
+  const handleRemoveCourse = (index) => {
+    setAcademicForm((prev) => ({
+      ...prev,
+      courses: prev.courses.filter((_, idx) => idx !== index).length > 0
+        ? prev.courses.filter((_, idx) => idx !== index)
+        : [createEmptyCourse()],
+    }))
+  }
+
+  const handleSaveAcademicSettings = async () => {
+    try {
+      setError('')
+      setAcademicSaving(true)
+
+      const courses = (academicForm.courses || [])
+        .map((course) => ({
+          name: String(course.name || '').trim(),
+          totalSemesters: Number(course.totalSemesters),
+          isActive: true,
+        }))
+        .filter((course) => course.name)
+
+      if (!academicForm.semesterStartDate || !academicForm.semesterEndDate) {
+        setError('Please configure semester start and end dates.')
+        return
+      }
+
+      if (courses.length === 0) {
+        setError('Please add at least one course with semester count.')
+        return
+      }
+
+      const updated = await updateAcademicSettings({
+        semesterStartDate: academicForm.semesterStartDate,
+        semesterEndDate: academicForm.semesterEndDate,
+        renewalWindowDays: 7,
+        courses,
+      })
+
+      setAcademicForm({
+        semesterStartDate: toDateInput(updated.semesterStartDate),
+        semesterEndDate: toDateInput(updated.semesterEndDate),
+        courses: (updated.courses || []).map((course) => ({
+          name: course.name || '',
+          totalSemesters: String(course.totalSemesters || ''),
+        })),
+      })
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to save academic settings.')
+    } finally {
+      setAcademicSaving(false)
+    }
+  }
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -121,6 +227,76 @@ function HostelsView() {
           {error}
         </Alert>
       )}
+
+      <Card sx={{ p: 3, mb: 3, border: '1px solid', borderColor: 'divider' }}>
+        <Typography variant="h6" fontWeight={800} sx={{ mb: 1 }}>
+          Academic Rules
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Set semester dates and allowed courses. Only listed courses can be selected by students.
+          Students above course semester limit will be blocked from room allocation.
+        </Typography>
+
+        <Grid container spacing={2} sx={{ mb: 2 }}>
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Semester Start Date"
+              value={academicForm.semesterStartDate}
+              onChange={(event) => handleAcademicFieldChange('semesterStartDate', event.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Semester End Date"
+              value={academicForm.semesterEndDate}
+              onChange={(event) => handleAcademicFieldChange('semesterEndDate', event.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+          </Grid>
+        </Grid>
+
+        <Divider sx={{ my: 2 }} />
+
+        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
+          Course List
+        </Typography>
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {academicForm.courses.map((course, index) => (
+            <Box key={`course-${index}`} sx={{ display: 'grid', gridTemplateColumns: '1fr 220px 48px', gap: 1.5 }}>
+              <TextField
+                label="Course Name"
+                value={course.name}
+                onChange={(event) => handleCourseChange(index, 'name', event.target.value)}
+              />
+              <TextField
+                type="number"
+                label="Total Semesters"
+                value={course.totalSemesters}
+                onChange={(event) => handleCourseChange(index, 'totalSemesters', event.target.value)}
+                inputProps={{ min: 1, max: 20 }}
+              />
+              <IconButton color="error" onClick={() => handleRemoveCourse(index)}>
+                <DeleteOutline />
+              </IconButton>
+            </Box>
+          ))}
+        </Box>
+
+        <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
+          <Button variant="outlined" onClick={handleAddCourse}>
+            Add Course
+          </Button>
+          <Button variant="contained" onClick={handleSaveAcademicSettings} disabled={academicSaving}>
+            {academicSaving ? 'Saving...' : 'Save Academic Settings'}
+          </Button>
+        </Box>
+      </Card>
 
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>

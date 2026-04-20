@@ -9,6 +9,10 @@ import Notification from "../models/Notification.js";
 import Complaint from "../models/Complaint.js";
 import MessSubscription from "../models/MessSubscription.js";
 import VacateRequest from "../models/VacateRequest.js";
+import {
+  getRenewalInfoFromAllocation,
+  processRoomRenewalLifecycle,
+} from "../services/roomRenewalService.js";
 
 const router = express.Router();
 
@@ -25,8 +29,10 @@ router.get("/student/dashboard", protect, async (req, res) => {
   try {
     const user = req.user;
 
+    await processRoomRenewalLifecycle({ studentId: user._id });
+
     const allocation = await RoomAllocation.findOne({ studentId: user._id, status: 'active' })
-      .populate({ path: 'roomId', select: 'roomNumber roomType capacity status' })
+      .populate({ path: 'roomId', select: 'roomNumber roomType capacity status price' })
       .populate({ path: 'hostelId', select: 'name type' });
 
     const payments = await Payment.find({ userId: user._id }).sort({ createdAt: -1 }).lean();
@@ -84,14 +90,23 @@ router.get("/student/dashboard", protect, async (req, res) => {
 
     const room = allocation
       ? {
+        allocationId: allocation._id,
         roomNumber: allocation.roomId?.roomNumber || null,
         roomType: allocation.roomId?.roomType || null,
         capacity: allocation.roomId?.capacity || null,
         status: allocation.roomId?.status || null,
+        price: Number(allocation.roomId?.price || 0),
         hostelName: allocation.hostelId?.name || null,
         hostelType: allocation.hostelId?.type || null,
         moveInDate: allocation.allocatedAt || null,
       }
+      : null;
+
+    const renewal = allocation
+      ? getRenewalInfoFromAllocation({
+        allocation,
+        roomPrice: allocation.roomId?.price,
+      })
       : null;
 
     const dashboardData = {
@@ -107,6 +122,7 @@ router.get("/student/dashboard", protect, async (req, res) => {
         studyYear: user.studyYear,
       },
       room,
+      renewal,
       payments,
       messSubscription,
       messCurrentStatus,

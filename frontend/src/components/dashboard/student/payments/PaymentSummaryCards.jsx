@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { Box, Card, Typography } from '@mui/material'
 
-export default function PaymentSummaryCards({ payments = [] }) {
+export default function PaymentSummaryCards({ payments = [], renewal = null }) {
   const summary = useMemo(() => {
     const relevantPayments = payments.filter((payment) =>
       ['hostel', 'room_request', 'mess'].includes(payment.type)
@@ -12,21 +12,34 @@ export default function PaymentSummaryCards({ payments = [] }) {
       .reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
 
     const pendingTotal = relevantPayments
-      .filter((payment) => payment.status === 'pending' || payment.status === 'failed')
+      .filter((payment) => payment.status === 'pending')
       .reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
 
     const nextPending = relevantPayments
-      .filter((payment) => payment.status === 'pending' || payment.status === 'failed')
+      .filter((payment) => payment.status === 'pending')
       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0]
+
+    const dueDateFromCycle = renewal?.dueDate
+      ? new Date(renewal.dueDate).toLocaleDateString()
+      : ''
+
+    const semesterStartFromCycle = renewal?.paymentWindowStart
+      ? new Date(renewal.paymentWindowStart).toLocaleDateString()
+      : ''
 
     return {
       totalPaid: `₹${paidTotal.toFixed(2)}`,
       pendingDues: `₹${pendingTotal.toFixed(2)}`,
-      nextDueDate: nextPending
-        ? new Date(nextPending.createdAt).toLocaleDateString()
-        : 'No dues',
+      nextDueDate: dueDateFromCycle
+        ? dueDateFromCycle
+        : nextPending
+          ? new Date(nextPending.createdAt).toLocaleDateString()
+          : 'No dues',
+      semesterStartsText: dueDateFromCycle
+        ? `Sem starts: ${semesterStartFromCycle || 'N/A'}`
+        : '',
     }
-  }, [payments])
+  }, [payments, renewal])
 
   const cards = [
     {
@@ -40,9 +53,10 @@ export default function PaymentSummaryCards({ payments = [] }) {
       color: 'warning.main',
     },
     {
-      label: 'Next Due Date For Hostel Rent',
+      label: 'Hostel Due Date',
       value: summary.nextDueDate,
       color: 'text.primary',
+      extraText: summary.semesterStartsText,
     },
   ]
 
@@ -68,6 +82,11 @@ export default function PaymentSummaryCards({ payments = [] }) {
           >
             {card.value}
           </Typography>
+          {card.extraText ? (
+            <Typography variant="body2" color="text.secondary" fontWeight={500} sx={{ mt: 0.5 }}>
+              {`(${card.extraText})`}
+            </Typography>
+          ) : null}
         </Card>
       ))}
     </Box>

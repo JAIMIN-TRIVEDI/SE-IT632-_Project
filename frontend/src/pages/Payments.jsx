@@ -4,7 +4,7 @@ import PaymentSummaryCards from '../components/dashboard/student/payments/Paymen
 import PaymentRecordsTable from '../components/dashboard/student/payments/PaymentRecordsTable'
 import api from '../api/api'
 
-function Payments({ payments: initialPayments = [], searchQuery = '' }) {
+function Payments({ payments: initialPayments = [], searchQuery = '', renewal = null }) {
   const [payments, setPayments] = useState(initialPayments)
   const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
@@ -69,7 +69,7 @@ function Payments({ payments: initialPayments = [], searchQuery = '' }) {
       )}
 
       {/* Summary Cards */}
-      <PaymentSummaryCards payments={payments} />
+      <PaymentSummaryCards payments={payments} renewal={renewal} />
 
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
         <Typography variant="body2" color="text.secondary" fontWeight={500}>

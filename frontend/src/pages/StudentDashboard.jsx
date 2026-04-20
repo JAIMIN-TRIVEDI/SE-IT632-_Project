@@ -157,9 +157,9 @@ function StudentDashboard({ mode = 'light', onToggleTheme }) {
           />
         )
       case 'Payments':
-        return <Payments payments={dashboardData?.payments || []} searchQuery={searchQuery} />
+        return <Payments payments={dashboardData?.payments || []} searchQuery={searchQuery} renewal={dashboardData?.renewal || null} />
       case 'Payment History':
-        return <Payments payments={dashboardData?.payments || []} searchQuery={searchQuery} />
+        return <Payments payments={dashboardData?.payments || []} searchQuery={searchQuery} renewal={dashboardData?.renewal || null} />
       case 'Mess Menu':
         return <MessMenu />
       case 'Mess Subscription':

@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import AppError from "../utils/AppError.js";
 import sendEmail from "../utils/sendEmail.js";
+import { validateStudentCourseAndSemester } from "./academicPolicyService.js";
 
 const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -10,6 +11,7 @@ const generateToken = (id) =>
 export const registerUserService = async (payload) => {
   const { name, email, password, enrollmentNo, phone, gender, role, course, studyYear } = payload;
   const normalizedEmail = email?.toLowerCase();
+  const normalizedRole = role || "student";
 
   if (!gender) {
     throw new AppError("Gender is required for registration.", 400);
@@ -20,6 +22,15 @@ export const registerUserService = async (payload) => {
     throw new AppError("Email already exists", 409);
   }
 
+  let validatedCourse = course;
+  let validatedStudyYear = studyYear;
+
+  if (normalizedRole === "student") {
+    const validated = await validateStudentCourseAndSemester({ course, studyYear });
+    validatedCourse = validated.course;
+    validatedStudyYear = validated.studyYear;
+  }
+
   const user = await User.create({
     name,
     email: normalizedEmail,
@@ -27,9 +38,9 @@ export const registerUserService = async (payload) => {
     enrollmentNo,
     phone,
     gender,
-    role: role || "student",
-    course,
-    studyYear,
+    role: normalizedRole,
+    course: validatedCourse,
+    studyYear: validatedStudyYear,
   });
 
   return {
@@ -115,8 +126,18 @@ export const updateProfileService = async (userId, payload) => {
   if (payload.name !== undefined) user.name = payload.name;
   if (payload.phone !== undefined) user.phone = payload.phone;
   if (payload.enrollmentNo !== undefined) user.enrollmentNo = payload.enrollmentNo;
-  if (payload.course !== undefined) user.course = payload.course;
-  if (payload.studyYear !== undefined) user.studyYear = payload.studyYear;
+  const shouldValidateAcademic =
+    user.role === "student" &&
+    (payload.course !== undefined || payload.studyYear !== undefined);
+
+  if (shouldValidateAcademic) {
+    const validated = await validateStudentCourseAndSemester({
+      course: payload.course !== undefined ? payload.course : user.course,
+      studyYear: payload.studyYear !== undefined ? payload.studyYear : user.studyYear,
+    });
+    user.course = validated.course;
+    user.studyYear = validated.studyYear;
+  }
 
   if (payload.emergencyName !== undefined) user.emergencyName = payload.emergencyName;
   if (payload.emergencyRelationship !== undefined) {

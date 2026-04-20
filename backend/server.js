@@ -7,6 +7,7 @@ import connectDB from "./src/config/db.js";
 import http from "http";
 import { Server } from "socket.io";
 import { registerNotificationRealtimeEmitter } from "./src/services/notificationService.js";
+import { processRoomRenewalLifecycle } from "./src/services/roomRenewalService.js";
 
 connectDB();
 
@@ -56,3 +57,22 @@ registerNotificationRealtimeEmitter(({ event, payload }) => {
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+const RENEWAL_LIFECYCLE_INTERVAL_MS = Math.max(
+  60 * 1000,
+  Number(process.env.ROOM_RENEWAL_CRON_MS) || 60 * 60 * 1000,
+);
+
+const runRenewalLifecycle = async () => {
+  try {
+    const processed = await processRoomRenewalLifecycle();
+    if (processed > 0) {
+      console.log(`[RenewalLifecycle] Checked ${processed} active allocations`);
+    }
+  } catch (err) {
+    console.error("[RenewalLifecycle] Failed:", err.message);
+  }
+};
+
+runRenewalLifecycle();
+setInterval(runRenewalLifecycle, RENEWAL_LIFECYCLE_INTERVAL_MS);

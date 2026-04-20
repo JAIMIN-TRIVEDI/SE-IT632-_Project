@@ -4,7 +4,16 @@ import Payment from "../models/Payment.js";
 import RoomRequest from "../models/RoomRequest.js";
 import Room from "../models/Room.js";
 import RoomAllocation from "../models/RoomAllocation.js";
+import User from "../models/User.js";
 import { sendPaymentSuccessNotification } from "../services/notificationService.js";
+import {
+  getConfiguredCycleDates,
+  getAllocationRenewalCycleKey,
+  isRenewalWindowOpen,
+  renewAllocationForNextSemester,
+  syncAllocationRenewalStatus,
+} from "../services/roomRenewalService.js";
+import { validateStudentCourseAndSemester } from "../services/academicPolicyService.js";
 
 const escapeRegex = (value = "") => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -37,11 +46,20 @@ const updatePaymentFailureStatus = async ({
 export const createOrder = async (req, res) => {
 
   const { amount, purpose, subscriptionId, type } = req.body;
+  const normalizedType = type || "room_request";
+  const student = await User.findById(req.user._id).select("course studyYear").lean();
 
   let payableAmount = Number(amount);
   let payablePurpose = purpose;
+  let allocationId;
+  let billingCycleKey = "";
 
-  if ((type || "room_request") === "room_request") {
+  if (normalizedType === "room_request") {
+    await validateStudentCourseAndSemester({
+      course: student?.course,
+      studyYear: student?.studyYear,
+    });
+
     if (!subscriptionId) {
       return res.status(400).json({ message: "Room request reference is required." });
     }
@@ -91,12 +109,65 @@ export const createOrder = async (req, res) => {
     payablePurpose = `Room request payment for Room ${room.roomNumber}`;
   }
 
+  if (normalizedType === "hostel") {
+    await validateStudentCourseAndSemester({
+      course: student?.course,
+      studyYear: student?.studyYear,
+    });
+
+    if (!subscriptionId) {
+      return res.status(400).json({ message: "Room allocation reference is required for hostel renewal." });
+    }
+
+    const allocation = await RoomAllocation.findById(subscriptionId)
+      .populate({ path: "roomId", select: "roomNumber price" });
+
+    if (!allocation || allocation.studentId.toString() !== req.user._id.toString()) {
+      return res.status(404).json({ message: "Active room allocation not found for renewal." });
+    }
+
+    await syncAllocationRenewalStatus(allocation, { autoVacateIfExpired: true });
+
+    if (allocation.status !== "active") {
+      return res.status(400).json({ message: "This allocation is no longer active. Please contact hostel office." });
+    }
+
+    if (!isRenewalWindowOpen(allocation)) {
+      return res.status(400).json({
+        message: "Hostel renewal payment is allowed only during the 1-week window after semester start.",
+        data: {
+          paymentWindowStart: allocation.renewalWindowStart,
+          paymentWindowEnd: allocation.renewalWindowEnd,
+        },
+      });
+    }
+
+    billingCycleKey = getAllocationRenewalCycleKey(allocation);
+    allocationId = allocation._id;
+
+    const existingSuccessPayment = await Payment.findOne({
+      userId: req.user._id,
+      type: "hostel",
+      allocationId,
+      billingCycleKey,
+      status: "success",
+    }).lean();
+
+    if (existingSuccessPayment) {
+      return res.status(400).json({ message: "Hostel renewal payment is already completed for this semester cycle." });
+    }
+
+    const roomPrice = Number(allocation.roomId?.price || 0);
+    payableAmount = roomPrice > 0 ? roomPrice : payableAmount;
+    payablePurpose = payablePurpose || `Hostel semester renewal for Room ${allocation.roomId?.roomNumber || "N/A"}`;
+  }
+
   if (!Number.isFinite(payableAmount) || payableAmount <= 0) {
     return res.status(400).json({ message: "Invalid payment amount." });
   }
 
   const options = {
-    amount: payableAmount * 100,
+    amount: Math.round(payableAmount * 100),
     currency: "INR"
   };
 
@@ -104,11 +175,13 @@ export const createOrder = async (req, res) => {
 
   const payment = await Payment.create({
     userId: req.user._id,
-    type: type || "room_request",
+    type: normalizedType,
     amount: payableAmount,
     orderId: order.id,
     purpose: payablePurpose,
     subscriptionId,
+    allocationId,
+    billingCycleKey,
     status: "pending",
   });
 
@@ -169,7 +242,34 @@ export const verifyPayment = async (req, res) => {
     purpose: payment.purpose,
   });
 
-  if (payment.subscriptionId) {
+  if (payment.type === "hostel" && payment.allocationId) {
+    const allocation = await RoomAllocation.findById(payment.allocationId);
+
+    if (!allocation || allocation.studentId.toString() !== payment.userId.toString()) {
+      return res.status(404).json({ message: "Room allocation for hostel renewal not found." });
+    }
+
+    await syncAllocationRenewalStatus(allocation, { autoVacateIfExpired: true });
+
+    if (allocation.status !== "active") {
+      return res.status(400).json({ message: "Room allocation is no longer active." });
+    }
+
+    if (!isRenewalWindowOpen(allocation)) {
+      return res.status(400).json({
+        message: "Renewal payment verification is outside the semester payment window.",
+      });
+    }
+
+    const expectedBillingCycleKey = getAllocationRenewalCycleKey(allocation);
+    if (payment.billingCycleKey && payment.billingCycleKey !== expectedBillingCycleKey) {
+      return res.status(400).json({ message: "Payment does not belong to the current semester renewal cycle." });
+    }
+
+    await renewAllocationForNextSemester(allocation);
+  }
+
+  if (payment.type === "room_request" && payment.subscriptionId) {
     const roomRequest = await RoomRequest.findById(payment.subscriptionId);
     if (roomRequest && roomRequest.paymentStatus === "pending") {
       if (roomRequest.status !== "approved") {
@@ -202,11 +302,18 @@ export const verifyPayment = async (req, res) => {
       }
       await room.save();
 
+      const cycle = await getConfiguredCycleDates(new Date());
+
       await RoomAllocation.create({
         studentId: payment.userId,
         roomId: room._id,
         hostelId: room.hostelId,
         status: "active",
+        semesterStartDate: cycle.semesterStartDate,
+        semesterEndDate: cycle.semesterEndDate,
+        renewalWindowStart: cycle.renewalWindowStart,
+        renewalWindowEnd: cycle.renewalWindowEnd,
+        renewalStatus: "not_due",
       });
 
       const io = req.app.get("io");

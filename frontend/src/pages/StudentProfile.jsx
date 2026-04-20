@@ -24,6 +24,7 @@ import {
 } from "@mui/icons-material";
 import api from "../api/api";
 import BrandImage from "../components/BrandImage.jsx";
+import { getPublicAcademicSettings } from "../services/hostelService.js";
 
 const RELATIONSHIPS = [
   "Parent",
@@ -74,6 +75,7 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
   });
   const [lastUpdated, setLastUpdated] = useState(null);
   const [roomInfo, setRoomInfo] = useState(null);
+  const [academicCourses, setAcademicCourses] = useState([]);
 
   const hasChanges = useMemo(
     () =>
@@ -149,6 +151,52 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
     };
     load();
   }, [initialUser]);
+
+  useEffect(() => {
+    const loadAcademicSettings = async () => {
+      try {
+        const settings = await getPublicAcademicSettings();
+        const courses = Array.isArray(settings?.courses)
+          ? settings.courses.filter((course) => course.isActive !== false)
+          : [];
+        setAcademicCourses(courses);
+      } catch (_) {
+        setAcademicCourses([]);
+      }
+    };
+
+    loadAcademicSettings();
+  }, []);
+
+  const selectedCourseMeta = useMemo(
+    () => academicCourses.find(
+      (course) => String(course.name || "").toLowerCase() === String(form.course || "").toLowerCase(),
+    ),
+    [academicCourses, form.course],
+  );
+
+  const courseOptions = useMemo(() => {
+    const options = [...academicCourses];
+    const currentCourse = String(form.course || "").trim();
+
+    if (
+      currentCourse &&
+      !options.some((course) => String(course.name || "").trim().toLowerCase() === currentCourse.toLowerCase())
+    ) {
+      options.push({ name: currentCourse, totalSemesters: 8, isActive: true });
+    }
+
+    return options;
+  }, [academicCourses, form.course]);
+
+  const semesterOptions = useMemo(
+    () => selectedCourseMeta
+      ? Array.from({ length: Number(selectedCourseMeta.totalSemesters || 0) }, (_, index) => index + 1)
+      : form.course
+        ? [1, 2, 3, 4, 5, 6, 7, 8]
+        : [],
+    [selectedCourseMeta, form.course],
+  );
 
   const handleChange = (field) => (e) =>
     setForm((p) => ({ ...p, [field]: e.target.value }));
@@ -422,22 +470,41 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
               />
             </Grid>
+            <br />
             <Grid item xs={12} sm={6}>
               <Typography
                 fontSize={13}
                 fontWeight={600}
                 color="text.secondary"
                 mb={0.8}
+                minWidth={20}
               >
                 Course
               </Typography>
               <TextField
+                select
                 fullWidth
                 value={form.course}
-                onChange={handleChange("course")}
-                placeholder="e.g. B.Tech CSE"
+                onChange={(event) => {
+                  handleChange("course")(event)
+                  setForm((prev) => ({ ...prev, studyYear: "" }))
+                }}
+                helperText={
+                  courseOptions.length === 0
+                    ? "No course list available right now. Ask hostel admin to configure academic settings."
+                    : ""
+                }
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-              />
+              >
+                <MenuItem value="">
+                  <em>Select course</em>
+                </MenuItem>
+                {courseOptions.map((course) => (
+                  <MenuItem key={course.name} value={course.name}>
+                    {course.name}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Grid>
             <Grid item xs={12} sm={6}>
               <Typography
@@ -446,21 +513,22 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
                 color="text.secondary"
                 mb={0.8}
               >
-                Study Year
+                Current Semester
               </Typography>
               <TextField
                 select
                 fullWidth
                 value={String(form.studyYear || "")}
                 onChange={handleChange("studyYear")}
+                disabled={!form.course}
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
               >
                 <MenuItem value="">
-                  <em>Select year</em>
+                  <em>Select semester</em>
                 </MenuItem>
-                {[1, 2, 3, 4].map((year) => (
-                  <MenuItem key={year} value={String(year)}>
-                    Year {year}
+                {semesterOptions.map((semester) => (
+                  <MenuItem key={semester} value={String(semester)}>
+                    Semester {semester}
                   </MenuItem>
                 ))}
               </TextField>

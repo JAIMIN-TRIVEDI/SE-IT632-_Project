@@ -7,6 +7,7 @@ import {
   resetPasswordService,
   updateProfileService,
 } from "../services/authService.js";
+import { validateStudentCourseAndSemester } from "../services/academicPolicyService.js";
 
 const ACCESS_TOKEN_EXPIRY = process.env.JWT_ACCESS_EXPIRES_IN || "1h";
 const REFRESH_TOKEN_EXPIRY = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
@@ -58,11 +59,24 @@ export const registerUser = async (req, res) => {
   try {
     const { name, email, password, enrollmentNo, phone, gender, role, course, studyYear } = req.body;
     const normalizedEmail = email?.toLowerCase();
+    const normalizedRole = role || "student";
 
     if (!gender) return res.status(400).json({ message: "Gender is required for registration." });
 
     const exists = await User.findOne({ email: normalizedEmail });
     if (exists) return res.status(409).json({ message: "Email already exists" });
+
+    let validatedCourse = course;
+    let validatedStudyYear = studyYear;
+
+    if (normalizedRole === "student") {
+      const validated = await validateStudentCourseAndSemester({
+        course,
+        studyYear,
+      });
+      validatedCourse = validated.course;
+      validatedStudyYear = validated.studyYear;
+    }
 
     const user = await User.create({
       name,
@@ -71,9 +85,9 @@ export const registerUser = async (req, res) => {
       enrollmentNo,
       phone,
       gender,
-      role: role || "student",
-      course,
-      studyYear,
+      role: normalizedRole,
+      course: validatedCourse,
+      studyYear: validatedStudyYear,
     });
     const accessToken = generateAccessToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
@@ -87,7 +101,7 @@ export const registerUser = async (req, res) => {
       sessionExpiresAt: getTokenExpiresAt(refreshToken),
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(err.statusCode || 500).json({ message: err.message });
   }
 };
 

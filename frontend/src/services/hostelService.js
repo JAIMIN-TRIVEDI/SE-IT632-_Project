@@ -29,3 +29,18 @@ export const assignWarden = async (id, wardenId) => {
   const response = await api.put(`/hostels/${id}/assign-warden`, { wardenId })
   return response.data?.data
 }
+
+export const getPublicAcademicSettings = async () => {
+  const response = await api.get('/hostels/academic-settings/public')
+  return response.data?.data
+}
+
+export const getAcademicSettings = async () => {
+  const response = await api.get('/hostels/academic-settings')
+  return response.data?.data
+}
+
+export const updateAcademicSettings = async (payload) => {
+  const response = await api.put('/hostels/academic-settings', payload)
+  return response.data?.data
+}

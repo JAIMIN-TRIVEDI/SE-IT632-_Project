@@ -25,6 +25,31 @@ const RoomAllocationSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    semesterStartDate: {
+        type: Date,
+        default: Date.now,
+    },
+    semesterEndDate: {
+        type: Date,
+    },
+    renewalWindowStart: {
+        type: Date,
+    },
+    renewalWindowEnd: {
+        type: Date,
+    },
+    renewalStatus: {
+        type: String,
+        enum: ["not_due", "due", "paid", "overdue", "vacated"],
+        default: "not_due",
+    },
+    lastRenewedAt: {
+        type: Date,
+    },
+    autoVacatedReason: {
+        type: String,
+        default: "",
+    },
     vacatedAt: {
         type: Date
     }

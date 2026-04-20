@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -22,6 +22,7 @@ import AuthLayout from "../layouts/AuthLayout.jsx";
 import FormInput from "../components/FormInput.jsx";
 import api from "../api/api.js";
 import BrandImage from "../components/BrandImage.jsx";
+import { getPublicAcademicSettings } from "../services/hostelService.js";
 
 function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -40,7 +41,34 @@ function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [academicLoading, setAcademicLoading] = useState(true);
+  const [courses, setCourses] = useState([]);
   const navigate = useNavigate();
+
+  const selectedCourseMeta = courses.find(
+    (course) => String(course.name || "").toLowerCase() === String(formData.course || "").toLowerCase(),
+  );
+  const semesterOptions = selectedCourseMeta
+    ? Array.from({ length: Number(selectedCourseMeta.totalSemesters || 0) }, (_, index) => index + 1)
+    : [];
+
+  useEffect(() => {
+    const loadAcademicSettings = async () => {
+      try {
+        const settings = await getPublicAcademicSettings();
+        const activeCourses = Array.isArray(settings?.courses)
+          ? settings.courses.filter((course) => course.isActive !== false)
+          : [];
+        setCourses(activeCourses);
+      } catch (_) {
+        setCourses([]);
+      } finally {
+        setAcademicLoading(false);
+      }
+    };
+
+    loadAcademicSettings();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, checked, type } = e.target;
@@ -60,9 +88,15 @@ function RegisterPage() {
       !formData.email ||
       !formData.password ||
       !formData.confirmPassword ||
-      !formData.gender
+      !formData.gender ||
+      !formData.course ||
+      !formData.studyYear
     ) {
       return setError("Please fill in all required fields.");
+    }
+
+    if (courses.length === 0) {
+      return setError("Registration is temporarily unavailable until hostel admin configures courses.");
     }
 
     if (formData.password !== formData.confirmPassword) {
@@ -193,31 +227,47 @@ function RegisterPage() {
                   icon="🎓"
                 />
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   select
-                  label="Year"
-                  name="studyYear"
-                  value={formData.studyYear}
-                  onChange={handleChange}
+                  label="Course"
+                  name="course"
+                  value={formData.course}
+                  onChange={(event) => {
+                    handleChange(event);
+                    setFormData((prev) => ({ ...prev, studyYear: "" }));
+                  }}
+                  disabled={academicLoading || courses.length === 0}
+                  helperText={
+                    !academicLoading && courses.length === 0
+                      ? 'No course options available. Contact hostel admin.'
+                      : ''
+                  }
                 >
-                  {[1, 2, 3, 4].map((year) => (
-                    <MenuItem key={year} value={String(year)}>
-                      Year {year}
+                  {courses.map((course) => (
+                    <MenuItem key={course.name} value={course.name}>
+                      {course.name}
                     </MenuItem>
                   ))}
                 </TextField>
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Course"
-                  name="course"
-                  placeholder="B.Tech CSE"
-                  value={formData.course}
+                  select
+                  label="Semester"
+                  name="studyYear"
+                  value={formData.studyYear}
                   onChange={handleChange}
-                />
+                  disabled={!formData.course || academicLoading}
+                >
+                  {semesterOptions.map((semester) => (
+                    <MenuItem key={semester} value={String(semester)}>
+                      Semester {semester}
+                    </MenuItem>
+                  ))}
+                </TextField>
               </Grid>
             </Grid>
 

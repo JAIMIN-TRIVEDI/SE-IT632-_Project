@@ -28,6 +28,14 @@ const PaymentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "RoomRequest"
   },
+  allocationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "RoomAllocation"
+  },
+  billingCycleKey: {
+    type: String,
+    default: ""
+  },
   status: {
     type: String,
     enum: ["success", "failed", "pending", "refunded"],

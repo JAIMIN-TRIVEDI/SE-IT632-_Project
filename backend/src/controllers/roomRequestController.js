@@ -4,6 +4,7 @@ import RoomAllocation from "../models/RoomAllocation.js";
 import Hostel from "../models/Hostel.js";
 import User from "../models/User.js";
 import { createNotification } from "../services/notificationService.js";
+import { validateStudentCourseAndSemester } from "../services/academicPolicyService.js";
 
 const DEFAULT_ROOM_PRICING = {
     double: 30000,
@@ -96,6 +97,12 @@ const getRoomWithResidents = async ({ hostelIds, roomType }) => {
 
 export const getAvailableRooms = async (req, res) => {
     try {
+        const student = await User.findById(req.user._id).select("course studyYear").lean();
+        await validateStudentCourseAndSemester({
+            course: student?.course,
+            studyYear: student?.studyYear,
+        });
+
         const userGender = await getStudentGender(req.user._id);
 
         if (!userGender || !["male", "female"].includes(userGender)) {
@@ -139,6 +146,12 @@ export const getMyRoomRequest = async (req, res) => {
 export const createRoomRequest = async (req, res) => {
     try {
         const { roomType, roomId, requestMode = "random" } = req.body;
+
+        const student = await User.findById(req.user._id).select("course studyYear").lean();
+        await validateStudentCourseAndSemester({
+            course: student?.course,
+            studyYear: student?.studyYear,
+        });
 
         const normalizedRoomType = roomType ? roomType.trim().toLowerCase() : undefined;
         const normalizedMode = String(requestMode).trim().toLowerCase();
