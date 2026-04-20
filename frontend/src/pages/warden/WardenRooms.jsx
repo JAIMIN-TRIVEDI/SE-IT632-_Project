@@ -74,7 +74,7 @@ function WardenRooms({ searchQuery }) {
     try {
       const [hostelsRes, studentsRes] = await Promise.all([
         api.get('/hostels'),
-        api.get('/reports/students-by-hostel'),
+        api.get('/reports/students-by-hostel/warden'),
       ])
 
       setHostels(hostelsRes.data?.data || [])
@@ -102,7 +102,7 @@ function WardenRooms({ searchQuery }) {
       const hostelStudents = studentsMap.get(String(hostel._id)) || []
 
       for (const student of hostelStudents) {
-        const roomKey = String(student.roomNumber || '').trim().toLowerCase()
+        const roomKey = String(student.roomId || '').trim()
         if (!roomKey) continue
         const students = roomStudentsMap.get(roomKey) || []
         students.push(student)
@@ -110,12 +110,15 @@ function WardenRooms({ searchQuery }) {
       }
 
       const rooms = (hostel.rooms || []).map((room) => {
-        const roomStudents = roomStudentsMap.get(String(room.roomNumber || '').trim().toLowerCase()) || []
+        const roomStudents = roomStudentsMap.get(String(room._id || '').trim()) || []
         const capacity = Number.isFinite(Number(room.capacity)) ? Number(room.capacity) : 0
         const occupiedFromRoom = Number.isFinite(Number(room.occupiedCount))
           ? Number(room.occupiedCount)
           : Number(room.occupied || 0)
-        const occupiedCount = Math.max(0, occupiedFromRoom, roomStudents.length)
+        // Prefer active allocation data when available; fallback to room counter for legacy data.
+        const occupiedCount = roomStudents.length > 0
+          ? roomStudents.length
+          : Math.max(0, occupiedFromRoom)
         const price = Number.isFinite(Number(room.price)) ? Number(room.price) : 0
         const effectiveStatus = getEffectiveStatus({
           status: room.status,

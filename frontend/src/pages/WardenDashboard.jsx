@@ -8,6 +8,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Refresh } from "@mui/icons-material";
+import { useLocation, useNavigate } from "react-router-dom";
 import WardenSidebarNav from "../components/dashboard/warden/WardenSidebarNav.jsx";
 import WardenTopBar from "../components/dashboard/warden/WardenTopBar.jsx";
 import WardenStatCard from "../components/dashboard/warden/WardenStatCard.jsx";
@@ -25,14 +26,52 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { connectSocketForUser } from "../services/socket";
 import api from "../api/api";
 
+const WARDEN_BASE_PATH = "/warden/dashboard";
+const WARDEN_SECTION_TO_PATH = {
+  Dashboard: "",
+  Rooms: "rooms",
+  "Room Requests": "room-requests",
+  "Vacate Requests": "vacate-requests",
+  Complaints: "complaints",
+  Students: "students",
+  Notifications: "notifications",
+  Profile: "profile",
+};
+
+const WARDEN_PATH_TO_SECTION = Object.fromEntries(
+  Object.entries(WARDEN_SECTION_TO_PATH)
+    .filter(([, slug]) => Boolean(slug))
+    .map(([label, slug]) => [slug, label]),
+);
+
+const getWardenSectionFromPath = (pathname) => {
+  const normalized = pathname.replace(/\/+$/, "");
+  const segment = normalized.replace(/^\/warden\/dashboard\/?/, "");
+  if (!segment) return "Dashboard";
+  return WARDEN_PATH_TO_SECTION[segment] || "Dashboard";
+};
+
 function WardenDashboard({ mode = "light", onToggleTheme }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
-  const [activeNav, setActiveNav] = useState("Dashboard");
+  const activeNav = getWardenSectionFromPath(location.pathname);
   const [searchQuery, setSearchQuery] = useState("");
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+
+  const navigateToSection = useCallback(
+    (label) => {
+      const slug = WARDEN_SECTION_TO_PATH[label];
+      const nextPath = slug ? `${WARDEN_BASE_PATH}/${slug}` : WARDEN_BASE_PATH;
+      if (location.pathname !== nextPath) {
+        navigate(nextPath);
+      }
+    },
+    [location.pathname, navigate],
+  );
 
   const fetchDashboardData = useCallback(async ({ silent = false } = {}) => {
     if (!silent) {
@@ -274,7 +313,7 @@ function WardenDashboard({ mode = "light", onToggleTheme }) {
         bgcolor: "background.default",
       }}
     >
-      <WardenSidebarNav activeNav={activeNav} onSelect={setActiveNav} />
+      <WardenSidebarNav activeNav={activeNav} onSelect={navigateToSection} />
       <Box
         sx={{
           flexGrow: 1,

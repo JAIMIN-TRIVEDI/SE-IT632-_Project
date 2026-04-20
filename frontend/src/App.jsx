@@ -121,7 +121,7 @@ function App() {
 
             {/* ✅ STUDENT */}
             <Route
-              path="/student/dashboard"
+              path="/student/dashboard/*"
               element={
                 <ProtectedRoute allowedRoles={["student"]}>
                   <StudentDashboard
@@ -158,7 +158,7 @@ function App() {
 
             {/* ✅ WARDEN */}
             <Route
-              path="/warden/dashboard"
+              path="/warden/dashboard/*"
               element={
                 <ProtectedRoute allowedRoles={["warden"]}>
                   <WardenDashboard
@@ -171,7 +171,7 @@ function App() {
 
             {/* ✅ ADMIN */}
             <Route
-              path="/hostel-admin/dashboard"
+              path="/hostel-admin/dashboard/*"
               element={
                 <ProtectedRoute allowedRoles={["hostel_admin"]}>
                   <AdminDashboard />

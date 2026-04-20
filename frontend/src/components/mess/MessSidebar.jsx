@@ -1,16 +1,42 @@
 import { Box, Typography } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
+import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
+import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
+import RestaurantMenuOutlinedIcon from "@mui/icons-material/RestaurantMenuOutlined";
+import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
+import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import { useLocation, useNavigate } from "react-router-dom";
 import BrandImage from "../BrandImage.jsx";
 
 const menu = [
-  { label: "Dashboard", route: "/mess-admin/dashboard" },
-  { label: "Mess Plans", route: "/mess-admin/plans" },
-  { label: "Records", route: "/mess-admin/records" },
-  { label: "Menu Management", route: "/mess-admin/menu" },
-  { label: "Notifications", route: "/mess-admin/notifications" },
-  { label: "Reports", route: "/mess-admin/reports" },
-  { label: "Profile", route: "/mess-admin/profile" },
+  {
+    label: "Dashboard",
+    route: "/mess-admin/dashboard",
+    icon: DashboardIcon,
+  },
+  {
+    label: "Mess Plans",
+    route: "/mess-admin/plans",
+    icon: ReceiptLongOutlinedIcon,
+  },
+  { label: "Records", route: "/mess-admin/records", icon: MenuBookOutlinedIcon },
+  {
+    label: "Menu Management",
+    route: "/mess-admin/menu",
+    icon: RestaurantMenuOutlinedIcon,
+  },
+  {
+    label: "Notifications",
+    route: "/mess-admin/notifications",
+    icon: NotificationsNoneOutlinedIcon,
+  },
+  {
+    label: "Reports",
+    route: "/mess-admin/reports",
+    icon: AssessmentOutlinedIcon,
+  },
+  { label: "Profile", route: "/mess-admin/profile", icon: PersonOutlineOutlinedIcon },
 ];
 
 function MessSidebar() {
@@ -37,6 +63,7 @@ function MessSidebar() {
 
       {/* Menu */}
       {menu.map((item) => {
+        const Icon = item.icon;
         const isActive =
           location.pathname === item.route ||
           (item.route === "/mess-admin/dashboard" &&
@@ -47,6 +74,9 @@ function MessSidebar() {
             onClick={() => navigate(item.route)}
             sx={{
               p: 1.3,
+              display: "flex",
+              alignItems: "center",
+              gap: 1.2,
               borderRadius: 2,
               cursor: "pointer",
               bgcolor: isActive ? "primary.main" : "transparent",
@@ -56,7 +86,8 @@ function MessSidebar() {
               },
             }}
           >
-            {item.label}
+            <Icon fontSize="small" />
+            <Box component="span">{item.label}</Box>
           </Box>
         );
       })}

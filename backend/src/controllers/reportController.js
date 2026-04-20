@@ -185,31 +185,43 @@ const parseAnnouncementMessage = (value = "") => {
 };
 
 const buildRoomAvailability = (rooms = []) => {
-  const counters = {
-    single: { available: 0, total: 0 },
-    double: { available: 0, total: 0 },
+  const defaultTypes = ["double", "triple", "quad"];
+  const counters = defaultTypes.reduce((acc, type) => {
+    acc[type] = { occupied: 0, total: 0 };
+    return acc;
+  }, {});
+
+  const toLabel = (type) => {
+    const normalized = String(type || "").toLowerCase();
+    if (!normalized) return "Unknown Rooms";
+    return `${normalized.charAt(0).toUpperCase()}${normalized.slice(1)} Rooms`;
   };
 
   rooms.forEach((room) => {
     const type = String(room.roomType || "").toLowerCase();
-    if (type === "single") {
-      counters.single.total += 1;
-      if ((room.status || "") === "available" && Number(room.occupiedCount || 0) < Number(room.capacity || 0)) {
-        counters.single.available += 1;
-      }
+    if (!counters[type]) {
+      counters[type] = { occupied: 0, total: 0 };
     }
 
-    if (type === "double") {
-      counters.double.total += 1;
-      if ((room.status || "") === "available" && Number(room.occupiedCount || 0) < Number(room.capacity || 0)) {
-        counters.double.available += 1;
-      }
+    counters[type].total += 1;
+    if (Number(room.occupiedCount || 0) > 0) {
+      counters[type].occupied += 1;
     }
   });
 
+  const orderedTypes = [
+    ...defaultTypes,
+    ...Object.keys(counters).filter((type) => !defaultTypes.includes(type)),
+  ];
+
   return {
-    singleRooms: counters.single,
-    doubleRooms: counters.double,
+    roomTypes: orderedTypes.map((type) => ({
+      key: type,
+      label: toLabel(type),
+      total: Number(counters[type]?.total || 0),
+      occupied: Number(counters[type]?.occupied || 0),
+      available: Math.max(Number(counters[type]?.total || 0) - Number(counters[type]?.occupied || 0), 0),
+    })),
   };
 };
 
@@ -229,8 +241,11 @@ export const wardenDashboard = async (req, res) => {
         recentActivity: [],
         announcements: [],
         roomAvailability: {
-          singleRooms: { available: 0, total: 0 },
-          doubleRooms: { available: 0, total: 0 },
+          roomTypes: [
+            { key: "double", label: "Double Rooms", total: 0, occupied: 0, available: 0 },
+            { key: "triple", label: "Triple Rooms", total: 0, occupied: 0, available: 0 },
+            { key: "quad", label: "Quad Rooms", total: 0, occupied: 0, available: 0 },
+          ],
         },
       },
     });
@@ -238,15 +253,24 @@ export const wardenDashboard = async (req, res) => {
 
   const [
     roomDocs,
-    pendingComplaints,
-    pendingVacateRequests,
+    managedStudentIds,
+    pendingVacateStudents,
     recentAllocations,
     recentVacates,
     announcementDocs,
   ] = await Promise.all([
-    Room.find({ hostelId: { $in: managedHostelIds } }, { roomType: 1, capacity: 1, occupiedCount: 1, status: 1 }).lean(),
-    Complaint.countDocuments({ status: "pending", hostelId: { $in: managedHostelIds } }),
-    VacateRequest.countDocuments({ status: "pending", hostelId: { $in: managedHostelIds } }),
+    Room.find(
+      { hostelId: { $in: managedHostelIds } },
+      { roomType: 1, capacity: 1, occupiedCount: 1, status: 1, roomNumber: 1 }
+    ).lean(),
+    RoomAllocation.distinct("studentId", {
+      hostelId: { $in: managedHostelIds },
+      status: "active",
+    }),
+    VacateRequest.distinct("studentId", {
+      status: "pending",
+      hostelId: { $in: managedHostelIds },
+    }),
     RoomAllocation.find({ status: "active", hostelId: { $in: managedHostelIds } })
       .sort({ updatedAt: -1 })
       .limit(8)
@@ -269,23 +293,45 @@ export const wardenDashboard = async (req, res) => {
       .lean(),
   ]);
 
+  const managedRoomIds = new Set(roomDocs.map((room) => String(room._id)));
+  const managedStudentIdSet = new Set(managedStudentIds.map((id) => String(id)));
+
+  const pendingComplaintFilter = {
+    status: "pending",
+    $or: [{ hostelId: { $in: managedHostelIds } }],
+  };
+
+  if (managedStudentIds.length) {
+    pendingComplaintFilter.$or.push({ studentId: { $in: managedStudentIds } });
+  }
+
+  const pendingComplaints = await Complaint.countDocuments(pendingComplaintFilter);
+
   const totalRooms = roomDocs.length;
   const totalCapacity = roomDocs.reduce((sum, room) => sum + Number(room.capacity || 0), 0);
   const occupiedRooms = roomDocs.filter((room) => Number(room.occupiedCount || 0) > 0).length;
 
-  const checkInActivity = recentAllocations.map((row) => ({
-    studentName: row.studentId?.name || "Student",
-    roomNumber: row.roomId?.roomNumber || "-",
-    status: "CHECK-IN",
-    time: row.updatedAt || row.createdAt,
-  }));
+  const checkInActivity = recentAllocations
+    .filter(
+      (row) =>
+        managedRoomIds.has(String(row.roomId?._id || row.roomId))
+        && managedStudentIdSet.has(String(row.studentId?._id || row.studentId))
+    )
+    .map((row) => ({
+      studentName: row.studentId?.name || "Student",
+      roomNumber: row.roomId?.roomNumber || "-",
+      status: "CHECK-IN",
+      time: row.updatedAt || row.createdAt,
+    }));
 
-  const checkOutActivity = recentVacates.map((row) => ({
-    studentName: row.studentId?.name || "Student",
-    roomNumber: row.roomId?.roomNumber || "-",
-    status: "CHECK-OUT",
-    time: row.processedAt || row.updatedAt || row.createdAt,
-  }));
+  const checkOutActivity = recentVacates
+    .filter((row) => managedRoomIds.has(String(row.roomId?._id || row.roomId)))
+    .map((row) => ({
+      studentName: row.studentId?.name || "Student",
+      roomNumber: row.roomId?.roomNumber || "-",
+      status: "CHECK-OUT",
+      time: row.processedAt || row.updatedAt || row.createdAt,
+    }));
 
   const recentActivity = [...checkInActivity, ...checkOutActivity]
     .sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0))
@@ -307,7 +353,7 @@ export const wardenDashboard = async (req, res) => {
       totalCapacity,
       occupiedRooms,
       pendingComplaints,
-      studentsOnLeave: pendingVacateRequests,
+      studentsOnLeave: pendingVacateStudents.length,
       recentActivity,
       announcements,
       roomAvailability: buildRoomAvailability(roomDocs),
@@ -654,7 +700,7 @@ export const hostelStudentsReport = async (req, res) => {
       const hostel = allocation.hostelId;
       const student = allocation.studentId;
 
-      if (!hostel || !student) return;
+      if (!hostel) return;
 
       const hostelKey = hostel._id.toString();
       if (!hostelMap.has(hostelKey)) {
@@ -669,13 +715,14 @@ export const hostelStudentsReport = async (req, res) => {
 
       const currentHostel = hostelMap.get(hostelKey);
       currentHostel.students.push({
-        studentId: student._id,
-        name: student.name,
-        email: student.email,
-        phone: student.phone,
-        enrollmentNo: student.enrollmentNo,
-        gender: student.gender,
-        isActive: student.isActive,
+        studentId: student?._id || allocation.studentId || null,
+        name: student?.name || "Unknown Student",
+        email: student?.email || "",
+        phone: student?.phone || "",
+        enrollmentNo: student?.enrollmentNo || "",
+        gender: student?.gender || "",
+        isActive: student?.isActive ?? true,
+        roomId: allocation.roomId?._id || null,
         roomNumber: allocation.roomId?.roomNumber || null,
         roomType: allocation.roomId?.roomType || null,
         roomStatus: allocation.roomId?.status || null,
@@ -766,7 +813,7 @@ export const wardenHostelStudentsReport = async (req, res) => {
       const hostel = allocation.hostelId;
       const student = allocation.studentId;
 
-      if (!hostel || !student) return;
+      if (!hostel) return;
 
       const hostelKey = hostel._id.toString();
       if (!hostelMap.has(hostelKey)) {
@@ -781,13 +828,14 @@ export const wardenHostelStudentsReport = async (req, res) => {
 
       const currentHostel = hostelMap.get(hostelKey);
       currentHostel.students.push({
-        studentId: student._id,
-        name: student.name,
-        email: student.email,
-        phone: student.phone,
-        enrollmentNo: student.enrollmentNo,
-        gender: student.gender,
-        isActive: student.isActive,
+        studentId: student?._id || allocation.studentId || null,
+        name: student?.name || "Unknown Student",
+        email: student?.email || "",
+        phone: student?.phone || "",
+        enrollmentNo: student?.enrollmentNo || "",
+        gender: student?.gender || "",
+        isActive: student?.isActive ?? true,
+        roomId: allocation.roomId?._id || null,
         roomNumber: allocation.roomId?.roomNumber || null,
         roomType: allocation.roomId?.roomType || null,
         roomStatus: allocation.roomId?.status || null,

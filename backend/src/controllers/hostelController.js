@@ -33,10 +33,62 @@ const attachBlocksAndRooms = async (hostelDocs) => {
     Room.find({ hostelId: { $in: hostelIds } }).sort({ roomNumber: 1 }).lean(),
   ]);
 
+  const activeAllocations = await RoomAllocation.find({
+    hostelId: { $in: hostelIds },
+    status: "active",
+  })
+    .select("roomId")
+    .lean();
+
+  const activeAllocationCountByRoom = activeAllocations.reduce((acc, allocation) => {
+    const roomKey = allocation.roomId?.toString();
+    if (!roomKey) return acc;
+    acc.set(roomKey, (acc.get(roomKey) || 0) + 1);
+    return acc;
+  }, new Map());
+
+  const roomSyncOps = [];
+
+  const normalizedRooms = rooms.map((room) => {
+    const roomKey = room._id?.toString();
+    const occupiedFromAllocations = roomKey ? Number(activeAllocationCountByRoom.get(roomKey) || 0) : 0;
+    const capacity = Number(room.capacity || 0);
+
+    const normalizedStatus = room.status === "maintenance"
+      ? "maintenance"
+      : occupiedFromAllocations >= capacity && capacity > 0
+        ? "full"
+        : "available";
+
+    if (room.occupiedCount !== occupiedFromAllocations || room.status !== normalizedStatus) {
+      roomSyncOps.push({
+        updateOne: {
+          filter: { _id: room._id },
+          update: {
+            $set: {
+              occupiedCount: occupiedFromAllocations,
+              ...(room.status === "maintenance" ? {} : { status: normalizedStatus }),
+            },
+          },
+        },
+      });
+    }
+
+    return {
+      ...room,
+      occupiedCount: occupiedFromAllocations,
+      status: normalizedStatus,
+    };
+  });
+
+  if (roomSyncOps.length > 0) {
+    await Room.bulkWrite(roomSyncOps);
+  }
+
   const roomsByBlock = new Map();
   const roomsByHostel = new Map();
 
-  for (const room of rooms) {
+  for (const room of normalizedRooms) {
     const blockKey = room.blockId?.toString();
     const hostelKey = room.hostelId?.toString();
 

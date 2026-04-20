@@ -340,8 +340,20 @@ function MessReports() {
       </Box>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <Card sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}>
+        <Grid item xs={12}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, minmax(0, 1fr))",
+                md: "repeat(3, minmax(0, 1fr))",
+                lg: "repeat(6, minmax(0, 1fr))",
+              },
+              gap: 2,
+            }}
+          >
+            <Card sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)", height: "100%" }}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <People color="primary" sx={{ mr: 1 }} />
@@ -357,10 +369,7 @@ function MessReports() {
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <Card sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}>
+            <Card sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)", height: "100%" }}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <Assignment color="secondary" sx={{ mr: 1 }} />
@@ -373,10 +382,7 @@ function MessReports() {
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <Card sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}>
+            <Card sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)", height: "100%" }}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <Payment color="success" sx={{ mr: 1 }} />
@@ -389,10 +395,7 @@ function MessReports() {
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <Card sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}>
+            <Card sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)", height: "100%" }}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <TrendingUp color="warning" sx={{ mr: 1 }} />
@@ -405,10 +408,7 @@ function MessReports() {
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <Card sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}>
+            <Card sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)", height: "100%" }}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <TrendingDown color="warning" sx={{ mr: 1 }} />
@@ -424,10 +424,7 @@ function MessReports() {
               </Typography>
             </CardContent>
           </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={4} lg={2}>
-          <Card sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}>
+            <Card sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)", height: "100%" }}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <TrendingUp color="primary" sx={{ mr: 1 }} />
@@ -441,11 +438,23 @@ function MessReports() {
               <Box sx={{ mt: 1 }}>{revenueTrendChip}</Box>
             </CardContent>
           </Card>
+          </Box>
         </Grid>
       </Grid>
 
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} lg={8}>
+      <Box
+        sx={{
+          mb: 4,
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "1fr",
+            xl: "1.35fr 1fr",
+          },
+          gap: 3,
+          alignItems: "stretch",
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
           <Card
             sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)", height: "100%" }}
           >
@@ -476,9 +485,9 @@ function MessReports() {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
-        <Grid item xs={12} lg={4}>
+        <Box sx={{ minWidth: 0 }}>
           <Card
             sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)", height: "100%" }}
           >
@@ -515,8 +524,8 @@ function MessReports() {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       <Card sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)", mb: 4 }}>
         <CardContent>
@@ -547,8 +556,19 @@ function MessReports() {
             Refund Records
           </Typography>
 
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={12} sm={6} md={3}>
+          <Box
+            sx={{
+              mb: 2,
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, minmax(0, 1fr))",
+                lg: "repeat(4, minmax(0, 1fr))",
+              },
+              gap: 2,
+            }}
+          >
+            <Box>
               <FormControl fullWidth size="small">
                 <InputLabel>Status</InputLabel>
                 <Select
@@ -564,9 +584,9 @@ function MessReports() {
                   <MenuItem value="rejected">Rejected</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Box>
               <FormControl fullWidth size="small">
                 <InputLabel>Plan</InputLabel>
                 <Select
@@ -584,9 +604,9 @@ function MessReports() {
                   ))}
                 </Select>
               </FormControl>
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Box>
               <TextField
                 type="date"
                 label="From"
@@ -598,9 +618,9 @@ function MessReports() {
                   handleFilterChange("from", event.target.value)
                 }
               />
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Box>
               <TextField
                 type="date"
                 label="To"
@@ -612,8 +632,8 @@ function MessReports() {
                   handleFilterChange("to", event.target.value)
                 }
               />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
 
           <TableContainer component={Paper} variant="outlined">
             <Table size="small">

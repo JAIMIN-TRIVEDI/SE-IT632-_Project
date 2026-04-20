@@ -8,6 +8,7 @@ import {
   Skeleton,
   Typography,
 } from "@mui/material";
+import { useLocation, useNavigate } from "react-router-dom";
 import SidebarNav from "../components/dashboard/SidebarNav.jsx";
 import TopBar from "../components/dashboard/TopBar.jsx";
 import DashboardHeader from "../components/dashboard/DashboardHeader.jsx";
@@ -22,13 +23,45 @@ import ReportsView from "../components/dashboard/admin/ReportsView.jsx";
 import NotificationsView from "../components/dashboard/admin/NotificationsView.jsx";
 import api from "../api/api";
 
+const ADMIN_BASE_PATH = "/hostel-admin/dashboard";
+const ADMIN_SECTION_TO_PATH = {
+  Hostels: "",
+  Students: "students",
+  Payments: "payments",
+  Reports: "reports",
+  Notifications: "notifications",
+};
+
+const ADMIN_PATH_TO_SECTION = Object.fromEntries(
+  Object.entries(ADMIN_SECTION_TO_PATH)
+    .filter(([, slug]) => Boolean(slug))
+    .map(([label, slug]) => [slug, label]),
+);
+
+const getAdminSectionFromPath = (pathname) => {
+  const normalized = pathname.replace(/\/+$/, "");
+  const segment = normalized.replace(/^\/hostel-admin\/dashboard\/?/, "");
+  if (!segment) return "Hostels";
+  return ADMIN_PATH_TO_SECTION[segment] || "Hostels";
+};
+
 function AdminDashboard() {
-  const [activeNav, setActiveNav] = useState("Hostels");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const activeNav = getAdminSectionFromPath(location.pathname);
 
   // ✅ REAL DATA STATE
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const navigateToSection = (label) => {
+    const slug = ADMIN_SECTION_TO_PATH[label];
+    const nextPath = slug ? `${ADMIN_BASE_PATH}/${slug}` : ADMIN_BASE_PATH;
+    if (location.pathname !== nextPath) {
+      navigate(nextPath);
+    }
+  };
 
   const fetchDashboard = async () => {
     try {
@@ -146,7 +179,7 @@ function AdminDashboard() {
         bgcolor: "background.default",
       }}
     >
-      <SidebarNav activeNav={activeNav} onSelect={setActiveNav} />
+      <SidebarNav activeNav={activeNav} onSelect={navigateToSection} />
 
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
         <TopBar />

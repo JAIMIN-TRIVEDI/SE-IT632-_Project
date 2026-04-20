@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Alert, Box, Button, CircularProgress, Skeleton, Typography } from '@mui/material'
+import { useLocation, useNavigate } from 'react-router-dom'
 import StudentSidebarNav from '../components/dashboard/student/StudentSidebarNav.jsx'
 import StudentTopBar from '../components/dashboard/student/StudentTopBar.jsx'
 import StudentStatusCards from '../components/dashboard/student/StudentStatusCards.jsx'
@@ -14,12 +15,50 @@ import StudentComplaints from './StudentComplaints.jsx'
 import StudentNotifications from './StudentNotifications.jsx'
 import api from '../api/api'
 
+const STUDENT_BASE_PATH = '/student/dashboard'
+const STUDENT_SECTION_TO_PATH = {
+  Dashboard: '',
+  'My Room': 'my-room',
+  'Mess Subscription': 'mess-subscription',
+  'Mess Menu': 'mess-menu',
+  Payments: 'payments',
+  Complaints: 'complaints',
+  Notifications: 'notifications',
+  Profile: 'profile',
+}
+
+const STUDENT_PATH_TO_SECTION = Object.fromEntries(
+  Object.entries(STUDENT_SECTION_TO_PATH)
+    .filter(([, slug]) => Boolean(slug))
+    .map(([label, slug]) => [slug, label]),
+)
+
+const getStudentSectionFromPath = (pathname) => {
+  const normalized = pathname.replace(/\/+$/, '')
+  const segment = normalized.replace(/^\/student\/dashboard\/?/, '')
+  if (!segment) return 'Dashboard'
+  return STUDENT_PATH_TO_SECTION[segment] || 'Dashboard'
+}
+
 function StudentDashboard({ mode = 'light', onToggleTheme }) {
-  const [activeNav, setActiveNav] = useState('Dashboard')
+  const navigate = useNavigate()
+  const location = useLocation()
+  const activeNav = getStudentSectionFromPath(location.pathname)
   const [searchQuery, setSearchQuery] = useState('')
   const [dashboardData, setDashboardData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  const navigateToSection = useCallback(
+    (label) => {
+      const slug = STUDENT_SECTION_TO_PATH[label]
+      const nextPath = slug ? `${STUDENT_BASE_PATH}/${slug}` : STUDENT_BASE_PATH
+      if (location.pathname !== nextPath) {
+        navigate(nextPath)
+      }
+    },
+    [location.pathname, navigate],
+  )
 
   const fetchDashboard = useCallback(async ({ preserveError = false } = {}) => {
     try {
@@ -152,9 +191,9 @@ function StudentDashboard({ mode = 'light', onToggleTheme }) {
               <StudentRecentNotifications
                 notifications={dashboardData?.notifications || []}
                 searchQuery={searchQuery}
-                onViewAllNotifications={() => setActiveNav('Notifications')}
+                  onViewAllNotifications={() => navigateToSection('Notifications')}
               />
-              <StudentQuickActions searchQuery={searchQuery} onActionSelect={setActiveNav} />
+              <StudentQuickActions searchQuery={searchQuery} onActionSelect={navigateToSection} />
             </Box>
           </>
         )
@@ -163,7 +202,7 @@ function StudentDashboard({ mode = 'light', onToggleTheme }) {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      <StudentSidebarNav activeNav={activeNav} onSelect={setActiveNav} user={dashboardData?.user} />
+      <StudentSidebarNav activeNav={activeNav} onSelect={navigateToSection} user={dashboardData?.user} />
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <StudentTopBar
           activeNav={activeNav}
@@ -174,7 +213,7 @@ function StudentDashboard({ mode = 'light', onToggleTheme }) {
           searchQuery={searchQuery}
           searchPlaceholder={getSearchPlaceholder()}
           onSearchChange={setSearchQuery}
-          onProfileClick={() => setActiveNav('Profile')}
+          onProfileClick={() => navigateToSection('Profile')}
         />
         <Box sx={{ px: 4, pb: 4, pt: 2, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 3, overflowY: 'auto' }}>
           {renderContent()}

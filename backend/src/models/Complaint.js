@@ -10,6 +10,10 @@ const ComplaintSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Hostel",
   },
+  roomId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Room",
+  },
   // New fields for the redesigned form
   category: {
     type: String,
