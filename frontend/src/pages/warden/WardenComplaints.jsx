@@ -14,6 +14,28 @@ const STATUS_LABELS = {
   resolved: 'Resolved',
 }
 
+const getRoomLabel = (complaint) => {
+  const room = complaint?.roomId
+
+  if (room && typeof room === 'object') {
+    const roomNumber = room.roomNumber?.trim()
+
+    if (roomNumber) {
+      return roomNumber
+    }
+  }
+
+  if (typeof room === 'string' && room.trim()) {
+    return room
+  }
+
+  if (typeof complaint?.room === 'string' && complaint.room.trim()) {
+    return complaint.room
+  }
+
+  return 'N/A'
+}
+
 function WardenComplaints({ searchQuery }) {
   const [complaints, setComplaints] = useState([])
   const [loading, setLoading] = useState(true)
@@ -154,7 +176,7 @@ function WardenComplaints({ searchQuery }) {
                     </Typography>
                   </Box>
                 </TableCell>
-                <TableCell sx={{ py: 2, border: 'none', color: 'text.secondary' }}>{complaint.roomId || complaint.room || 'N/A'}</TableCell>
+                <TableCell sx={{ py: 2, border: 'none', color: 'text.secondary' }}>{getRoomLabel(complaint)}</TableCell>
                 <TableCell sx={{ py: 2, border: 'none', color: 'text.secondary' }}>{complaint.category || 'General'}</TableCell>
                 <TableCell sx={{ py: 2, border: 'none' }}>
                   <Chip

@@ -22,6 +22,13 @@ function RoomCardItem({ room, searchQuery = '' }) {
     return Math.min(100, Math.round((room.occupiedCount / room.capacity) * 100))
   }, [room.capacity, room.occupiedCount])
 
+  const occupancyColor = useMemo(() => {
+    if (occupancyPct === 0) return 'success.main'
+    if (occupancyPct < 50) return 'info.main'
+    if (occupancyPct < 80) return 'warning.main'
+    return 'error.main'
+  }, [occupancyPct])
+
   const canExpand = room.effectiveStatus === 'occupied' || room.students.length > 0
 
   return (
@@ -130,7 +137,7 @@ function RoomCardItem({ room, searchQuery = '' }) {
               bgcolor: 'divider',
               '& .MuiLinearProgress-bar': {
                 borderRadius: 4,
-                bgcolor: room.effectiveStatus === 'occupied' ? 'error.main' : room.effectiveStatus === 'maintenance' ? 'warning.main' : 'success.main',
+                bgcolor: occupancyColor,
               },
             }}
           />

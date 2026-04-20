@@ -1,4 +1,6 @@
 import Complaint from "../models/Complaint.js";
+import Hostel from "../models/Hostel.js";
+import RoomAllocation from "../models/RoomAllocation.js";
 
 const emitWardenUpdate = (req) => {
   const io = req.app.get("io");
@@ -9,15 +11,31 @@ const emitWardenUpdate = (req) => {
   });
 };
 
+const roomPopulateConfig = {
+  path: "roomId",
+  select: "roomNumber blockId",
+  populate: {
+    path: "blockId",
+    select: "name",
+  },
+};
+
 export const createComplaint = async (req, res) => {
 
   try {
 
+    const activeAllocation = await RoomAllocation.findOne({
+      studentId: req.user._id,
+      status: "active",
+    })
+      .select("hostelId roomId")
+      .lean();
+
     const complaint = await Complaint.create({
       ...req.body,
       studentId: req.user._id,
-      hostelId: req.user.hostelId,
-      roomId: req.user.roomId
+      hostelId: activeAllocation?.hostelId || req.body.hostelId,
+      roomId: activeAllocation?.roomId || req.body.roomId,
     });
 
     res.status(201).json({
@@ -43,8 +61,34 @@ export const getComplaints = async (req, res) => {
       filter.studentId = req.user._id;
     }
 
+    if (req.user.role === "warden") {
+      const managedHostels = await Hostel.find({ wardenId: req.user._id }).select("_id").lean();
+      const managedHostelIds = managedHostels.map((hostel) => hostel._id);
+
+      if (!managedHostelIds.length) {
+        return res.json({ success: true, data: [] });
+      }
+
+      const managedStudentIds = await RoomAllocation.distinct("studentId", {
+        hostelId: { $in: managedHostelIds },
+        status: "active",
+      });
+
+      filter = {
+        ...filter,
+        $or: [
+          { hostelId: { $in: managedHostelIds } },
+        ],
+      };
+
+      if (managedStudentIds.length) {
+        filter.$or.push({ studentId: { $in: managedStudentIds } });
+      }
+    }
+
     const complaints = await Complaint.find(filter)
-      .populate("studentId", "name email");
+      .populate("studentId", "name email")
+      .populate(roomPopulateConfig);
 
     res.json({
       success: true,
@@ -62,7 +106,8 @@ export const getComplaintById = async (req, res) => {
   try {
 
     const complaint = await Complaint.findById(req.params.id)
-      .populate("studentId", "name email");
+      .populate("studentId", "name email")
+      .populate(roomPopulateConfig);
 
     if (!complaint) {
       return res.status(404).json({ message: "Complaint not found" });
@@ -96,10 +141,15 @@ export const updateComplaintStatus = async (req, res) => {
 
     await complaint.save();
 
+    await complaint.populate("studentId", "name email");
+    await complaint.populate(roomPopulateConfig);
+
     res.json({
       success: true,
       data: complaint
     });
+
+    emitWardenUpdate(req);
 
   } catch (err) {
     res.status(500).json({ message: err.message });

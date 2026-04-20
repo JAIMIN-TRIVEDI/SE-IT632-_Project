@@ -1,27 +1,31 @@
 import { Box, LinearProgress, Typography } from "@mui/material";
-import { Add } from "@mui/icons-material";
 import DashboardCard from "../DashboardCard.jsx";
 
-const toAvailabilityRows = (roomAvailability = {}) => [
-  {
-    label: "Single Rooms",
-    available: Number(roomAvailability?.singleRooms?.available || 0),
-    total: Number(roomAvailability?.singleRooms?.total || 0),
-    color: "#2563eb",
-  },
-  {
-    label: "Double Rooms",
-    available: Number(roomAvailability?.doubleRooms?.available || 0),
-    total: Number(roomAvailability?.doubleRooms?.total || 0),
-    color: "#16a34a",
-  },
-];
+const TYPE_COLORS = {
+  double: "#2563eb",
+  triple: "#16a34a",
+  quad: "#f59e0b",
+};
+
+const toAvailabilityRows = (roomAvailability = {}) => {
+  const rows = Array.isArray(roomAvailability?.roomTypes)
+    ? roomAvailability.roomTypes
+    : [];
+
+  return rows.map((item) => ({
+    label: item?.label || "Rooms",
+    total: Number(item?.total || 0),
+    occupied: Number(item?.occupied || 0),
+    available: Number(item?.available || 0),
+    color: TYPE_COLORS[item?.key] || "#6366f1",
+  }));
+};
 
 function WardenAvailabilityCard({ roomAvailability }) {
   const availabilityRows = toAvailabilityRows(roomAvailability);
 
   return (
-    <DashboardCard sx={{ position: "relative" }}>
+    <DashboardCard>
       <Box
         display="flex"
         justifyContent="space-between"
@@ -40,12 +44,12 @@ function WardenAvailabilityCard({ roomAvailability }) {
                 {item.label}
               </Typography>
               <Typography fontSize={13} color="text.secondary">
-                {item.available}/{item.total}
+                {item.occupied}/{item.total} occupied
               </Typography>
             </Box>
             <LinearProgress
               variant="determinate"
-              value={item.total > 0 ? (item.available / item.total) * 100 : 0}
+              value={item.total > 0 ? (item.occupied / item.total) * 100 : 0}
               sx={{
                 height: 6,
                 borderRadius: 3,
@@ -58,29 +62,6 @@ function WardenAvailabilityCard({ roomAvailability }) {
             />
           </Box>
         ))}
-      </Box>
-      <Box
-        sx={{
-          position: "absolute",
-          bottom: 16,
-          right: 16,
-          width: 44,
-          height: 44,
-          borderRadius: "50%",
-          bgcolor: "primary.main",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#fff",
-          cursor: "default",
-          boxShadow: (theme) =>
-            theme.palette.mode === "dark"
-              ? "0 4px 12px rgba(0,0,0,0.5)"
-              : "0 4px 12px rgba(37,99,235,0.4)",
-          "&:hover": { bgcolor: "primary.main" },
-        }}
-      >
-        <Add />
       </Box>
     </DashboardCard>
   );
