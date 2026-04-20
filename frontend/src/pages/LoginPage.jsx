@@ -133,6 +133,7 @@ function LoginPage() {
                 />
                 <Link
                   component="button"
+                  type="button"
                   onClick={(e) => {
                     e.preventDefault();
                     navigate("/forgot-password");
@@ -169,6 +170,7 @@ function LoginPage() {
                   Don't have an account?{" "}
                   <Link
                     component="button"
+                    type="button"
                     onClick={(e) => {
                       e.preventDefault();
                       navigate("/register");
