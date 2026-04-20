@@ -10,14 +10,17 @@ import {
   Navigate,
   Routes,
   Route,
+  useLocation,
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext.jsx";
 
 import RootLayout from "./layouts/RootLayout.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
 import AboutPage from "./pages/AboutPage.jsx";
+import HomeLinkedPage from "./pages/HomeLinkedPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
+import ResetPassword from "./pages/ResetPassword.jsx";
 
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import WardenDashboard from "./pages/WardenDashboard.jsx";
@@ -42,6 +45,20 @@ import { getDefaultRouteForRole } from "./utils/roleRoutes.js";
 
 import getTheme from "./styles/theme.js";
 import "./styles/app.css";
+
+function ScrollManager() {
+  const { pathname, hash } = useLocation();
+
+  useEffect(() => {
+    if (hash) {
+      return;
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [pathname, hash]);
+
+  return null;
+}
 
 function HomeEntry({ mode, onToggleTheme }) {
   const { isInitializing, isAuthenticated, user } = useAuth();
@@ -98,6 +115,7 @@ function App() {
 
       <Router>
         <AuthProvider>
+          <ScrollManager />
           <Routes>
             {/* Landing */}
             <Route
@@ -114,10 +132,22 @@ function App() {
                 </RootLayout>
               }
             />
+            <Route
+              path="/info/:slug"
+              element={
+                <RootLayout>
+                  <HomeLinkedPage
+                    mode={mode}
+                    onToggleTheme={handleToggleTheme}
+                  />
+                </RootLayout>
+              }
+            />
 
             {/* Auth */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
 
             {/* ✅ STUDENT */}
             <Route

@@ -12,21 +12,70 @@ import FacebookIcon from "@mui/icons-material/Facebook";
 import TwitterIcon from "@mui/icons-material/Twitter";
 import LinkedInIcon from "@mui/icons-material/LinkedIn";
 import SendIcon from "@mui/icons-material/Send";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { subscribeToUpdates } from "../services/supportService.js";
 import LogoMark from "./LogoMark.jsx";
 import BrandImage from "./BrandImage.jsx";
 
 const columns = [
   {
     title: "Product",
-    links: ["Features", "Admin Tools", "Student Mobile App", "Pricing"],
+    links: [
+      { label: "Features", path: "/info/features" },
+      { label: "Admin Tools", path: "/info/admin-tools" },
+      { label: "Student Mobile App (Upcoming)", path: "/info/student-mobile-app" },
+      { label: "Pricing", path: "/info/pricing" },
+    ],
   },
   {
     title: "Support",
-    links: ["Help Center", "API Docs", "Contact Support", "Security"],
+    links: [
+      { label: "Help Center", path: "/info/help-center" },
+      { label: "API Docs", path: "/info/api-docs" },
+      { label: "Contact Support", path: "/info/contact-support" },
+      { label: "Security", path: "/info/security" },
+    ],
   },
 ];
 
 function FooterSection() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState({ type: "", message: "" });
+
+  const currentYear = new Date().getFullYear();
+
+  const handleNavigate = (path) => {
+    navigate(path);
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  };
+
+  const handleSubscribe = async () => {
+    if (!email.trim()) {
+      setFeedback({ type: "error", message: "Please enter an email." });
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setFeedback({ type: "", message: "" });
+      await subscribeToUpdates(email.trim());
+      setFeedback({ type: "success", message: "Subscribed successfully." });
+      setEmail("");
+    } catch (err) {
+      setFeedback({
+        type: "error",
+        message: err.response?.data?.message || "Failed to subscribe.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <Box
       component="footer"
@@ -88,15 +137,16 @@ function FooterSection() {
                 <Stack spacing={1.2}>
                   {column.links.map((link) => (
                     <Button
-                      key={link}
+                      key={link.label}
                       color="inherit"
+                      onClick={() => handleNavigate(link.path)}
                       sx={{
                         justifyContent: "flex-start",
                         px: 0,
                         color: "rgba(255,255,255,0.7)",
                       }}
                     >
-                      {link}
+                      {link.label}
                     </Button>
                   ))}
                 </Stack>
@@ -118,10 +168,23 @@ function FooterSection() {
               placeholder="Email address"
               variant="outlined"
               size="small"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSubscribe();
+                }
+              }}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton sx={{ color: "#fff" }}>
+                    <IconButton
+                      sx={{ color: "#fff" }}
+                      onClick={handleSubscribe}
+                      disabled={submitting}
+                      aria-label="Subscribe to updates"
+                    >
                       <SendIcon fontSize="small" />
                     </IconButton>
                   </InputAdornment>
@@ -141,6 +204,21 @@ function FooterSection() {
                 },
               }}
             />
+            {feedback.message ? (
+              <Typography
+                variant="caption"
+                sx={{
+                  mt: 1,
+                  display: "block",
+                  color:
+                    feedback.type === "success"
+                      ? "#86efac"
+                      : "rgba(255,255,255,0.75)",
+                }}
+              >
+                {feedback.message}
+              </Typography>
+            ) : null}
           </Box>
         </Stack>
         <Box
@@ -160,7 +238,7 @@ function FooterSection() {
               variant="caption"
               sx={{ color: "rgba(255,255,255,0.6)" }}
             >
-              © 2024
+              © {currentYear}
             </Typography>
             <BrandImage width={125} sx={{ opacity: 0.9 }} />
             <Typography
@@ -171,10 +249,18 @@ function FooterSection() {
             </Typography>
           </Box>
           <Stack direction="row" spacing={2}>
-            <Button color="inherit" sx={{ color: "rgba(255,255,255,0.6)" }}>
+            <Button
+              color="inherit"
+              onClick={() => handleNavigate("/info/privacy-policy")}
+              sx={{ color: "rgba(255,255,255,0.6)" }}
+            >
               Privacy Policy
             </Button>
-            <Button color="inherit" sx={{ color: "rgba(255,255,255,0.6)" }}>
+            <Button
+              color="inherit"
+              onClick={() => handleNavigate("/info/terms-of-service")}
+              sx={{ color: "rgba(255,255,255,0.6)" }}
+            >
               Terms of Service
             </Button>
           </Stack>

@@ -10,6 +10,7 @@ import {
 } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded'
+import { useNavigate } from 'react-router-dom'
 
 const DashboardMockup = () => (
   <Paper
@@ -104,6 +105,15 @@ const DashboardMockup = () => (
 )
 
 const HeroSection = () => {
+  const navigate = useNavigate()
+
+  const handleNavigate = (path) => {
+    navigate(path)
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    })
+  }
+
   return (
     <Box sx={{ bgcolor: 'background.default', py: { xs: 6, md: 10 } }}>
       <Container maxWidth="lg">
@@ -153,6 +163,7 @@ const HeroSection = () => {
 
             <Box sx={{ display: 'flex', gap: 2, mb: 5, flexWrap: 'wrap' }}>
               <Button
+                onClick={() => handleNavigate('/register')}
                 variant="contained"
                 size="large"
                 sx={{
@@ -173,6 +184,7 @@ const HeroSection = () => {
                 variant="outlined"
                 size="large"
                 startIcon={<PlayArrowRoundedIcon />}
+                onClick={() => handleNavigate('/info/features')}
                 sx={{
                   borderColor: 'grey.300',
                   color: 'text.primary',

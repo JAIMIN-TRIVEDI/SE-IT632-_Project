@@ -13,6 +13,7 @@ import reportRoutes from "./routes/reportRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import vacateRoutes from "./routes/vacateRoutes.js";
 import wardenRoutes from "./routes/wardenRoutes.js";
+import supportRoutes from "./routes/supportRoutes.js";
 
 
 const app = express();
@@ -38,6 +39,7 @@ app.use("/api/v1", wardenRoutes);
 app.use("/api/v1", complaintRoutes);
 app.use("/api/v1/hostels", hostelRoutes);
 app.use("/api/v1/reports", reportRoutes);
+app.use("/api/v1/support", supportRoutes);
 
 app.use(errorHandler);
 export default app;
