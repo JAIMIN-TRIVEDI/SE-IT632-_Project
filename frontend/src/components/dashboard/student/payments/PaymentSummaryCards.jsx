@@ -3,19 +3,19 @@ import { Box, Card, Typography } from '@mui/material'
 
 export default function PaymentSummaryCards({ payments = [] }) {
   const summary = useMemo(() => {
-    const hostelPayments = payments.filter(
-      (payment) => payment.type === 'hostel' || payment.type === 'room_request'
+    const relevantPayments = payments.filter((payment) =>
+      ['hostel', 'room_request', 'mess'].includes(payment.type)
     )
 
-    const paidTotal = hostelPayments
+    const paidTotal = relevantPayments
       .filter((payment) => payment.status === 'success')
       .reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
 
-    const pendingTotal = hostelPayments
+    const pendingTotal = relevantPayments
       .filter((payment) => payment.status === 'pending' || payment.status === 'failed')
       .reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
 
-    const nextPending = hostelPayments
+    const nextPending = relevantPayments
       .filter((payment) => payment.status === 'pending' || payment.status === 'failed')
       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0]
 
@@ -40,7 +40,7 @@ export default function PaymentSummaryCards({ payments = [] }) {
       color: 'warning.main',
     },
     {
-      label: 'Next Due Date',
+      label: 'Next Due Date For Hostel Rent',
       value: summary.nextDueDate,
       color: 'text.primary',
     },
