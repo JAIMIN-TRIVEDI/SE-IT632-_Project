@@ -51,7 +51,6 @@ function MessSubscriptions() {
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selectedSubscription, setSelectedSubscription] = useState(null);
-  const [transferReference, setTransferReference] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
   const [snack, setSnack] = useState({
     open: false,
@@ -88,7 +87,6 @@ function MessSubscriptions() {
   const closeApproveDialog = () => {
     setApproveDialogOpen(false);
     setSelectedSubscription(null);
-    setTransferReference("");
   };
 
   const closeRejectDialog = () => {
@@ -103,10 +101,7 @@ function MessSubscriptions() {
     try {
       setActionLoadingId(selectedSubscription._id);
       setActionType("approve");
-      await approveRefund(selectedSubscription._id, {
-        confirmTransfer: true,
-        transferReference: transferReference.trim(),
-      });
+      await approveRefund(selectedSubscription._id, {});
       setSubscriptions((prev) => prev.filter((sub) => sub._id !== selectedSubscription._id));
       closeApproveDialog();
       setSnack({
@@ -416,17 +411,8 @@ function MessSubscriptions() {
               Paid From (Razorpay ref): {getPaymentReference(selectedSubscription)}
             </Typography>
             <Alert severity="info" sx={{ mt: 1 }}>
-              Complete the transfer in Razorpay first, then enter transaction reference below.
+              This action will automatically process refund through Razorpay using the original payment ID.
             </Alert>
-            <TextField
-              label="Razorpay Transfer Transaction ID"
-              placeholder="Example: payout_abc123 or UTR/reference"
-              value={transferReference}
-              onChange={(event) => setTransferReference(event.target.value)}
-              fullWidth
-              size="small"
-              required
-            />
           </Box>
         </DialogContent>
         <DialogActions>
@@ -436,7 +422,7 @@ function MessSubscriptions() {
           <Button
             variant="contained"
             onClick={handleApproveRefund}
-            disabled={Boolean(actionLoadingId) || !transferReference.trim()}
+            disabled={Boolean(actionLoadingId)}
           >
             {actionType === "approve" && actionLoadingId ? "Approving..." : "Approve Refund"}
           </Button>

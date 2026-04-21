@@ -66,6 +66,16 @@ export default function PaymentRecordsTable({ payments = [], searchQuery = '' })
                 DESCRIPTION
               </TableCell>
               <TableCell
+                sx={{
+                  color: 'primary.main',
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                  letterSpacing: '0.5px',
+                }}
+              >
+                TYPE
+              </TableCell>
+              <TableCell
                 align="right"
                 sx={{
                   color: 'primary.main',
@@ -92,12 +102,14 @@ export default function PaymentRecordsTable({ payments = [], searchQuery = '' })
           <TableBody>
             {payments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} sx={{ textAlign: 'center', py: 4 }}>
+                <TableCell colSpan={6} sx={{ textAlign: 'center', py: 4 }}>
                   <Typography color="text.secondary">No payment records available.</Typography>
                 </TableCell>
               </TableRow>
             ) : (
               payments.map((payment) => {
+                const purpose = String(payment.purpose || '').toLowerCase()
+                const isRefundTransaction = purpose.includes('refund')
                 const isHostelPayment = payment.type === 'hostel' || payment.type === 'room_request'
                 const displayStatus = isHostelPayment
                   ? payment.status === 'success'
@@ -148,6 +160,19 @@ export default function PaymentRecordsTable({ payments = [], searchQuery = '' })
                       <Typography variant="body2">
                         <HighlightMatch text={payment.purpose || payment.type || 'Room payment'} query={searchQuery} />
                       </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={isRefundTransaction ? 'Credit' : 'Debit'}
+                        size="small"
+                        sx={{
+                          bgcolor: isRefundTransaction ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                          color: isRefundTransaction ? 'success.main' : 'error.main',
+                          fontWeight: 600,
+                          fontSize: '0.75rem',
+                          borderRadius: 4,
+                        }}
+                      />
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2" fontWeight={600}>

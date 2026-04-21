@@ -530,6 +530,7 @@ export default function ApplyMessPlan() {
   const [cancelling, setCancelling] = useState(false);
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
   const [refundReason, setRefundReason] = useState("");
+  const isRefundReasonValid = refundReason.trim().length > 0;
   const [error, setError] = useState(null);
   const [snack, setSnack] = useState({
     open: false,
@@ -699,6 +700,11 @@ export default function ApplyMessPlan() {
   };
 
   const handleRefundRequestSubmit = async () => {
+    if (!isRefundReasonValid) {
+      notify("Refund reason is required.", "warning");
+      return;
+    }
+
     setCancelling(true);
     try {
       const res = await api.post("/refund/request", {
@@ -889,7 +895,7 @@ export default function ApplyMessPlan() {
               Your refund request will be sent to mess admin for approval.
             </Typography>
             <TextField
-              label="Reason (optional)"
+              label="Reason"
               placeholder="Enter refund reason"
               value={refundReason}
               onChange={(event) => setRefundReason(event.target.value)}
@@ -898,6 +904,13 @@ export default function ApplyMessPlan() {
               multiline
               minRows={3}
               inputProps={{ maxLength: 300 }}
+              required
+              error={!isRefundReasonValid}
+              helperText={
+                isRefundReasonValid
+                  ? `${refundReason.trim().length}/300 characters`
+                  : "Refund reason is required."
+              }
             />
           </Box>
         </DialogContent>
@@ -909,7 +922,7 @@ export default function ApplyMessPlan() {
             variant="contained"
             color="warning"
             onClick={handleRefundRequestSubmit}
-            disabled={cancelling}
+            disabled={cancelling || !isRefundReasonValid}
           >
             {cancelling ? "Requesting..." : "Submit Refund Request"}
           </Button>

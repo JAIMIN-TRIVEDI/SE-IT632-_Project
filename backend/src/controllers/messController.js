@@ -2192,6 +2192,10 @@ export const requestRefund = async (req, res) => {
       return res.status(400).json({ message: "Refund reason cannot exceed 300 characters." });
     }
 
+    if (!reason) {
+      return res.status(400).json({ message: "Refund reason is required." });
+    }
+
     const subscription = await MessSubscription.findOne({
       studentId: req.user._id,
       status: { $in: ["active", "refund_pending"] },
@@ -2318,13 +2322,8 @@ export const approveRefund = async (req, res) => {
     }
 
     const reason = parseRefundReason(req.body?.reason);
-    const transferReference = parseRefundReason(req.body?.transferReference);
     if (reason.length > MAX_REFUND_REASON_LENGTH) {
       return res.status(400).json({ message: "Refund reason cannot exceed 300 characters." });
-    }
-
-    if (!transferReference) {
-      return res.status(400).json({ message: "Transfer transaction reference is required before approving refund." });
     }
 
     const subscription = await MessSubscription.findById(req.params.id);
@@ -2337,12 +2336,6 @@ export const approveRefund = async (req, res) => {
       return res.status(409).json({ message: "Refund is already processed or not requested." });
     }
 
-    if (req.body?.confirmTransfer !== true) {
-      return res.status(400).json({
-        message: "Please confirm that the transfer to the student's original payment ID/account has been completed before approving.",
-      });
-    }
-
     let approvedAmount = Number(subscription.refund?.amount || 0);
     if (req.body?.amount !== undefined) {
       const parsedAmount = Number(req.body.amount);
@@ -2352,6 +2345,24 @@ export const approveRefund = async (req, res) => {
       approvedAmount = parsedAmount;
     }
 
+    const paymentToRefund = await findLatestSuccessfulMessPayment(subscription.studentId);
+
+    if (!paymentToRefund?.paymentId) {
+      return res.status(400).json({
+        message: "Original Razorpay payment ID not found for this subscription. Automatic refund cannot be processed.",
+      });
+    }
+
+    const refundResponse = await razorpay.payments.refund(paymentToRefund.paymentId, {
+      amount: Math.round(Math.max(0, approvedAmount) * 100),
+      notes: {
+        subscriptionId: String(subscription._id),
+        studentId: String(subscription.studentId),
+        reason: reason || "Mess plan refund",
+      },
+    });
+
+    const transferReference = String(refundResponse?.id || "");
     const processedAt = new Date();
 
     subscription.status = "refund_approved";
@@ -2361,26 +2372,32 @@ export const approveRefund = async (req, res) => {
 
     await subscription.save();
 
-    const paymentToRefund = await findLatestSuccessfulMessPayment(subscription.studentId);
+    await Payment.collection.updateOne(
+      { _id: paymentToRefund._id },
+      {
+        $set: {
+          "refund.status": "refunded",
+          "refund.amount": approvedAmount,
+          "refund.reason": reason,
+          "refund.transferReference": transferReference,
+          "refund.processedAt": processedAt,
+          "refund.subscriptionId": subscription._id,
+          updatedAt: processedAt,
+        },
+      }
+    );
 
-    if (paymentToRefund) {
-      await Payment.collection.updateOne(
-        { _id: paymentToRefund._id },
-        {
-          $set: {
-            status: "refunded",
-            refundedAt: processedAt,
-            "refund.status": "refunded",
-            "refund.amount": approvedAmount,
-            "refund.reason": reason,
-            "refund.transferReference": transferReference,
-            "refund.processedAt": processedAt,
-            "refund.subscriptionId": subscription._id,
-            updatedAt: processedAt,
-          },
-        }
-      );
-    }
+    await Payment.create({
+      userId: subscription.studentId,
+      type: "mess",
+      amount: approvedAmount,
+      orderId: transferReference,
+      paymentId: transferReference,
+      purpose: "Mess Refund",
+      subscriptionId: subscription.planId,
+      status: "refunded",
+      refundedAt: processedAt,
+    });
 
     await MessSubscription.collection.updateOne(
       { _id: subscription._id },
@@ -2400,7 +2417,7 @@ export const approveRefund = async (req, res) => {
     return sendSuccess(res, 200, "Refund approved successfully", {
       subscriptionId: subscription._id,
       paymentId: paymentToRefund?._id || null,
-      paymentStatus: paymentToRefund ? "refunded" : "not_found",
+      paymentStatus: "refunded",
       transferDetails: {
         amount: approvedAmount,
         paidFromId: paymentToRefund?.paymentId || paymentToRefund?.orderId || null,

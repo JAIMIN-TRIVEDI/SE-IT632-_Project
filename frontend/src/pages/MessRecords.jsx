@@ -119,7 +119,6 @@ function MessRecords() {
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
-  const [transferReference, setTransferReference] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
 
   const initialTab = searchParams.get("tab");
@@ -155,7 +154,6 @@ function MessRecords() {
   const closeApproveDialog = () => {
     setApproveDialogOpen(false);
     setSelectedRow(null);
-    setTransferReference("");
   };
 
   const closeRejectDialog = () => {
@@ -170,10 +168,7 @@ function MessRecords() {
     try {
       setActionError("");
       setApprovingId(selectedRow._id);
-      await approveRefund(selectedRow._id, {
-        confirmTransfer: true,
-        transferReference: transferReference.trim(),
-      });
+      await approveRefund(selectedRow._id, {});
       await Promise.all([
         subscriptionsHook.refresh(),
         studentsHook.refresh(),
@@ -709,17 +704,8 @@ function MessRecords() {
               Paid From (Razorpay ref): {getPaymentReference(selectedRow)}
             </Typography>
             <Alert severity="info" sx={{ mt: 1 }}>
-              Complete the transfer in Razorpay first, then enter transaction reference below.
+              This action will automatically process refund through Razorpay using the original payment ID.
             </Alert>
-            <TextField
-              label="Razorpay Transfer Transaction ID"
-              placeholder="Example: payout_abc123 or UTR/reference"
-              value={transferReference}
-              onChange={(event) => setTransferReference(event.target.value)}
-              fullWidth
-              required
-              size="small"
-            />
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -729,7 +715,7 @@ function MessRecords() {
           <Button
             variant="contained"
             onClick={handleApproveConfirm}
-            disabled={!transferReference.trim() || Boolean(approvingId)}
+            disabled={Boolean(approvingId)}
           >
             {approvingId ? "Approving..." : "Approve Refund"}
           </Button>
