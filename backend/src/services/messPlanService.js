@@ -16,6 +16,16 @@ const normalizePlan = (planDoc) => {
 
 const resolveDuration = (payload) => payload.duration ?? payload.durationInDays;
 
+const normalizeMeals = (meals = {}) => ({
+  breakfast: Boolean(meals.breakfast),
+  lunch: Boolean(meals.lunch),
+  snacks: Boolean(meals.snacks),
+  dinner: Boolean(meals.dinner),
+});
+
+const hasAnyMeal = (meals = {}) =>
+  Boolean(meals.breakfast || meals.lunch || meals.snacks || meals.dinner);
+
 export const getAllMessPlansService = async (search = "") => {
   const normalizedSearch = search.trim();
 
@@ -56,11 +66,17 @@ export const getAllMessPlansService = async (search = "") => {
 
 export const createMessPlanService = async (payload, userId) => {
   const duration = Number(resolveDuration(payload));
+  const meals = normalizeMeals(payload.meals);
+
+  if (!hasAnyMeal(meals)) {
+    throw new AppError("At least one meal must be selected", 400);
+  }
 
   const plan = await MessPlan.create({
     name: payload.name,
     price: Number(payload.price),
     durationInDays: duration,
+    meals,
     createdBy: userId,
   });
 
@@ -76,6 +92,16 @@ export const updateMessPlanService = async (planId, payload) => {
   const duration = resolveDuration(payload);
   if (duration !== undefined) {
     updateData.durationInDays = Number(duration);
+  }
+
+  if (payload.meals !== undefined) {
+    const meals = normalizeMeals(payload.meals);
+
+    if (!hasAnyMeal(meals)) {
+      throw new AppError("At least one meal must be selected", 400);
+    }
+
+    updateData.meals = meals;
   }
 
   const updatedPlan = await MessPlan.findByIdAndUpdate(planId, updateData, {

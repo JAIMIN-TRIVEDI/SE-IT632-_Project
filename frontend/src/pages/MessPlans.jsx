@@ -10,6 +10,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  FormControlLabel,
+  FormGroup,
+  Checkbox,
   TextField,
   CircularProgress,
   IconButton,
@@ -54,6 +57,12 @@ function MessPlans() {
     price: '',
     durationInDays: '',
     status: 'active',
+    meals: {
+      breakfast: true,
+      lunch: true,
+      snacks: true,
+      dinner: true,
+    },
   })
 
   const [selectedPlan, setSelectedPlan] = useState(null)
@@ -106,7 +115,18 @@ function MessPlans() {
 
   const openCreateDialog = () => {
     setEditingPlan(null)
-    setFormValues({ name: '', price: '', durationInDays: '', status: 'active' })
+    setFormValues({
+      name: '',
+      price: '',
+      durationInDays: '',
+      status: 'active',
+      meals: {
+        breakfast: true,
+        lunch: true,
+        snacks: true,
+        dinner: true,
+      },
+    })
     setIsDialogOpen(true)
   }
 
@@ -117,6 +137,12 @@ function MessPlans() {
       price: plan.price?.toString() ?? '',
       durationInDays: (plan.duration ?? plan.durationInDays)?.toString() ?? '',
       status: plan.status || 'active',
+      meals: {
+        breakfast: Boolean(plan.meals?.breakfast),
+        lunch: Boolean(plan.meals?.lunch),
+        snacks: Boolean(plan.meals?.snacks),
+        dinner: Boolean(plan.meals?.dinner),
+      },
     })
     setIsDialogOpen(true)
   }
@@ -132,12 +158,23 @@ function MessPlans() {
     setFormValues((prev) => ({ ...prev, [name]: value }))
   }
 
+  const handleMealChange = (meal, checked) => {
+    setFormValues((prev) => ({
+      ...prev,
+      meals: {
+        ...prev.meals,
+        [meal]: checked,
+      },
+    }))
+  }
+
   const handleSavePlan = async () => {
     const payload = {
       name: formValues.name.trim(),
       price: Number(formValues.price),
       duration: Number(formValues.durationInDays),
       status: formValues.status,
+      meals: formValues.meals,
     }
 
     if (!payload.name || !payload.price || !payload.duration || !payload.status) {
@@ -308,6 +345,21 @@ function MessPlans() {
             <Tab icon={<People />} label="Students" />
             <Tab icon={<Payment />} label="Payments" />
           </Tabs>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" fontWeight={700} mb={1}>
+              Included Meals
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {['breakfast', 'lunch', 'snacks', 'dinner'].map((meal) => (
+                <Chip
+                  key={meal}
+                  label={meal.charAt(0).toUpperCase() + meal.slice(1)}
+                  color={selectedPlan?.meals?.[meal] ? 'success' : 'default'}
+                  variant={selectedPlan?.meals?.[meal] ? 'filled' : 'outlined'}
+                />
+              ))}
+            </Box>
+          </Box>
           {detailsLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress />
@@ -433,6 +485,30 @@ function MessPlans() {
             <MenuItem value="active">Active</MenuItem>
             <MenuItem value="inactive">Inactive</MenuItem>
           </TextField>
+          <Box>
+            <Typography variant="subtitle2" fontWeight={700} mb={1}>
+              Meals Included
+            </Typography>
+            <FormGroup row>
+              {[
+                { key: 'breakfast', label: 'Breakfast' },
+                { key: 'lunch', label: 'Lunch' },
+                { key: 'snacks', label: 'Snacks' },
+                { key: 'dinner', label: 'Dinner' },
+              ].map((meal) => (
+                <FormControlLabel
+                  key={meal.key}
+                  control={
+                    <Checkbox
+                      checked={Boolean(formValues.meals?.[meal.key])}
+                      onChange={(event) => handleMealChange(meal.key, event.target.checked)}
+                    />
+                  }
+                  label={meal.label}
+                />
+              ))}
+            </FormGroup>
+          </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
           <Button onClick={handleCloseDialog} sx={{ textTransform: 'none' }}>

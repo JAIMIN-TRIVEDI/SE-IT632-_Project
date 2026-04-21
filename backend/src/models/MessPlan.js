@@ -13,6 +13,24 @@ const MessPlanSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  meals: {
+    breakfast: {
+      type: Boolean,
+      default: false,
+    },
+    lunch: {
+      type: Boolean,
+      default: false,
+    },
+    snacks: {
+      type: Boolean,
+      default: false,
+    },
+    dinner: {
+      type: Boolean,
+      default: false,
+    },
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",

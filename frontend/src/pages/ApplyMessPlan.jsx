@@ -41,13 +41,18 @@ const loadRazorpay = () =>
   });
 
 // ── Plan feature list ─────────────────────────────────────────────────────────
-const getPlanFeatures = (plan) => [
-  { label: "3 Meals per day (Breakfast, Lunch, Dinner)", included: true },
-  { label: "Veg & Non-Veg options", included: true },
-  { label: "Weekly menu updates", included: true },
-  { label: "Special occasion meals", included: plan.durationInDays >= 30 },
-  { label: "Priority seating", included: plan.durationInDays >= 30 },
-];
+const getPlanFeatures = (plan) => {
+  const meals = plan.meals || {};
+
+  return [
+    { label: "Breakfast", included: Boolean(meals.breakfast) },
+    { label: "Lunch", included: Boolean(meals.lunch) },
+    { label: "Snacks", included: Boolean(meals.snacks) },
+    { label: "Dinner", included: Boolean(meals.dinner) },
+    { label: "Weekly menu updates", included: true },
+    { label: "Special occasion meals", included: plan.durationInDays >= 30 },
+  ];
+};
 
 // ── Single plan card ──────────────────────────────────────────────────────────
 function PlanCard({ plan, isActive, isCurrent, onSelect, loading, locked }) {

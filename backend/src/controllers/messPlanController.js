@@ -9,6 +9,7 @@ import {
 } from "../services/messPlanService.js";
 
 const statusValues = ["active", "inactive"];
+const mealValues = ["breakfast", "lunch", "snacks", "dinner"];
 
 export const createMessPlanValidation = [
   body("name").trim().notEmpty().withMessage("name is required"),
@@ -22,6 +23,21 @@ export const createMessPlanValidation = [
     .optional()
     .isIn(statusValues)
     .withMessage("status must be one of: active, inactive"),
+  body("meals")
+    .optional()
+    .custom((value) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error("meals must be an object");
+      }
+
+      const selectedMeals = mealValues.filter((meal) => Boolean(value[meal]));
+
+      if (selectedMeals.length === 0) {
+        throw new Error("At least one meal must be selected");
+      }
+
+      return true;
+    }),
   body().custom((value) => {
     const duration = value.duration ?? value.durationInDays;
 
@@ -53,6 +69,25 @@ export const updateMessPlanValidation = [
     .optional()
     .isIn(statusValues)
     .withMessage("status must be one of: active, inactive"),
+  body("meals")
+    .optional()
+    .custom((value) => {
+      if (value === undefined) {
+        return true;
+      }
+
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        throw new Error("meals must be an object");
+      }
+
+      const selectedMeals = mealValues.filter((meal) => Boolean(value[meal]));
+
+      if (selectedMeals.length === 0) {
+        throw new Error("At least one meal must be selected");
+      }
+
+      return true;
+    }),
   body().custom((value) => {
     const hasAnyUpdatableField =
       value.name !== undefined ||
