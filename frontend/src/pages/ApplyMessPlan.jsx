@@ -6,8 +6,13 @@ import {
   Card,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   Snackbar,
+  TextField,
   Typography,
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -523,6 +528,8 @@ export default function ApplyMessPlan() {
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [paying, setPaying] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false);
+  const [refundReason, setRefundReason] = useState("");
   const [error, setError] = useState(null);
   const [snack, setSnack] = useState({
     open: false,
@@ -681,20 +688,29 @@ export default function ApplyMessPlan() {
   };
 
   // ── Cancel subscription ──────────────────────────────────────────────────────
-  const handleCancel = async () => {
-    if (!window.confirm("Request refund for your active subscription?")) return;
+  const handleCancel = () => {
+    setRefundDialogOpen(true);
+  };
 
-    const reason =
-      window.prompt("Optional: Enter refund reason (max 300 chars)", "") || "";
+  const handleRefundDialogClose = () => {
+    if (cancelling) return;
+    setRefundDialogOpen(false);
+    setRefundReason("");
+  };
 
+  const handleRefundRequestSubmit = async () => {
     setCancelling(true);
     try {
-      const res = await api.post("/refund/request", { reason });
+      const res = await api.post("/refund/request", {
+        reason: refundReason.trim(),
+      });
       notify(
         `Refund requested. Amount: ₹${res.data?.data?.refund?.amount ?? 0}`,
         "info",
       );
       await refreshSubscription();
+      setRefundDialogOpen(false);
+      setRefundReason("");
     } catch (err) {
       notify(err.response?.data?.message || "Failed to cancel.", "error");
     } finally {
@@ -859,6 +875,46 @@ export default function ApplyMessPlan() {
           {snack.msg}
         </Alert>
       </Snackbar>
+
+      <Dialog
+        open={refundDialogOpen}
+        onClose={handleRefundDialogClose}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Request Refund</DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: "grid", gap: 1.25 }}>
+            <Typography fontSize={14} color="text.secondary">
+              Your refund request will be sent to mess admin for approval.
+            </Typography>
+            <TextField
+              label="Reason (optional)"
+              placeholder="Enter refund reason"
+              value={refundReason}
+              onChange={(event) => setRefundReason(event.target.value)}
+              fullWidth
+              size="small"
+              multiline
+              minRows={3}
+              inputProps={{ maxLength: 300 }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleRefundDialogClose} disabled={cancelling}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={handleRefundRequestSubmit}
+            disabled={cancelling}
+          >
+            {cancelling ? "Requesting..." : "Submit Refund Request"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

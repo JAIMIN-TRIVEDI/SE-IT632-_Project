@@ -603,13 +603,17 @@ export const getSubscriptions = async (req, res) => {
                 amount: "$refund.amount",
                 status: "$refund.status",
                 reason: "$refund.reason",
+                transferReference: "$refund.transferReference",
                 requestedAt: "$refund.requestedAt",
                 processedAt: "$refund.processedAt",
                 rejectedAt: "$refund.rejectedAt",
                 rejectionReason: "$refund.rejectionReason",
               },
               latestPayment: {
+                _id: "$latestPayment._id",
                 status: "$latestPayment.status",
+                paymentId: "$latestPayment.paymentId",
+                orderId: "$latestPayment.orderId",
                 refundedAt: "$latestPayment.refundedAt",
                 refund: "$latestPayment.refund",
               },
@@ -2314,8 +2318,13 @@ export const approveRefund = async (req, res) => {
     }
 
     const reason = parseRefundReason(req.body?.reason);
+    const transferReference = parseRefundReason(req.body?.transferReference);
     if (reason.length > MAX_REFUND_REASON_LENGTH) {
       return res.status(400).json({ message: "Refund reason cannot exceed 300 characters." });
+    }
+
+    if (!transferReference) {
+      return res.status(400).json({ message: "Transfer transaction reference is required before approving refund." });
     }
 
     const subscription = await MessSubscription.findById(req.params.id);
@@ -2326,6 +2335,12 @@ export const approveRefund = async (req, res) => {
 
     if (!subscription.refund?.requested || subscription.refund?.approved) {
       return res.status(409).json({ message: "Refund is already processed or not requested." });
+    }
+
+    if (req.body?.confirmTransfer !== true) {
+      return res.status(400).json({
+        message: "Please confirm that the transfer to the student's original payment ID/account has been completed before approving.",
+      });
     }
 
     let approvedAmount = Number(subscription.refund?.amount || 0);
@@ -2358,6 +2373,7 @@ export const approveRefund = async (req, res) => {
             "refund.status": "refunded",
             "refund.amount": approvedAmount,
             "refund.reason": reason,
+            "refund.transferReference": transferReference,
             "refund.processedAt": processedAt,
             "refund.subscriptionId": subscription._id,
             updatedAt: processedAt,
@@ -2372,6 +2388,7 @@ export const approveRefund = async (req, res) => {
         $set: {
           "refund.status": "refunded",
           "refund.reason": reason,
+          "refund.transferReference": transferReference,
           "refund.processedAt": processedAt,
           "refund.rejectedAt": null,
           "refund.rejectionReason": "",
@@ -2384,6 +2401,12 @@ export const approveRefund = async (req, res) => {
       subscriptionId: subscription._id,
       paymentId: paymentToRefund?._id || null,
       paymentStatus: paymentToRefund ? "refunded" : "not_found",
+      transferDetails: {
+        amount: approvedAmount,
+        paidFromId: paymentToRefund?.paymentId || paymentToRefund?.orderId || null,
+        paymentReference: paymentToRefund?.paymentId || paymentToRefund?.orderId || String(paymentToRefund?._id || ""),
+        transferReference,
+      },
       refund: {
         status: "refunded",
         amount: approvedAmount,
@@ -2479,6 +2502,29 @@ export const getPendingRefundRequests = asyncHandler(async (req, res) => {
     },
     { $unwind: { path: "$plan", preserveNullAndEmptyArrays: true } },
     {
+      $lookup: {
+        from: "payments",
+        let: { sid: "$studentId" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$userId", "$$sid"] },
+                  { $eq: ["$type", "mess"] },
+                  { $eq: ["$status", "success"] },
+                ],
+              },
+            },
+          },
+          { $sort: { createdAt: -1 } },
+          { $limit: 1 },
+        ],
+        as: "latestPayment",
+      },
+    },
+    { $unwind: { path: "$latestPayment", preserveNullAndEmptyArrays: true } },
+    {
       $project: {
         _id: 1,
         studentId: {
@@ -2499,9 +2545,17 @@ export const getPendingRefundRequests = asyncHandler(async (req, res) => {
           approved: { $ifNull: ["$refund.approved", false] },
           amount: { $ifNull: ["$refund.amount", 0] },
           reason: { $ifNull: ["$refund.reason", ""] },
+          transferReference: { $ifNull: ["$refund.transferReference", ""] },
           status: { $ifNull: ["$refund.status", "requested"] },
           requestedAt: { $ifNull: ["$refund.requestedAt", "$updatedAt"] },
           processedAt: "$refund.processedAt",
+        },
+        latestPayment: {
+          _id: "$latestPayment._id",
+          paymentId: "$latestPayment.paymentId",
+          orderId: "$latestPayment.orderId",
+          status: "$latestPayment.status",
+          createdAt: "$latestPayment.createdAt",
         },
         createdAt: 1,
         updatedAt: 1,

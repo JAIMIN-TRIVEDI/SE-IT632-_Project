@@ -57,8 +57,8 @@ export const updateMessMenu = async (payload) => {
   return response.data
 }
 
-export const approveRefund = async (id) => {
-  const response = await api.patch(`/refund/approve/${id}`)
+export const approveRefund = async (id, payload = {}) => {
+  const response = await api.patch(`/refund/approve/${id}`, payload)
   return response.data
 }
 

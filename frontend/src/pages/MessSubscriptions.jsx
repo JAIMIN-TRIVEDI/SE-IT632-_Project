@@ -5,6 +5,10 @@ import {
   Card,
   CardContent,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Snackbar,
   Skeleton,
   Table,
@@ -25,12 +29,30 @@ import {
 } from "../services/messService";
 import { useSearch } from "../hooks/useSearch";
 
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(Number(amount || 0));
+
+const getPaymentReference = (subscription) =>
+  subscription?.latestPayment?.paymentId ||
+  subscription?.latestPayment?.orderId ||
+  subscription?.latestPayment?._id ||
+  "Not available";
+
 function MessSubscriptions() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionLoadingId, setActionLoadingId] = useState("");
   const [actionType, setActionType] = useState("");
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [selectedSubscription, setSelectedSubscription] = useState(null);
+  const [transferReference, setTransferReference] = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
   const [snack, setSnack] = useState({
     open: false,
     message: "",
@@ -63,12 +85,30 @@ function MessSubscriptions() {
     }
   };
 
-  const handleApproveRefund = async (id) => {
+  const closeApproveDialog = () => {
+    setApproveDialogOpen(false);
+    setSelectedSubscription(null);
+    setTransferReference("");
+  };
+
+  const closeRejectDialog = () => {
+    setRejectDialogOpen(false);
+    setSelectedSubscription(null);
+    setRejectionReason("");
+  };
+
+  const handleApproveRefund = async () => {
+    if (!selectedSubscription?._id) return;
+
     try {
-      setActionLoadingId(id);
+      setActionLoadingId(selectedSubscription._id);
       setActionType("approve");
-      await approveRefund(id);
-      setSubscriptions((prev) => prev.filter((sub) => sub._id !== id));
+      await approveRefund(selectedSubscription._id, {
+        confirmTransfer: true,
+        transferReference: transferReference.trim(),
+      });
+      setSubscriptions((prev) => prev.filter((sub) => sub._id !== selectedSubscription._id));
+      closeApproveDialog();
       setSnack({
         open: true,
         message: "Refund approved successfully.",
@@ -91,16 +131,15 @@ function MessSubscriptions() {
     }
   };
 
-  const handleRejectRefund = async (id) => {
-    const reason =
-      window.prompt("Optional: Enter rejection reason (max 300 chars)", "") ||
-      "";
+  const handleRejectRefund = async () => {
+    if (!selectedSubscription?._id) return;
 
     try {
-      setActionLoadingId(id);
+      setActionLoadingId(selectedSubscription._id);
       setActionType("reject");
-      await rejectRefund(id, { reason });
-      setSubscriptions((prev) => prev.filter((sub) => sub._id !== id));
+      await rejectRefund(selectedSubscription._id, { reason: rejectionReason.trim() });
+      setSubscriptions((prev) => prev.filter((sub) => sub._id !== selectedSubscription._id));
+      closeRejectDialog();
       setSnack({
         open: true,
         message: "Refund rejected successfully.",
@@ -303,7 +342,10 @@ function MessSubscriptions() {
                           variant="contained"
                           size="small"
                           disabled={Boolean(actionLoadingId)}
-                          onClick={() => handleApproveRefund(sub._id)}
+                          onClick={() => {
+                            setSelectedSubscription(sub);
+                            setApproveDialogOpen(true);
+                          }}
                           sx={{ textTransform: "none" }}
                         >
                           {actionLoadingId === sub._id &&
@@ -316,7 +358,10 @@ function MessSubscriptions() {
                           color="warning"
                           size="small"
                           disabled={Boolean(actionLoadingId)}
-                          onClick={() => handleRejectRefund(sub._id)}
+                          onClick={() => {
+                            setSelectedSubscription(sub);
+                            setRejectDialogOpen(true);
+                          }}
                           sx={{ textTransform: "none" }}
                         >
                           {actionLoadingId === sub._id &&
@@ -348,6 +393,95 @@ function MessSubscriptions() {
           {snack.message}
         </Alert>
       </Snackbar>
+
+      <Dialog
+        open={approveDialogOpen}
+        onClose={actionLoadingId ? undefined : closeApproveDialog}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Approve Refund</DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: "grid", gap: 1.2 }}>
+            <Typography>
+              Student: {selectedSubscription?.studentId?.name || "Unknown"}
+            </Typography>
+            <Typography color="text.secondary">
+              {selectedSubscription?.studentId?.email || "—"}
+            </Typography>
+            <Typography>
+              Refund Amount: {formatCurrency(selectedSubscription?.refund?.amount || 0)}
+            </Typography>
+            <Typography>
+              Paid From (Razorpay ref): {getPaymentReference(selectedSubscription)}
+            </Typography>
+            <Alert severity="info" sx={{ mt: 1 }}>
+              Complete the transfer in Razorpay first, then enter transaction reference below.
+            </Alert>
+            <TextField
+              label="Razorpay Transfer Transaction ID"
+              placeholder="Example: payout_abc123 or UTR/reference"
+              value={transferReference}
+              onChange={(event) => setTransferReference(event.target.value)}
+              fullWidth
+              size="small"
+              required
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeApproveDialog} disabled={Boolean(actionLoadingId)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleApproveRefund}
+            disabled={Boolean(actionLoadingId) || !transferReference.trim()}
+          >
+            {actionType === "approve" && actionLoadingId ? "Approving..." : "Approve Refund"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={rejectDialogOpen}
+        onClose={actionLoadingId ? undefined : closeRejectDialog}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Reject Refund</DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: "grid", gap: 1.2 }}>
+            <Typography>
+              Student: {selectedSubscription?.studentId?.name || "Unknown"}
+            </Typography>
+            <TextField
+              label="Reason (optional)"
+              placeholder="Enter reason for rejection"
+              value={rejectionReason}
+              onChange={(event) => setRejectionReason(event.target.value)}
+              fullWidth
+              size="small"
+              multiline
+              minRows={2}
+              inputProps={{ maxLength: 300 }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeRejectDialog} disabled={Boolean(actionLoadingId)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={handleRejectRefund}
+            disabled={Boolean(actionLoadingId)}
+          >
+            {actionType === "reject" && actionLoadingId ? "Rejecting..." : "Reject Refund"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

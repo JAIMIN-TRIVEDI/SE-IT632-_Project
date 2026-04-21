@@ -6,6 +6,10 @@ import {
   Card,
   CardContent,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   MenuItem,
   Stack,
   Tab,
@@ -69,6 +73,12 @@ const formatCurrency = (amount) =>
     maximumFractionDigits: 0,
   }).format(Number(amount || 0));
 
+const getPaymentReference = (row) =>
+  row?.latestPayment?.paymentId ||
+  row?.latestPayment?.orderId ||
+  row?.latestPayment?._id ||
+  "Not available";
+
 const getRefundChipConfig = (status) => {
   const normalized = String(status || "none").toLowerCase();
 
@@ -106,6 +116,11 @@ function MessRecords() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [actionError, setActionError] = useState("");
   const [approvingId, setApprovingId] = useState("");
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+  const [transferReference, setTransferReference] = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
 
   const initialTab = searchParams.get("tab");
   const activeTab = TAB_CONFIG[initialTab] ? initialTab : "students";
@@ -136,6 +151,69 @@ function MessRecords() {
         : paymentsHook;
 
   const isActiveLoading = activeHook.loading || isDebouncing;
+
+  const closeApproveDialog = () => {
+    setApproveDialogOpen(false);
+    setSelectedRow(null);
+    setTransferReference("");
+  };
+
+  const closeRejectDialog = () => {
+    setRejectDialogOpen(false);
+    setSelectedRow(null);
+    setRejectionReason("");
+  };
+
+  const handleApproveConfirm = async () => {
+    if (!selectedRow?._id) return;
+
+    try {
+      setActionError("");
+      setApprovingId(selectedRow._id);
+      await approveRefund(selectedRow._id, {
+        confirmTransfer: true,
+        transferReference: transferReference.trim(),
+      });
+      await Promise.all([
+        subscriptionsHook.refresh(),
+        studentsHook.refresh(),
+        paymentsHook.refresh(),
+      ]);
+      closeApproveDialog();
+    } catch (err) {
+      setActionError(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to approve refund.",
+      );
+    } finally {
+      setApprovingId("");
+    }
+  };
+
+  const handleRejectConfirm = async () => {
+    if (!selectedRow?._id) return;
+
+    try {
+      setActionError("");
+      setApprovingId(selectedRow._id);
+      await rejectRefund(selectedRow._id, { reason: rejectionReason.trim() });
+      await Promise.all([
+        subscriptionsHook.refresh(),
+        studentsHook.refresh(),
+        paymentsHook.refresh(),
+      ]);
+      closeRejectDialog();
+    } catch (err) {
+      setActionError(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to reject refund.",
+      );
+    } finally {
+      setApprovingId("");
+    }
+  };
 
   const studentsColumns = useMemo(
     () => [
@@ -315,25 +393,10 @@ function MessRecords() {
                 variant="contained"
                 size="small"
                 disabled={approvingId === row._id}
-                onClick={async () => {
-                  try {
-                    setActionError("");
-                    setApprovingId(row._id);
-                    await approveRefund(row._id);
-                    await Promise.all([
-                      subscriptionsHook.refresh(),
-                      studentsHook.refresh(),
-                      paymentsHook.refresh(),
-                    ]);
-                  } catch (err) {
-                    setActionError(
-                      err.response?.data?.message ||
-                        err.message ||
-                        "Failed to approve refund.",
-                    );
-                  } finally {
-                    setApprovingId("");
-                  }
+                onClick={() => {
+                  setActionError("");
+                  setSelectedRow(row);
+                  setApproveDialogOpen(true);
                 }}
                 sx={{ textTransform: "none" }}
               >
@@ -344,30 +407,10 @@ function MessRecords() {
                 color="warning"
                 size="small"
                 disabled={approvingId === row._id}
-                onClick={async () => {
-                  const reason =
-                    window.prompt(
-                      "Optional: Enter rejection reason (max 300 chars)",
-                      "",
-                    ) || "";
-                  try {
-                    setActionError("");
-                    setApprovingId(row._id);
-                    await rejectRefund(row._id, { reason });
-                    await Promise.all([
-                      subscriptionsHook.refresh(),
-                      studentsHook.refresh(),
-                      paymentsHook.refresh(),
-                    ]);
-                  } catch (err) {
-                    setActionError(
-                      err.response?.data?.message ||
-                        err.message ||
-                        "Failed to reject refund.",
-                    );
-                  } finally {
-                    setApprovingId("");
-                  }
+                onClick={() => {
+                  setActionError("");
+                  setSelectedRow(row);
+                  setRejectDialogOpen(true);
                 }}
                 sx={{ textTransform: "none" }}
               >
@@ -643,6 +686,95 @@ function MessRecords() {
         totalRecords={activeHook.pagination.totalRecords || 0}
         onPageChange={activeHook.setPage}
       />
+
+      <Dialog
+        open={approveDialogOpen}
+        onClose={approvingId ? undefined : closeApproveDialog}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Approve Refund</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={1.2}>
+            <Typography>
+              Student: {selectedRow?.studentId?.name || "Unknown"}
+            </Typography>
+            <Typography color="text.secondary">
+              {selectedRow?.studentId?.email || "—"}
+            </Typography>
+            <Typography>
+              Refund Amount: {formatCurrency(selectedRow?.refundAmount ?? selectedRow?.refund?.amount ?? 0)}
+            </Typography>
+            <Typography>
+              Paid From (Razorpay ref): {getPaymentReference(selectedRow)}
+            </Typography>
+            <Alert severity="info" sx={{ mt: 1 }}>
+              Complete the transfer in Razorpay first, then enter transaction reference below.
+            </Alert>
+            <TextField
+              label="Razorpay Transfer Transaction ID"
+              placeholder="Example: payout_abc123 or UTR/reference"
+              value={transferReference}
+              onChange={(event) => setTransferReference(event.target.value)}
+              fullWidth
+              required
+              size="small"
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeApproveDialog} disabled={Boolean(approvingId)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleApproveConfirm}
+            disabled={!transferReference.trim() || Boolean(approvingId)}
+          >
+            {approvingId ? "Approving..." : "Approve Refund"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={rejectDialogOpen}
+        onClose={approvingId ? undefined : closeRejectDialog}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Reject Refund</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={1.2}>
+            <Typography>
+              Student: {selectedRow?.studentId?.name || "Unknown"}
+            </Typography>
+            <TextField
+              label="Reason (optional)"
+              placeholder="Enter reason for rejection"
+              value={rejectionReason}
+              onChange={(event) => setRejectionReason(event.target.value)}
+              fullWidth
+              size="small"
+              inputProps={{ maxLength: 300 }}
+              multiline
+              minRows={2}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeRejectDialog} disabled={Boolean(approvingId)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={handleRejectConfirm}
+            disabled={Boolean(approvingId)}
+          >
+            {approvingId ? "Rejecting..." : "Reject Refund"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
