@@ -13,7 +13,7 @@ import { alpha } from "@mui/material/styles";
 import HighlightMatch from "../HighlightMatch.jsx";
 
 // ── Icon / colour mapping by notification type ─────────────────────────────────
-export function getNotifStyle(type) {
+function getNotifStyle(type) {
   const t = (type || "").toLowerCase();
   if (
     t.includes("payment") ||
@@ -40,7 +40,7 @@ export function getNotifStyle(type) {
   return { icon: Info, color: "#64748b", bg: "#f1f5f9" };
 }
 
-export function formatRelativeTime(dateStr) {
+function formatRelativeTime(dateStr) {
   if (!dateStr) return "";
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);

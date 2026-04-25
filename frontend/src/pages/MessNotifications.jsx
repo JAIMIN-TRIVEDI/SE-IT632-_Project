@@ -323,17 +323,6 @@ function MessNotifications() {
     [form.targetUsers, userOptions],
   );
 
-  const filteredReceivedNotifications = useMemo(() => {
-    const q = search.trim().toLowerCase();
-
-    return receivedNotifications.filter((item) => {
-      if (!q) return true;
-      const text =
-        `${item.title || ""} ${item.message || ""} ${item.type || ""}`.toLowerCase();
-      return text.includes(q);
-    });
-  }, [receivedNotifications, search]);
-
   const filteredSentNotifications = useMemo(() => {
     const q = search.trim().toLowerCase();
 

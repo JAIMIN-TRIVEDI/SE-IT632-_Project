@@ -604,7 +604,7 @@ export default function ApplyMessPlan() {
 
       try {
         await api.post("/payments/fail", { orderId, reason });
-      } catch (_) {
+      } catch {
         // Failure state persistence is best-effort.
       }
     };

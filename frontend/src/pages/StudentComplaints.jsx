@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Alert, Box, Button, Card, Chip, CircularProgress,
   Divider, MenuItem, Snackbar, TextField, ToggleButton,
   ToggleButtonGroup, Typography,
 } from '@mui/material'
 import {
-  CloudUpload, Shield, Bolt, History, ArrowForwardIos,
+  Shield, Bolt, History, ArrowForwardIos,
   ReportProblemOutlined, CheckCircle, Cancel, Schedule,
 } from '@mui/icons-material'
 import HighlightMatch from '../components/HighlightMatch.jsx'
@@ -75,13 +75,11 @@ function ComplaintRow({ complaint, query = '' }) {
 export default function StudentComplaints({ searchQuery = '', onOpenComplaintsChange }) {
   const [view, setView] = useState('list') // 'new' | 'list'
   const [form, setForm] = useState({ category: '', urgency: 'normal', title: '', description: '' })
-  const [files, setFiles] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [complaints, setComplaints] = useState([])
   const [loadingList, setLoadingList] = useState(false)
   const [hostelId, setHostelId] = useState(null)
   const [snack, setSnack] = useState({ open: false, msg: '', severity: 'success' })
-  const fileRef = useRef()
 
   const notify = (msg, severity = 'success') => setSnack({ open: true, msg, severity })
 
@@ -125,17 +123,6 @@ export default function StudentComplaints({ searchQuery = '', onOpenComplaintsCh
 
   const handleField = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }))
 
-  const handleFileChange = (e) => {
-    const picked = Array.from(e.target.files || []).slice(0, 5)
-    setFiles(picked)
-  }
-
-  const handleDrop = (e) => {
-    e.preventDefault()
-    const dropped = Array.from(e.dataTransfer.files || []).slice(0, 5)
-    setFiles(dropped)
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.category) { notify('Please select a category.', 'error'); return }
@@ -151,7 +138,6 @@ export default function StudentComplaints({ searchQuery = '', onOpenComplaintsCh
         hostelId: hostelId || undefined,
       })
       setForm({ category: '', urgency: 'normal', title: '', description: '' })
-      setFiles([])
       notify('Complaint filed successfully! We will look into it.', 'success')
       setView('list')
     } catch (err) {
@@ -275,14 +261,14 @@ export default function StudentComplaints({ searchQuery = '', onOpenComplaintsCh
               { icon: Shield, color: '#2563eb', bg: '#eff6ff', title: 'Trackable', desc: 'Get real-time updates on your complaint status.' },
               { icon: Bolt, color: '#d97706', bg: '#fef3c7', title: 'Priority Support', desc: 'Electrical and water issues are handled on priority.' },
               { icon: History, color: '#7c3aed', bg: '#ede9fe', title: 'Resolution History', desc: 'View past complaints and their resolutions anytime.' },
-            ].map(({ icon: Icon, color, bg, title, desc }) => (
-              <Box key={title} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, flex: '1 1 200px', maxWidth: 280 }}>
-                <Box sx={{ width: 36, height: 36, borderRadius: '50%', bgcolor: bg, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon sx={{ fontSize: 18, color }} />
+            ].map((feature) => (
+              <Box key={feature.title} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, flex: '1 1 200px', maxWidth: 280 }}>
+                <Box sx={{ width: 36, height: 36, borderRadius: '50%', bgcolor: feature.bg, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <feature.icon sx={{ fontSize: 18, color: feature.color }} />
                 </Box>
                 <Box>
-                  <Typography fontWeight={700} fontSize={14}>{title}</Typography>
-                  <Typography fontSize={12} color="text.secondary" mt={0.2}>{desc}</Typography>
+                  <Typography fontWeight={700} fontSize={14}>{feature.title}</Typography>
+                  <Typography fontSize={12} color="text.secondary" mt={0.2}>{feature.desc}</Typography>
                 </Box>
               </Box>
             ))}

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from 'react'
 import {
   Dialog,
@@ -368,13 +369,13 @@ function HostelFormDialog({ open, onClose, onSubmit, initialData = null, loading
       }
 
       if (!Number.isInteger(block.totalRooms) || block.totalRooms < 0) {
-        setFormError(`Block \"${block.name || 'Unnamed'}\" must have a valid total room count.`)
+        setFormError(`Block "${block.name || 'Unnamed'}" must have a valid total room count.`)
         return
       }
 
       if (block.duplicateRoomNumbers.length > 0) {
         setFormError(
-          `Block \"${block.name || 'Unnamed'}\" has duplicate room numbers: ${[
+          `Block "${block.name || 'Unnamed'}" has duplicate room numbers: ${[
             ...new Set(block.duplicateRoomNumbers),
           ].join(', ')}`
         )
@@ -388,14 +389,14 @@ function HostelFormDialog({ open, onClose, onSubmit, initialData = null, loading
             : `Remove ${Math.abs(block.remaining)} room${Math.abs(block.remaining) === 1 ? '' : 's'}`
 
         setFormError(
-          `Block \"${block.name || 'Unnamed'}\" requires exactly ${block.totalRooms} rooms. Generated ${block.generatedCount}. ${actionText}.`
+          `Block "${block.name || 'Unnamed'}" requires exactly ${block.totalRooms} rooms. Generated ${block.generatedCount}. ${actionText}.`
         )
         return
       }
 
       for (const room of block.rooms) {
         if (globalRoomSet.has(room.roomNumber)) {
-          setFormError(`Duplicate room number \"${room.roomNumber}\" is not allowed across blocks.`)
+          setFormError(`Duplicate room number "${room.roomNumber}" is not allowed across blocks.`)
           return
         }
         globalRoomSet.add(room.roomNumber)

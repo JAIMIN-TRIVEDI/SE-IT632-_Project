@@ -1,6 +1,8 @@
 import { Box, Card, CardContent, Typography } from '@mui/material'
 
-function StudentStatCard({ icon: Icon, gradient, label, value, sub }) {
+function StudentStatCard({ icon, gradient, label, value, sub }) {
+  const StatIcon = icon
+
   return (
     <Card
       sx={{
@@ -31,7 +33,7 @@ function StudentStatCard({ icon: Icon, gradient, label, value, sub }) {
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
           }}
         >
-          <Icon sx={{ color: '#fff', fontSize: 22 }} />
+          <StatIcon sx={{ color: '#fff', fontSize: 22 }} />
         </Box>
         <Typography
           fontSize={12}

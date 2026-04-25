@@ -75,7 +75,7 @@ function MyRoom({ dashboardData, searchQuery = '', onVacateRequested }) {
         orderId,
         reason,
       })
-    } catch (_) {
+    } catch {
       // Best effort update; failure should not block user flow.
     }
   }

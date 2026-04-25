@@ -141,7 +141,7 @@ function ApplyRoom() {
         orderId,
         reason,
       });
-    } catch (_) {
+    } catch {
       // Best effort: failure state should not block the user flow.
     }
   };
@@ -175,7 +175,7 @@ function ApplyRoom() {
 
   const selectedRoomOption = useMemo(
     () => roomOptions.find((option) => option.value === selectedType),
-    [selectedType],
+    [selectedType, roomOptions],
   );
 
   const selectedRoom = useMemo(

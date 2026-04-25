@@ -45,10 +45,10 @@ function WardenAnnouncementsCard({ items = [] }) {
         </Typography>
       </Box>
       <Box display="flex" flexDirection="column" gap={2}>
-        {items.map((item) => {
+        {items.map((item, index) => {
           return (
             <Box
-              key={`${item.title}-${item.createdAt || Math.random()}`}
+              key={`${item.title || "announcement"}-${item.createdAt || index}`}
               display="flex"
               gap={1.5}
               alignItems="flex-start"

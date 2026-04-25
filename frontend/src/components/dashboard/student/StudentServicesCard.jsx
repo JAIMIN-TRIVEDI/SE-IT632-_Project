@@ -22,7 +22,7 @@ function StudentServicesCard() {
             Quick booking
           </Typography>
         </Box>
-        {services.map((service, i) => {
+        {services.map((service) => {
           const Icon = service.icon
           return (
             <Box

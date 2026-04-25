@@ -50,7 +50,7 @@ function MessAdminProfile() {
         setForm(profile)
         setOriginal(profile)
         setLastUpdated(u.updatedAt || null)
-      } catch (err) {
+      } catch {
         setError('Could not load profile.')
       } finally {
         setLoading(false)

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Alert,
   Avatar,
@@ -107,7 +107,9 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
           setLastUpdated(
             dash.data?.data?.user?.updatedAt || u.updatedAt || null,
           );
-        } catch (_) {}
+        } catch {
+          setRoomInfo(null);
+        }
 
         const profile = {
           name: u.name || "",
@@ -127,7 +129,7 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
         setForm(profile);
         setOriginal(profile);
         setLastUpdated(u.updatedAt || null);
-      } catch (err) {
+      } catch {
         // fallback to initialUser
         if (initialUser) {
           const fallback = {
@@ -164,7 +166,7 @@ export default function StudentProfile({ initialUser, onProfileUpdated }) {
           ? settings.courses.filter((course) => course.isActive !== false)
           : [];
         setAcademicCourses(courses);
-      } catch (_) {
+      } catch {
         setAcademicCourses([]);
       }
     };

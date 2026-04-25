@@ -60,7 +60,7 @@ function RegisterPage() {
           ? settings.courses.filter((course) => course.isActive !== false)
           : [];
         setCourses(activeCourses);
-      } catch (_) {
+      } catch {
         setCourses([]);
       } finally {
         setAcademicLoading(false);

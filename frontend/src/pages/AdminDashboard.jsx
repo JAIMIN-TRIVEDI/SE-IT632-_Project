@@ -106,7 +106,7 @@ function AdminDashboard() {
         return <NotificationsView />;
 
       case "Dashboard":
-      // return <HostelsView />
+        break;
       default:
         if (loading) {
           return (

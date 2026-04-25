@@ -2,12 +2,6 @@ import { Box, IconButton, Typography, Chip, Stack } from '@mui/material'
 import { HomeWork, Edit, Delete } from '@mui/icons-material'
 import DashboardCard from '../DashboardCard.jsx'
 
-const formatDate = (value) => {
-  if (!value) return '—'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString()
-}
-
 function HostelCard({ hostel, onEdit, onDelete }) {
   const blocks = Array.isArray(hostel.blocks) ? hostel.blocks : []
   const rooms = Array.isArray(hostel.rooms) ? hostel.rooms : []
@@ -16,10 +10,6 @@ function HostelCard({ hostel, onEdit, onDelete }) {
   const availableRooms = hostel.availableRooms ?? rooms.filter((room) => room.status === 'available').length
   const wardenName = hostel.wardenId?.name || 'Unassigned'
   const wardenEmail = hostel.wardenId?.email || ''
-  const creatorName = hostel.createdBy?.name || 'Unknown'
-  const creatorEmail = hostel.createdBy?.email || ''
-  const createdAt = formatDate(hostel.createdAt)
-  const updatedAt = formatDate(hostel.updatedAt)
 
   const roomTypeSummary = [
     {

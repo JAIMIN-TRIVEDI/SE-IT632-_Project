@@ -90,14 +90,12 @@ function HomeEntry({ mode, onToggleTheme }) {
 }
 
 function App() {
-  const [mode, setMode] = useState("light");
-
-  useEffect(() => {
+  const [mode, setMode] = useState(() => {
     const storedMode = localStorage.getItem("color-mode");
-    if (storedMode === "light" || storedMode === "dark") {
-      setMode(storedMode);
-    }
-  }, []);
+    return storedMode === "light" || storedMode === "dark"
+      ? storedMode
+      : "light";
+  });
 
   const theme = useMemo(() => getTheme(mode), [mode]);
 
