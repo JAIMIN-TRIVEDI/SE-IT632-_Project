@@ -13,11 +13,16 @@ connectDB();
 
 const PORT = process.env.PORT || 5000;
 const SOCKET_EVENT_NAME = process.env.NOTIFICATION_SOCKET_EVENT || "new_notification";
+const DEFAULT_DEV_ORIGINS = ["http://localhost:5173"];
+const DEFAULT_PROD_ORIGINS = ["https://hostezy.netlify.app"];
 
 const server = http.createServer(app);
-const allowedOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(",")
-  : ["http://localhost:5173"];
+const envOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(",").map((origin) => origin.trim()).filter(Boolean)
+  : [];
+const allowedOrigins = envOrigins.length > 0
+  ? envOrigins
+  : (process.env.NODE_ENV === "production" ? DEFAULT_PROD_ORIGINS : DEFAULT_DEV_ORIGINS);
 
 const io = new Server(server, {
   cors: {

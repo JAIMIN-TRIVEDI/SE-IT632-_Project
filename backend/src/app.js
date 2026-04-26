@@ -19,9 +19,25 @@ import supportRoutes from "./routes/supportRoutes.js";
 
 const app = express();
 
+const DEFAULT_DEV_ORIGINS = ["http://localhost:5173"];
+const DEFAULT_PROD_ORIGINS = ["https://hostezy.netlify.app"];
+
+const envOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(",").map((origin) => origin.trim()).filter(Boolean)
+  : [];
+
+const allowedOrigins = envOrigins.length > 0
+  ? envOrigins
+  : (process.env.NODE_ENV === "production" ? DEFAULT_PROD_ORIGINS : DEFAULT_DEV_ORIGINS);
+
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true
 }));
 
