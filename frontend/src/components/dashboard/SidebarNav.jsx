@@ -10,6 +10,7 @@ import {
   ListItemText,
   Typography,
 } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import { alpha } from "@mui/material/styles";
 import { Add } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
@@ -17,17 +18,21 @@ import { DRAWER_WIDTH } from "../../constants/constants";
 import { navItems } from "../../constants/data";
 import BrandImage from "../BrandImage.jsx";
 
-function SidebarNav({ activeNav, onSelect }) {
+function SidebarNav({ activeNav, onSelect, mobileOpen = false, onMobileClose }) {
   const navigate = useNavigate();
+  const isMobile = useMediaQuery((theme) => theme.breakpoints.down('md'));
 
   return (
     <Drawer
-      variant="permanent"
+      variant={isMobile ? 'temporary' : 'permanent'}
+      open={isMobile ? mobileOpen : true}
+      onClose={onMobileClose}
+      ModalProps={{ keepMounted: true }}
       sx={{
-        width: DRAWER_WIDTH,
+        width: isMobile ? 280 : DRAWER_WIDTH,
         flexShrink: 0,
         "& .MuiDrawer-paper": {
-          width: DRAWER_WIDTH,
+          width: isMobile ? 280 : DRAWER_WIDTH,
           boxSizing: "border-box",
           bgcolor: (theme) => theme.palette.background.paper,
           borderRight: (theme) => `1px solid ${theme.palette.divider}`,

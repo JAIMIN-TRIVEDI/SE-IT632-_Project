@@ -54,6 +54,7 @@ function AdminDashboard() {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const navigateToSection = (label) => {
     const slug = ADMIN_SECTION_TO_PATH[label];
@@ -87,6 +88,10 @@ function AdminDashboard() {
   useEffect(() => {
     fetchDashboard();
   }, []);
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
 
   const renderContent = () => {
     switch (activeNav) {
@@ -179,12 +184,17 @@ function AdminDashboard() {
         bgcolor: "background.default",
       }}
     >
-      <SidebarNav activeNav={activeNav} onSelect={navigateToSection} />
+      <SidebarNav
+        activeNav={activeNav}
+        onSelect={navigateToSection}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={() => setMobileNavOpen(false)}
+      />
 
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        <TopBar />
+        <TopBar onMobileMenuOpen={() => setMobileNavOpen(true)} />
 
-        <Box sx={{ p: 3, flexGrow: 1 }}>{renderContent()}</Box>
+        <Box sx={{ p: { xs: 2, sm: 3 }, flexGrow: 1 }}>{renderContent()}</Box>
       </Box>
     </Box>
   );

@@ -48,6 +48,7 @@ function StudentDashboard({ mode = 'light', onToggleTheme }) {
   const [dashboardData, setDashboardData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   const navigateToSection = useCallback(
     (label) => {
@@ -81,6 +82,10 @@ function StudentDashboard({ mode = 'light', onToggleTheme }) {
   useEffect(() => {
     setSearchQuery('')
   }, [activeNav])
+
+  useEffect(() => {
+    setMobileNavOpen(false)
+  }, [location.pathname])
 
   const handleOpenComplaintsChange = useCallback((openCount) => {
     setDashboardData((prev) => {
@@ -187,7 +192,7 @@ function StudentDashboard({ mode = 'light', onToggleTheme }) {
         return (
           <>
             <StudentStatusCards dashboardData={dashboardData} />
-            <Box sx={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 3 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' }, gap: 3 }}>
               <StudentRecentNotifications
                 notifications={dashboardData?.notifications || []}
                 searchQuery={searchQuery}
@@ -202,7 +207,13 @@ function StudentDashboard({ mode = 'light', onToggleTheme }) {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      <StudentSidebarNav activeNav={activeNav} onSelect={navigateToSection} user={dashboardData?.user} />
+      <StudentSidebarNav
+        activeNav={activeNav}
+        onSelect={navigateToSection}
+        user={dashboardData?.user}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={() => setMobileNavOpen(false)}
+      />
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <StudentTopBar
           activeNav={activeNav}
@@ -214,8 +225,9 @@ function StudentDashboard({ mode = 'light', onToggleTheme }) {
           searchPlaceholder={getSearchPlaceholder()}
           onSearchChange={setSearchQuery}
           onProfileClick={() => navigateToSection('Profile')}
+          onMobileMenuOpen={() => setMobileNavOpen(true)}
         />
-        <Box sx={{ px: 4, pb: 4, pt: 2, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 3, overflowY: 'auto' }}>
+        <Box sx={{ px: { xs: 2, sm: 3, md: 4 }, pb: 4, pt: 2, flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 3, overflowY: 'auto' }}>
           {renderContent()}
         </Box>
       </Box>

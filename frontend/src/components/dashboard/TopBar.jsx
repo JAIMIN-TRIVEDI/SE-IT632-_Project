@@ -1,15 +1,15 @@
 import { Avatar, Box, IconButton, InputBase, Typography } from '@mui/material'
-import { Help, Notifications, Search } from '@mui/icons-material'
+import { Help, Menu, Notifications, Search } from '@mui/icons-material'
 import LogoutButton from '../LogoutButton.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 
-function TopBar() {
+function TopBar({ onMobileMenuOpen }) {
   const { user } = useAuth()
 
   return (
     <Box
       sx={{
-        px: 3,
+        px: { xs: 2, sm: 3 },
         py: 1.5,
         bgcolor: 'background.paper',
         borderBottom: '1px solid',
@@ -17,12 +17,21 @@ function TopBar() {
         display: 'flex',
         alignItems: 'center',
         gap: 2,
+        flexWrap: 'wrap',
       }}
     >
+      <IconButton
+        onClick={onMobileMenuOpen}
+        sx={{ display: { xs: 'inline-flex', md: 'none' } }}
+        aria-label="Open navigation menu"
+      >
+        <Menu />
+      </IconButton>
+
       <Box
         sx={{
           flex: 1,
-          maxWidth: 420,
+          maxWidth: { xs: '100%', md: 420 },
           display: 'flex',
           alignItems: 'center',
           gap: 1,
@@ -32,6 +41,7 @@ function TopBar() {
           borderRadius: 2,
           px: 2,
           py: 0.8,
+          width: { xs: '100%', md: 'auto' },
         }}
       >
         <Search sx={{ color: 'text.secondary', fontSize: 20 }} />
@@ -40,7 +50,7 @@ function TopBar() {
           sx={{ fontSize: 13, color: 'text.secondary', flex: 1 }}
         />
       </Box>
-      <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <Box sx={{ ml: { xs: 0, md: 'auto' }, display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
         <IconButton size="small" sx={{ color: 'text.secondary' }}>
           <Notifications />
         </IconButton>

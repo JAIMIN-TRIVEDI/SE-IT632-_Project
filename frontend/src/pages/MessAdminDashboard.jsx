@@ -172,25 +172,26 @@ function MessAdminDashboard() {
         <>
           <Box display="flex" gap={2} mb={3} flexWrap="wrap">
             {stats.map((stat) => (
-              <StatCard
-                key={stat.title}
-                title={stat.title}
-                value={stat.value}
-                change={stat.change}
-                warning={stat.warning}
-              />
+              <Box key={stat.title} sx={{ flex: '1 1 220px', minWidth: { xs: '100%', sm: 220 } }}>
+                <StatCard
+                  title={stat.title}
+                  value={stat.value}
+                  change={stat.change}
+                  warning={stat.warning}
+                />
+              </Box>
             ))}
           </Box>
 
           <Box display="flex" gap={2} flexWrap="wrap">
-            <Box flex={2} minWidth={300}>
+            <Box flex={2} minWidth={{ xs: '100%', md: 300 }}>
               <RevenueChart
                 data={dashboardData?.revenueSeries || []}
                 loading={loading}
                 error={error}
               />
             </Box>
-            <Box flex={1} minWidth={260}>
+            <Box flex={1} minWidth={{ xs: '100%', md: 260 }}>
               <RecentActivity
                 items={dashboardData?.recentActivities || []}
                 loading={loading}

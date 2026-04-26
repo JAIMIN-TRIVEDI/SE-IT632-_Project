@@ -61,6 +61,7 @@ function WardenDashboard({ mode = "light", onToggleTheme }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const navigateToSection = useCallback(
     (label) => {
@@ -129,6 +130,10 @@ function WardenDashboard({ mode = "light", onToggleTheme }) {
     setSearchQuery("");
   }, [activeNav]);
 
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
+
   const getSearchPlaceholder = () => {
     switch (activeNav) {
       case "Rooms":
@@ -183,14 +188,14 @@ function WardenDashboard({ mode = "light", onToggleTheme }) {
             >
               <WardenActivityTableCard
                 items={dashboardData?.recentActivity || []}
-                sx={{ minWidth: 360, flex: 2 }}
+                sx={{ minWidth: { xs: '100%', lg: 360 }, flex: 2 }}
               />
               <Box
                 flex={1}
                 display="flex"
                 flexDirection="column"
                 gap={2.5}
-                sx={{ minWidth: 320 }}
+                sx={{ minWidth: { xs: '100%', lg: 320 } }}
               >
                 <WardenAnnouncementsCard
                   items={dashboardData?.announcements || []}

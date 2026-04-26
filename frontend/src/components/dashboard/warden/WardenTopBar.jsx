@@ -1,6 +1,6 @@
 import { Box, IconButton, InputBase, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { LocationOn, Search, Tune } from "@mui/icons-material";
+import { LocationOn, Menu, Search, Tune } from "@mui/icons-material";
 import Brightness4RoundedIcon from "@mui/icons-material/Brightness4Rounded";
 import Brightness7RoundedIcon from "@mui/icons-material/Brightness7Rounded";
 import Tooltip from "@mui/material/Tooltip";
@@ -13,22 +13,30 @@ function WardenTopBar({
   searchQuery,
   onSearchChange,
   placeholder,
+  onMobileMenuOpen,
 }) {
   return (
     <Box
       sx={{
-        px: 4,
+        px: { xs: 2, sm: 3, md: 4 },
         pt: 3,
         pb: 2,
         bgcolor: "background.default",
         display: "flex",
+        flexWrap: "wrap",
         alignItems: "center",
         justifyContent: "space-between",
         gap: 2,
-        flexWrap: "wrap",
       }}
     >
-      <Box>
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        <IconButton
+          onClick={onMobileMenuOpen}
+          sx={{ display: { xs: 'inline-flex', md: 'none' }, mb: 1, ml: -0.75 }}
+          aria-label="Open navigation menu"
+        >
+          <Menu />
+        </IconButton>
         <Typography
           variant="h4"
           fontWeight={800}
@@ -44,7 +52,7 @@ function WardenTopBar({
           </Typography>
         </Box>
       </Box>
-      <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
+      <Box display="flex" alignItems="center" gap={1.25} flexWrap="wrap" width={{ xs: '100%', md: 'auto' }} justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}>
         <Box
           sx={{
             display: "flex",
@@ -59,7 +67,8 @@ function WardenTopBar({
             borderRadius: 10,
             px: 2,
             py: 0.8,
-            minWidth: 280,
+            minWidth: { xs: '100%', sm: 280 },
+            width: { xs: '100%', sm: 'auto' },
           }}
         >
           <Search sx={{ color: "text.secondary", fontSize: 18 }} />

@@ -1,4 +1,4 @@
-import { Box, Typography } from "@mui/material";
+import { Box, Drawer, Typography } from '@mui/material'
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
@@ -7,6 +7,7 @@ import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNone
 import AssessmentOutlinedIcon from "@mui/icons-material/AssessmentOutlined";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import { useLocation, useNavigate } from "react-router-dom";
+import useMediaQuery from '@mui/material/useMediaQuery'
 import BrandImage from "../BrandImage.jsx";
 
 const menu = [
@@ -39,20 +40,29 @@ const menu = [
   { label: "Profile", route: "/mess-admin/profile", icon: PersonOutlineOutlinedIcon },
 ];
 
-function MessSidebar() {
+function MessSidebar({ mobileOpen = false, onMobileClose }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useMediaQuery((theme) => theme.breakpoints.down('md'));
 
   return (
-    <Box
+    <Drawer
+      variant={isMobile ? 'temporary' : 'permanent'}
+      open={isMobile ? mobileOpen : true}
+      onClose={onMobileClose}
+      ModalProps={{ keepMounted: true }}
       sx={{
-        width: 260,
-        bgcolor: "background.paper",
-        borderRight: "1px solid",
-        borderColor: "divider",
-        p: 2,
-        display: "flex",
-        flexDirection: "column",
+        width: isMobile ? 280 : 260,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: isMobile ? 280 : 260,
+          bgcolor: 'background.paper',
+          borderRight: '1px solid',
+          borderColor: 'divider',
+          p: 2,
+          display: 'flex',
+          flexDirection: 'column',
+        },
       }}
     >
       {/* Logo */}
@@ -114,7 +124,7 @@ function MessSidebar() {
           + Add Mess Plan
         </Box>
       </Box>
-    </Box>
+    </Drawer>
   );
 }
 

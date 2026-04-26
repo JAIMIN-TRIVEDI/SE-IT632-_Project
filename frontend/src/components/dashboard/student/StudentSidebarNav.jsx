@@ -12,6 +12,7 @@ import {
   ListItemText,
   Typography,
 } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import { alpha } from "@mui/material/styles";
 import { LogoutOutlined } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
@@ -21,9 +22,10 @@ import BrandImage from "../../BrandImage.jsx";
 
 const DRAWER_WIDTH = 240;
 
-function StudentSidebarNav({ activeNav, onSelect, user }) {
+function StudentSidebarNav({ activeNav, onSelect, user, mobileOpen = false, onMobileClose }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const isMobile = useMediaQuery((theme) => theme.breakpoints.down('md'));
 
   const userName = user?.name || "Student";
   const userRole = user?.role
@@ -43,12 +45,15 @@ function StudentSidebarNav({ activeNav, onSelect, user }) {
 
   return (
     <Drawer
-      variant="permanent"
+      variant={isMobile ? "temporary" : "permanent"}
+      open={isMobile ? mobileOpen : true}
+      onClose={onMobileClose}
+      ModalProps={{ keepMounted: true }}
       sx={{
-        width: DRAWER_WIDTH,
+        width: isMobile ? 280 : DRAWER_WIDTH,
         flexShrink: 0,
         "& .MuiDrawer-paper": {
-          width: DRAWER_WIDTH,
+          width: isMobile ? 280 : DRAWER_WIDTH,
           boxSizing: "border-box",
           bgcolor: "background.paper",
           borderRight: (theme) => `1px solid ${theme.palette.divider}`,

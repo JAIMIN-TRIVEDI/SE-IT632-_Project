@@ -56,6 +56,7 @@ function LoginPage() {
     <Box
       sx={{
         display: "flex",
+        flexDirection: { xs: "column", md: "row" },
         minHeight: "100vh",
         bgcolor: "background.default",
       }}
@@ -72,7 +73,7 @@ function LoginPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          p: { xs: 3, md: 6 },
+          p: { xs: 2.5, sm: 3, md: 6 },
           bgcolor: "background.paper",
         }}
       >

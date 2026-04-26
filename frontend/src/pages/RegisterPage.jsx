@@ -60,6 +60,21 @@ function RegisterPage() {
           ? settings.courses.filter((course) => course.isActive !== false)
           : [];
         setCourses(activeCourses);
+
+        setFormData((prev) => {
+          if (prev.course || activeCourses.length === 0) {
+            return prev;
+          }
+
+          const firstCourse = activeCourses[0];
+          const firstSemester = Number(firstCourse?.totalSemesters || 0) > 0 ? "1" : "";
+
+          return {
+            ...prev,
+            course: firstCourse?.name || "",
+            studyYear: firstSemester,
+          };
+        });
       } catch {
         setCourses([]);
       } finally {

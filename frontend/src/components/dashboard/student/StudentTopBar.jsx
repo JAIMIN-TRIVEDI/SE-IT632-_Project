@@ -1,6 +1,6 @@
 import { Avatar, Box, IconButton, InputBase, Tooltip, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
-import { Notifications, Search } from '@mui/icons-material'
+import { Menu, Notifications, Search } from '@mui/icons-material'
 import Brightness4RoundedIcon from '@mui/icons-material/Brightness4Rounded'
 import Brightness7RoundedIcon from '@mui/icons-material/Brightness7Rounded'
 import LogoutButton from '../../LogoutButton.jsx'
@@ -15,6 +15,7 @@ function StudentTopBar({
   searchPlaceholder = 'Search... ',
   onSearchChange,
   onProfileClick,
+  onMobileMenuOpen,
 }) {
   const userName = user?.name || 'Student'
   const initials = userName
@@ -70,17 +71,25 @@ function StudentTopBar({
   return (
     <Box
       sx={{
-        px: 4,
+        px: { xs: 2, sm: 3, md: 4 },
         pt: 3,
         pb: 2,
         bgcolor: 'background.default',
         display: 'flex',
+        flexWrap: 'wrap',
         alignItems: 'flex-start',
         justifyContent: 'space-between',
         gap: 2,
       }}
     >
-      <Box>
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        <IconButton
+          onClick={onMobileMenuOpen}
+          sx={{ display: { xs: 'inline-flex', md: 'none' }, mb: 1, ml: -0.75 }}
+          aria-label="Open navigation menu"
+        >
+          <Menu />
+        </IconButton>
         <Typography variant="h4" fontWeight={800} color="text.primary" lineHeight={1.2}>
           {pageInfo.title}
         </Typography>
@@ -88,7 +97,15 @@ function StudentTopBar({
           {pageInfo.subtitle}
         </Typography>
       </Box>
-      <Box display="flex" alignItems="center" gap={1.5} mt={0.5}>
+      <Box
+        display="flex"
+        alignItems="center"
+        gap={1.25}
+        mt={0.5}
+        flexWrap="wrap"
+        justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}
+        width={{ xs: '100%', md: 'auto' }}
+      >
         <Box
           sx={{
             display: 'flex',
@@ -103,7 +120,8 @@ function StudentTopBar({
             borderRadius: 10,
             px: 2,
             py: 0.8,
-            minWidth: 240,
+            minWidth: { xs: '100%', sm: 240 },
+            width: { xs: '100%', sm: 'auto' },
           }}
         >
           <Search sx={{ color: 'text.secondary', fontSize: 18 }} />
