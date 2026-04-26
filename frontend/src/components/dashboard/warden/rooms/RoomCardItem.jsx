@@ -64,7 +64,7 @@ function RoomCardItem({ room, searchQuery = '' }) {
           <RoomStatusChip status={room.effectiveStatus} />
         </Box>
 
-        <Box display="grid" gridTemplateColumns="repeat(2, minmax(0, 1fr))" gap={1.1} mt={1.8}>
+        <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' }} gap={1.1} mt={1.8}>
           <Box
             sx={{
               p: 1.25,

@@ -10,9 +10,11 @@ function RecordsTable({
   totalRecords,
   onPageChange,
 }) {
+  const minTableWidth = Math.max(720, columns.length * 140)
+
   return (
-    <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
-      <Table>
+    <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)', overflowX: 'auto' }}>
+      <Table sx={{ minWidth: minTableWidth }}>
         <TableHead>
           <TableRow>
             {columns.map((column) => (

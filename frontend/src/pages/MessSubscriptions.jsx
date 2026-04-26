@@ -196,7 +196,7 @@ function MessSubscriptions() {
             Review and process student refund requests.
           </Typography>
         </Box>
-        <Card sx={{ minWidth: 240, p: 2, bgcolor: "background.paper" }}>
+        <Card sx={{ minWidth: { xs: '100%', sm: 240 }, p: 2, bgcolor: "background.paper" }}>
           <CardContent>
             <Typography fontSize={12} color="text.secondary" gutterBottom>
               Pending requests
@@ -243,9 +243,9 @@ function MessSubscriptions() {
       {loading || isDebouncing ? (
         <TableContainer
           component={Paper}
-          sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}
+          sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)", overflowX: 'auto' }}
         >
-          <Table>
+          <Table sx={{ minWidth: 860 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Student</TableCell>
@@ -270,9 +270,9 @@ function MessSubscriptions() {
       ) : (
         <TableContainer
           component={Paper}
-          sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}
+          sx={{ boxShadow: "0 10px 30px rgba(0,0,0,0.08)", overflowX: 'auto' }}
         >
-          <Table>
+          <Table sx={{ minWidth: 860 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Student</TableCell>

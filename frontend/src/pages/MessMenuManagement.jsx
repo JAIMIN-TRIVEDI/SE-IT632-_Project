@@ -146,14 +146,14 @@ function MessMenuManagement() {
           value={selectedDate}
           onChange={(event) => setSelectedDate(event.target.value)}
           size="small"
-          sx={{ minWidth: 240 }}
+          sx={{ minWidth: { xs: '100%', sm: 240 } }}
           InputLabelProps={{ shrink: true }}
         />
         <TextField
           label="Week Start"
           value={weekStart}
           size="small"
-          sx={{ minWidth: 180 }}
+          sx={{ minWidth: { xs: '100%', sm: 180 } }}
           InputProps={{ readOnly: true }}
           InputLabelProps={{ shrink: true }}
         />

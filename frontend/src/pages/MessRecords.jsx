@@ -99,7 +99,7 @@ const getRefundChipConfig = (status) => {
 
 function StatsCard({ label, value }) {
   return (
-    <Card sx={{ minWidth: 200, bgcolor: "background.paper" }}>
+    <Card sx={{ minWidth: { xs: '100%', sm: 200 }, bgcolor: "background.paper" }}>
       <CardContent>
         <Typography fontSize={12} color="text.secondary" gutterBottom>
           {label}
@@ -597,6 +597,8 @@ function MessRecords() {
           setActionError("");
           setSearchParams({ tab: nextTab });
         }}
+        variant="scrollable"
+        allowScrollButtonsMobile
         sx={{
           mb: 2,
           "& .MuiTab-root": { textTransform: "none", fontWeight: 700 },
@@ -615,7 +617,7 @@ function MessRecords() {
           label="Status"
           value={activeHook.status}
           onChange={(event) => activeHook.setStatus(event.target.value)}
-          sx={{ minWidth: 180 }}
+          sx={{ minWidth: { xs: '100%', sm: 180 } }}
         >
           {activeStatusOptions.map((option) => (
             <MenuItem key={option} value={option}>
@@ -630,7 +632,7 @@ function MessRecords() {
           label="Sort"
           value={activeHook.sort}
           onChange={(event) => activeHook.setSort(event.target.value)}
-          sx={{ minWidth: 220 }}
+          sx={{ minWidth: { xs: '100%', sm: 220 } }}
         >
           {activeSortOptions.map((option) => (
             <MenuItem key={option.value} value={option.value}>
@@ -650,7 +652,7 @@ function MessRecords() {
                 paymentsHook.setStartDate(event.target.value)
               }
               InputLabelProps={{ shrink: true }}
-              sx={{ minWidth: 180 }}
+              sx={{ minWidth: { xs: '100%', sm: 180 } }}
             />
             <TextField
               type="date"
@@ -659,7 +661,7 @@ function MessRecords() {
               value={paymentsHook.endDate}
               onChange={(event) => paymentsHook.setEndDate(event.target.value)}
               InputLabelProps={{ shrink: true }}
-              sx={{ minWidth: 180 }}
+              sx={{ minWidth: { xs: '100%', sm: 180 } }}
             />
           </>
         )}

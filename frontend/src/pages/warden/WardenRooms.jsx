@@ -360,7 +360,7 @@ function WardenRooms({ searchQuery }) {
                   )}
                 </Box>
                 <Box display="flex" alignItems="center" gap={1.2} flexWrap="wrap" sx={{ width: { xs: '100%', md: 'auto' } }}>
-                  <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 } }}>
                     <Select
                       value={statusFilter}
                       onChange={(event) => setStatusFilter(event.target.value)}
@@ -382,7 +382,7 @@ function WardenRooms({ searchQuery }) {
                     </Select>
                   </FormControl>
 
-                  <FormControl size="small" sx={{ minWidth: 190 }}>
+                  <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 190 } }}>
                     <Select
                       value={roomNumberFilter}
                       onChange={(event) => setRoomNumberFilter(event.target.value)}
@@ -415,7 +415,7 @@ function WardenRooms({ searchQuery }) {
                 <Box
                   sx={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                    gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit, minmax(260px, 1fr))' },
                     gap: 2,
                   }}
                 >

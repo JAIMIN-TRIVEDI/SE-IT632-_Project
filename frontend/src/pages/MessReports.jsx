@@ -314,7 +314,7 @@ function MessReports() {
             Subscriptions, revenue, refunds, and operational trends in one view.
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
           <Button
             variant="outlined"
             startIcon={<Refresh />}
@@ -635,8 +635,8 @@ function MessReports() {
             </Box>
           </Box>
 
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
+          <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+            <Table size="small" sx={{ minWidth: 860 }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Student</TableCell>
@@ -703,7 +703,7 @@ function MessReports() {
               {pagination.totalPages || 1} ({pagination.totalRecords || 0}{" "}
               records)
             </Typography>
-            <Stack direction="row" spacing={1}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
               <Button
                 variant="outlined"
                 size="small"
@@ -739,8 +739,8 @@ function MessReports() {
           <Typography variant="h6" fontWeight={600} mb={2}>
             Recent Activities
           </Typography>
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
+          <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
+            <Table size="small" sx={{ minWidth: 720 }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Type</TableCell>

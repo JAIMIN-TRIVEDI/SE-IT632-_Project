@@ -83,7 +83,8 @@ function WardenStudents({ searchQuery }) {
             borderRadius: 10,
             px: 2,
             py: 0.9,
-            minWidth: 280,
+            minWidth: { xs: '100%', sm: 280 },
+            width: { xs: '100%', sm: 'auto' },
             flex: 1,
             maxWidth: 420,
           }}
@@ -99,8 +100,8 @@ function WardenStudents({ searchQuery }) {
       </Box>
 
       <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', overflowX: 'auto' }}>
-        <TableContainer>
-          <Table>
+        <TableContainer sx={{ overflowX: 'auto' }}>
+          <Table sx={{ minWidth: 760 }}>
             <TableHead>
               <TableRow>
                 {['Student', 'Email', 'Hostel', 'Room', 'Enrollment', 'Status'].map((label) => (

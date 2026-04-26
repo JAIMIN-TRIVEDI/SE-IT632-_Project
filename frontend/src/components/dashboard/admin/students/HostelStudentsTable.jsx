@@ -31,7 +31,7 @@ const getInitials = (name) =>
 function HostelStudentsTable({ selectedHostelName, rows }) {
   return (
     <DashboardCard>
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
         <Typography variant="h6" fontWeight={800} color="text.primary">
           Students - {selectedHostelName}
         </Typography>
@@ -55,7 +55,7 @@ function HostelStudentsTable({ selectedHostelName, rows }) {
           </Typography>
         </Box>
       ) : (
-        <TableContainer sx={{ maxHeight: '62vh' }}>
+        <TableContainer sx={{ maxHeight: '62vh', overflowX: 'auto' }}>
           <Table size="small" stickyHeader sx={{ minWidth: 900 }}>
             <TableHead>
               <TableRow>

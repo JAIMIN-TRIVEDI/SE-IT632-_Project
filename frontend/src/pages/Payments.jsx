@@ -83,6 +83,7 @@ function Payments({ payments: initialPayments = [], searchQuery = '', renewal = 
             if (value) setFilter(value)
           }}
           aria-label="payment filter"
+          sx={{ flexWrap: 'wrap' }}
         >
           <ToggleButton value="all">All</ToggleButton>
           <ToggleButton value="hostel">Hostel</ToggleButton>

@@ -15,6 +15,7 @@ import FormInput from "../components/FormInput.jsx";
 import SocialAuthButtons from "../components/SocialAuthButtons.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getDefaultRouteForRole } from "../utils/roleRoutes.js";
+import authHeroImage from "../assets/images/Image.png";
 
 function LoginPage() {
   const [email, setEmail] = useState("");
@@ -64,7 +65,7 @@ function LoginPage() {
       <AuthBranding
         title="Your home away from home."
         description="Join thousands of students managing their stays effortlessly with our modern hostel management platform."
-        backgroundImage="/src/assets/images/Image.png"
+        backgroundImage={authHeroImage}
       />
 
       <Box

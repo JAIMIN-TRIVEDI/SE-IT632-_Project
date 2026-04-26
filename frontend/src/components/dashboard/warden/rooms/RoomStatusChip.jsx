@@ -25,7 +25,7 @@ function RoomStatusChip({ status = 'available' }) {
       label={config.label}
       size="small"
       sx={{
-        minWidth: 108,
+        minWidth: { xs: 92, sm: 108 },
         justifyContent: 'center',
         fontWeight: 700,
         borderRadius: 1.5,

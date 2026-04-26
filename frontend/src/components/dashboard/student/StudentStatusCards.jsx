@@ -128,7 +128,11 @@ export default function StudentStatusCards({ dashboardData }) {
 
   return (
     <Box
-      sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 2 }}
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", xl: "repeat(4, 1fr)" },
+        gap: 2,
+      }}
     >
       {cards.map((card, idx) => {
         const IconComponent = iconMap[card.icon];
@@ -186,7 +190,11 @@ export default function StudentStatusCards({ dashboardData }) {
               >
                 {card.label}
               </Typography>
-              <Typography variant="h4" fontWeight="bold" sx={{ mt: 0.5 }}>
+              <Typography
+                variant="h4"
+                fontWeight="bold"
+                sx={{ mt: 0.5, fontSize: { xs: "1.55rem", sm: "2rem" } }}
+              >
                 {card.value}
               </Typography>
               {card.sub && (

@@ -260,7 +260,7 @@ function MyRoom({ dashboardData, searchQuery = '', onVacateRequested }) {
       <Card sx={{ p: 3, border: '1px solid', borderColor: 'divider' }}>
         <RoomCard room={room} />
       </Card>
-      <Box sx={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 3 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' }, gap: 3 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
           <RoomDetails room={room} searchQuery={searchQuery} />
           <RoommatesSection roommates={filteredRoommates} searchQuery={searchQuery} />

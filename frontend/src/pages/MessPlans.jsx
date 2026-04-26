@@ -341,7 +341,7 @@ function MessPlans() {
           {selectedPlan?.name} - Details
         </DialogTitle>
         <DialogContent>
-          <Tabs value={detailsTab} onChange={(e, newValue) => setDetailsTab(newValue)} sx={{ mb: 2 }}>
+          <Tabs value={detailsTab} onChange={(e, newValue) => setDetailsTab(newValue)} variant="scrollable" allowScrollButtonsMobile sx={{ mb: 2 }}>
             <Tab icon={<People />} label="Students" />
             <Tab icon={<Payment />} label="Payments" />
           </Tabs>
@@ -367,8 +367,8 @@ function MessPlans() {
           ) : (
             <>
               {detailsTab === 0 && (
-                <TableContainer component={Paper}>
-                  <Table>
+                <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+                  <Table sx={{ minWidth: 720 }}>
                     <TableHead>
                       <TableRow>
                         <TableCell>Name</TableCell>
@@ -405,8 +405,8 @@ function MessPlans() {
                 </TableContainer>
               )}
               {detailsTab === 1 && (
-                <TableContainer component={Paper}>
-                  <Table>
+                <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+                  <Table sx={{ minWidth: 680 }}>
                     <TableHead>
                       <TableRow>
                         <TableCell>Student</TableCell>

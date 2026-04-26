@@ -114,7 +114,7 @@ function WardenComplaints({ searchQuery }) {
             Review and update the status of submitted complaints.
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, maxWidth: 440 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1, maxWidth: { xs: '100%', md: 440 }, width: { xs: '100%', md: 'auto' }, flexWrap: 'wrap' }}>
           <Box
             sx={{
               display: 'flex',
@@ -143,7 +143,7 @@ function WardenComplaints({ searchQuery }) {
           <Select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            sx={{ minWidth: 180, borderRadius: 2, '& .MuiOutlinedInput-notchedOutline': { border: 'none' } }}
+            sx={{ minWidth: { xs: '100%', sm: 180 }, borderRadius: 2, '& .MuiOutlinedInput-notchedOutline': { border: 'none' } }}
             size="small"
           >
             <MenuItem value="All">All statuses</MenuItem>
@@ -155,7 +155,8 @@ function WardenComplaints({ searchQuery }) {
       </Box>
 
       <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', overflowX: 'auto' }}>
-        <Table>
+        <Box sx={{ overflowX: 'auto' }}>
+        <Table sx={{ minWidth: 860 }}>
           <TableHead>
             <TableRow>
               {['Student', 'Room', 'Category', 'Status', 'Submitted', 'Action'].map((label) => (
@@ -213,6 +214,7 @@ function WardenComplaints({ searchQuery }) {
             ))}
           </TableBody>
         </Table>
+        </Box>
       </Card>
 
       {filteredComplaints.length === 0 && (

@@ -185,8 +185,8 @@ function ReportsView() {
           </Typography>
         </Box>
 
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
-          <FormControl size="small" sx={{ minWidth: 150 }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+          <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 } }}>
             <InputLabel id="range-filter-label">Range</InputLabel>
             <Select
               labelId="range-filter-label"
@@ -210,6 +210,7 @@ function ReportsView() {
             value={fromDate}
             onChange={(event) => setFromDate(event.target.value)}
             InputLabelProps={{ shrink: true }}
+            sx={{ minWidth: { xs: '100%', sm: 170 } }}
           />
 
           <TextField
@@ -219,6 +220,7 @@ function ReportsView() {
             value={toDate}
             onChange={(event) => setToDate(event.target.value)}
             InputLabelProps={{ shrink: true }}
+            sx={{ minWidth: { xs: '100%', sm: 170 } }}
           />
 
           <Chip
@@ -274,7 +276,7 @@ function ReportsView() {
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          gridTemplateColumns: { xs: '1fr', xl: 'repeat(2, minmax(0, 1fr))' },
           gap: 2.5,
           alignItems: 'stretch',
           width: '100%',

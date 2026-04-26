@@ -60,6 +60,8 @@ function WardenActivityTableCard({ items = [] }) {
         justifyContent="space-between"
         alignItems="center"
         mb={2.5}
+        gap={1}
+        flexWrap="wrap"
       >
         <Typography fontWeight={700} fontSize={16} color="text.primary">
           Recent Activity
@@ -70,32 +72,35 @@ function WardenActivityTableCard({ items = [] }) {
           onChange={(event, value) => value && setActivityFilter(value)}
           size="small"
           sx={{
-            bgcolor: (theme) =>
-              theme.palette.mode === "dark"
-                ? alpha(theme.palette.common.white, 0.06)
-                : "#f1f5f9",
-            borderRadius: 2,
-            border: "none",
-            "& .MuiToggleButton-root": {
-              border: "none",
+            flexWrap: 'wrap',
+            ...{
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? alpha(theme.palette.common.white, 0.06)
+                  : "#f1f5f9",
               borderRadius: 2,
-              px: 2,
-              py: 0.5,
-              fontSize: 13,
-              color: "text.secondary",
-              fontWeight: 500,
-              textTransform: "none",
-              "&.Mui-selected": {
-                bgcolor: (theme) =>
-                  theme.palette.mode === "dark"
-                    ? alpha(theme.palette.common.white, 0.12)
-                    : theme.palette.common.white,
-                color: "text.primary",
-                fontWeight: 600,
-                boxShadow: (theme) =>
-                  theme.palette.mode === "dark"
-                    ? "0 1px 2px rgba(0,0,0,0.5)"
-                    : "0 1px 3px rgba(0,0,0,0.1)",
+              border: "none",
+              "& .MuiToggleButton-root": {
+                border: "none",
+                borderRadius: 2,
+                px: 2,
+                py: 0.5,
+                fontSize: 13,
+                color: "text.secondary",
+                fontWeight: 500,
+                textTransform: "none",
+                "&.Mui-selected": {
+                  bgcolor: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? alpha(theme.palette.common.white, 0.12)
+                      : theme.palette.common.white,
+                  color: "text.primary",
+                  fontWeight: 600,
+                  boxShadow: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? "0 1px 2px rgba(0,0,0,0.5)"
+                      : "0 1px 3px rgba(0,0,0,0.1)",
+                },
               },
             },
           }}
@@ -105,7 +110,8 @@ function WardenActivityTableCard({ items = [] }) {
           <ToggleButton value="Out">Out</ToggleButton>
         </ToggleButtonGroup>
       </Box>
-      <Table>
+      <Box sx={{ overflowX: 'auto' }}>
+      <Table sx={{ minWidth: 760 }}>
         <TableHead>
           <TableRow>
             {["STUDENT", "ROOM", "STATUS", "TIME", "ACTION"].map((header) => (
@@ -237,6 +243,7 @@ function WardenActivityTableCard({ items = [] }) {
           })}
         </TableBody>
       </Table>
+      </Box>
       {!filteredActivity.length ? (
         <Box textAlign="center" mt={2}>
           <Typography fontSize={13} color="text.secondary">

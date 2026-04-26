@@ -375,6 +375,8 @@ export default function WardenNotifications({ searchQuery = "" }) {
           <Tabs
             value={activeTab}
             onChange={(_, value) => setActiveTab(value)}
+            variant="scrollable"
+            allowScrollButtonsMobile
             sx={{ mb: 2 }}
           >
             {tabs.map((tab) => (

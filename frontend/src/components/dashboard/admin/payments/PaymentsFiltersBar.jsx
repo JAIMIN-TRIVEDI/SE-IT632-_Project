@@ -31,7 +31,7 @@ function PaymentsFiltersBar({
           value={searchTerm}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder="Search by tenant, transaction ID, hostel"
-          sx={{ minWidth: 280, flex: 1 }}
+          sx={{ minWidth: { xs: '100%', md: 280 }, flex: 1 }}
         />
 
         <TextField
@@ -40,7 +40,7 @@ function PaymentsFiltersBar({
           label="Status"
           value={statusFilter}
           onChange={(event) => onStatusFilterChange(event.target.value)}
-          sx={{ minWidth: 150 }}
+          sx={{ minWidth: { xs: '100%', sm: 150 } }}
         >
           <MenuItem value="all">All</MenuItem>
           <MenuItem value="success">Success</MenuItem>
@@ -54,7 +54,7 @@ function PaymentsFiltersBar({
           label="Type"
           value={typeFilter}
           onChange={(event) => onTypeFilterChange(event.target.value)}
-          sx={{ minWidth: 160 }}
+          sx={{ minWidth: { xs: '100%', sm: 160 } }}
         >
           <MenuItem value="all">All</MenuItem>
           <MenuItem value="hostel">Hostel</MenuItem>
@@ -64,7 +64,7 @@ function PaymentsFiltersBar({
         </TextField>
       </Box>
 
-      <Box sx={{ display: 'flex', gap: 1, ml: 'auto' }}>
+      <Box sx={{ display: 'flex', gap: 1, ml: { xs: 0, md: 'auto' }, width: { xs: '100%', md: 'auto' }, flexWrap: 'wrap' }}>
         <Button variant="outlined" startIcon={<FilterAlt />}>
           Advanced
         </Button>

@@ -31,8 +31,8 @@ export default function PaymentRecordsTable({ payments = [], searchQuery = '' })
       </Box>
 
       {/* Table */}
-      <TableContainer>
-        <Table>
+      <TableContainer sx={{ overflowX: 'auto' }}>
+        <Table sx={{ minWidth: 760 }}>
           <TableHead>
             <TableRow>
               <TableCell

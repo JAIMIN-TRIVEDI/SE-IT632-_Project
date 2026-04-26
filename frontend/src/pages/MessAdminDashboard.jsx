@@ -141,7 +141,7 @@ function MessAdminDashboard() {
         <>
           <Box display="flex" gap={2} mb={3} flexWrap="wrap">
             {Array.from({ length: 4 }).map((_, index) => (
-              <Box key={index} sx={{ flex: 1, minWidth: 220 }}>
+              <Box key={index} sx={{ flex: 1, minWidth: { xs: '100%', sm: 220 } }}>
                 <Skeleton variant="rounded" height={124} />
               </Box>
             ))}

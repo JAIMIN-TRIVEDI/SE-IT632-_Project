@@ -58,7 +58,7 @@ function MessPayments() {
             Review all mess payment transactions.
           </Typography>
         </Box>
-        <Card sx={{ p: 2, minWidth: 240, bgcolor: 'background.paper' }}>
+        <Card sx={{ p: 2, minWidth: { xs: '100%', sm: 240 }, bgcolor: 'background.paper' }}>
           <CardContent>
             <Typography fontSize={12} color="text.secondary" gutterBottom>
               Total revenue
@@ -90,8 +90,8 @@ function MessPayments() {
       )}
 
       {loading || isDebouncing ? (
-        <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
-          <Table>
+        <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)', overflowX: 'auto' }}>
+          <Table sx={{ minWidth: 720 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Student</TableCell>
@@ -111,8 +111,8 @@ function MessPayments() {
           </Table>
         </TableContainer>
       ) : (
-        <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
-          <Table>
+        <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)', overflowX: 'auto' }}>
+          <Table sx={{ minWidth: 720 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Student</TableCell>

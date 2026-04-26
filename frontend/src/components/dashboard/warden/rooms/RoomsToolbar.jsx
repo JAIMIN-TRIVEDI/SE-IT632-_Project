@@ -31,7 +31,7 @@ function RoomsToolbar({
       </Box>
 
       <Box display="flex" alignItems="center" flexWrap="wrap" gap={1.2}>
-        <FormControl size="small" sx={{ minWidth: 150 }}>
+        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 } }}>
           <Select
             value={statusFilter}
             onChange={(event) => onStatusFilterChange(event.target.value)}
@@ -44,7 +44,7 @@ function RoomsToolbar({
           </Select>
         </FormControl>
 
-        <FormControl size="small" sx={{ minWidth: 190 }}>
+        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 190 } }}>
           <Select
             value={roomNumberFilter}
             onChange={(event) => onRoomNumberFilterChange(event.target.value)}

@@ -112,7 +112,7 @@ function WardenVacateRequests({ searchQuery }) {
           size="small"
           value={status}
           onChange={(event) => setStatus(event.target.value)}
-          sx={{ minWidth: 180 }}
+          sx={{ minWidth: { xs: '100%', sm: 180 } }}
         >
           {STATUS_OPTIONS.map((item) => (
             <MenuItem key={item} value={item}>

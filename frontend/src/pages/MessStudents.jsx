@@ -56,7 +56,7 @@ function MessStudents() {
             See all students subscribed to the mess service.
           </Typography>
         </Box>
-        <Card sx={{ p: 2, minWidth: 240, bgcolor: 'background.paper' }}>
+        <Card sx={{ p: 2, minWidth: { xs: '100%', sm: 240 }, bgcolor: 'background.paper' }}>
           <CardContent>
             <Typography fontSize={12} color="text.secondary" gutterBottom>
               Total students
@@ -88,8 +88,8 @@ function MessStudents() {
       )}
 
       {loading || isDebouncing ? (
-        <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
-          <Table>
+        <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)', overflowX: 'auto' }}>
+          <Table sx={{ minWidth: 760 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Name</TableCell>
@@ -110,8 +110,8 @@ function MessStudents() {
           </Table>
         </TableContainer>
       ) : (
-        <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
-          <Table>
+        <TableContainer component={Paper} sx={{ boxShadow: '0 10px 30px rgba(0,0,0,0.08)', overflowX: 'auto' }}>
+          <Table sx={{ minWidth: 760 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Name</TableCell>

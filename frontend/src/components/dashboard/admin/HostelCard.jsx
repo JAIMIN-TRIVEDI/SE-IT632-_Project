@@ -146,7 +146,7 @@ function HostelCard({ hostel, onEdit, onDelete }) {
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
+          gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(3, 1fr)' },
           gap: 1.5,
           pt: 2,
         }}

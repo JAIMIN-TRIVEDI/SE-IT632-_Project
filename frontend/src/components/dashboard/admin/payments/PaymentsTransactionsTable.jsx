@@ -43,6 +43,8 @@ function PaymentsTransactionsTable({ payments, total, page, totalPages, loading,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          gap: 1,
+          flexWrap: 'wrap',
         }}
       >
         <Typography variant="subtitle1" fontWeight={700}>
@@ -53,8 +55,8 @@ function PaymentsTransactionsTable({ payments, total, page, totalPages, loading,
         </Typography>
       </Box>
 
-      <TableContainer>
-        <Table size="small">
+      <TableContainer sx={{ overflowX: 'auto' }}>
+        <Table size="small" sx={{ minWidth: 900 }}>
           <TableHead>
             <TableRow>
               <TableCell>Transaction ID</TableCell>
@@ -144,7 +146,7 @@ function PaymentsTransactionsTable({ payments, total, page, totalPages, loading,
         </Table>
       </TableContainer>
 
-      <Box sx={{ px: 2.5, py: 1.5, borderTop: (theme) => `1px solid ${theme.palette.divider}` }}>
+      <Box sx={{ px: 2.5, py: 1.5, borderTop: (theme) => `1px solid ${theme.palette.divider}`, overflowX: 'auto' }}>
         <Pagination
           page={page}
           onChange={(_, value) => onPageChange(value)}

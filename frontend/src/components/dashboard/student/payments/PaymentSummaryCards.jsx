@@ -61,7 +61,7 @@ export default function PaymentSummaryCards({ payments = [], renewal = null }) {
   ]
 
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
       {cards.map((card, idx) => (
         <Card
           key={idx}
@@ -78,7 +78,7 @@ export default function PaymentSummaryCards({ payments = [], renewal = null }) {
             variant="h3"
             fontWeight={800}
             color={card.color}
-            sx={{ mt: 0.5 }}
+            sx={{ mt: 0.5, fontSize: { xs: '1.65rem', sm: '2.35rem' } }}
           >
             {card.value}
           </Typography>
