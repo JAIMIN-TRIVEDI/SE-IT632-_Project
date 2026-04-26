@@ -233,6 +233,9 @@ function App() {
             </Route>
 
             <Route path="/forgot-password" element={<ForgotPassword />} />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>
       </Router>
