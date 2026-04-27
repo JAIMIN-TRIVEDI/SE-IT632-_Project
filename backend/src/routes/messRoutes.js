@@ -62,7 +62,7 @@ router.delete(
   "/mess/plans/:id",
   protect,
   authorizeRoles("mess_admin"),
-  deleteMessPlanValidation,
+  // deleteMessPlanValidation,
   validateRequest,
   deleteMessPlan
 );

@@ -60,7 +60,7 @@ const sanitizeUser = (user) => ({
 /* ── REGISTER ─────────────────────────────────────────────────────────────── */
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, enrollmentNo, phone, gender, role, course, studyYear, admissionYear } = req.body;
+    const { name, email, password, enrollmentNo, phone, gender, role, course, studyYear, admissionYear, confirmPassword } = req.body;
     const normalizedEmail = email?.toLowerCase();
     const normalizedRole = role || "student";
 
