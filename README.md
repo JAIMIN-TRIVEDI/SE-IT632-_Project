@@ -199,6 +199,12 @@ Hostezy is structured with clear module boundaries (`controllers`, `models`, `ro
 - Queue/background jobs for notifications
 - CI/CD and containerized deployment
 
+## Hosting / Deployment
+
+- Frontend: Netlify  
+- Backend: Render  
+
+Live Application: https://hostezy.netlify.app/
 ## License
 
 This project is currently intended for academic/institutional development usage. Add a formal license before public distribution.
