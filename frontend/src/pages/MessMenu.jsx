@@ -3,50 +3,15 @@ import {
   Alert, Box, Card, Chip, CircularProgress, Divider, Typography,
 } from '@mui/material'
 import {
-  FreeBreakfast, WbSunny, Cake, Nightlight,
   NotificationsActive, Restaurant as RestaurantIcon, CheckCircle, Warning,
 } from '@mui/icons-material'
 import api from '../api/api'
+import { MEAL_TYPES, getAllowedMealKeys } from '../constants/messMenu'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const DAYS_IN_WEEK = 7
 const MIN_CELL_WIDTH = 150
 const TOTAL_COLUMNS = 8
-
-const MEAL_TYPES = [
-  {
-    key: 'breakfast',
-    label: 'Breakfast',
-    time: '08:00 - 09:30',
-    icon: FreeBreakfast,
-    color: '#d97706',
-    bg: '#fef3c7',
-  },
-  {
-    key: 'lunch',
-    label: 'Lunch',
-    time: '12:30 - 14:00',
-    icon: WbSunny,
-    color: '#0891b2',
-    bg: '#e0f2fe',
-  },
-  {
-    key: 'snacks',
-    label: 'Snacks',
-    time: '17:00 - 18:00',
-    icon: Cake,
-    color: '#ea580c',
-    bg: '#ffedd5',
-  },
-  {
-    key: 'dinner',
-    label: 'Dinner',
-    time: '20:00 - 21:30',
-    icon: Nightlight,
-    color: '#6d28d9',
-    bg: '#ede9fe',
-  },
-]
 
 const GUIDELINES = [
   { text: 'Carry your Hostel ID card for meal verification.', type: 'ok' },
@@ -110,6 +75,7 @@ export default function MessMenu() {
   const [loading, setLoading] = useState(true)
   const [menu, setMenu] = useState(null)
   const [subscription, setSubscription] = useState(null)
+  const [subscriptionStatus, setSubscriptionStatus] = useState('none')
   const [error, setError] = useState(null)
 
   const load = async () => {
@@ -120,8 +86,11 @@ export default function MessMenu() {
         api.get('/mess/menu'),
         api.get('/mess/subscription/me').catch(() => ({ data: { data: null } })),
       ])
+      console.log('[MessMenu] menu response', menuRes.data)
+      console.log('[MessMenu] subscription response', subRes.data)
       setMenu(menuRes.data.data)
       setSubscription(subRes.data.data)
+      setSubscriptionStatus(subRes.data.currentStatus || 'none')
     } catch (err) {
       setError(err.response?.data?.message || err.message)
     } finally {
@@ -129,7 +98,13 @@ export default function MessMenu() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      load()
+    }, 0)
+
+    return () => window.clearTimeout(timer)
+  }, [])
 
   const weekColumns = useMemo(() => {
     const start = getApiWeekStart(menu?.weekStart)
@@ -158,6 +133,20 @@ export default function MessMenu() {
       meals: menu?.menu?.[col.dayKey] || {},
     }))
   }, [menu?.menu, weekColumns])
+
+  const allowedMealKeys = Array.isArray(menu?.allowedMeals) && menu.allowedMeals.length > 0
+    ? menu.allowedMeals
+    : subscriptionStatus === 'active'
+      ? getAllowedMealKeys(subscription?.planId || {})
+      : []
+
+  const visibleMealTypes = MEAL_TYPES.filter((meal) => allowedMealKeys.includes(meal.key))
+
+  const hasActivePlan = subscriptionStatus === 'active' && visibleMealTypes.length > 0
+  const hasHiddenMeals = hasActivePlan && visibleMealTypes.length < MEAL_TYPES.length
+  const hasMenuItems = orderedDays.some(({ meals }) => {
+    return visibleMealTypes.some((meal) => String(meals?.[meal.key] || '').trim().length > 0)
+  })
 
   // Week range chip display
   const weekRange = useMemo(() => {
@@ -194,7 +183,7 @@ export default function MessMenu() {
               sx={{ fontWeight: 600, fontSize: 12, bgcolor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : '#f1f5f9', color: 'text.secondary' }} />
           )}
         </Box>
-        {subscription?.status === 'active' && (
+        {hasActivePlan && (
           <Chip
             label="● Mess Active"
             size="small"
@@ -202,6 +191,20 @@ export default function MessMenu() {
           />
         )}
       </Box>
+
+      {!hasActivePlan ? (
+        <Alert severity="warning" sx={{ borderRadius: 2 }}>
+          No active plan
+        </Alert>
+      ) : !hasMenuItems ? (
+        <Alert severity="info" sx={{ borderRadius: 2 }}>
+          No menu available for this week.
+        </Alert>
+      ) : hasHiddenMeals ? (
+        <Alert severity="info" sx={{ borderRadius: 2 }}>
+          Meals not included in your plan are hidden.
+        </Alert>
+      ) : null}
 
       {/* ── Schedule card ───────────────────────────────────────────────── */}
       <Card sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, overflow: 'hidden' }}>
@@ -257,9 +260,9 @@ export default function MessMenu() {
               </Box>
 
               {/* ── Meal rows ───────────────────────────────────────────── */}
-              {MEAL_TYPES.map((meal, mealIdx) => {
+              {visibleMealTypes.map((meal, mealIdx) => {
                 const Icon = meal.icon
-                const isLast = mealIdx === MEAL_TYPES.length - 1
+                const isLast = mealIdx === visibleMealTypes.length - 1
                 return (
                   <Box key={meal.key} sx={{
                     display: 'grid',
@@ -286,6 +289,11 @@ export default function MessMenu() {
                   </Box>
                 )
               })}
+              {!visibleMealTypes.length && (
+                <Box sx={{ p: 4, textAlign: 'center', borderTop: '1px solid', borderColor: 'divider' }}>
+                  <Typography color="text.secondary">No active plan</Typography>
+                </Box>
+              )}
             </Box>
           </Box>
         )}

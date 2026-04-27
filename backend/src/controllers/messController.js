@@ -9,6 +9,11 @@ import mongoose from "mongoose";
 import asyncHandler from "../utils/asyncHandler.js";
 import { sendSuccess } from "../utils/apiResponse.js";
 import {
+  filterMenuByAllowedMeals,
+  getAllowedMealsForPlan,
+  isSubscriptionActiveNow,
+} from "../utils/messMealAccess.js";
+import {
   expireSubscriptionsAndNotify,
   sendExpiringSubscriptionNotifications,
   sendPaymentSuccessNotification,
@@ -29,7 +34,7 @@ const getSubscriptionCurrentStatus = (subscription) => {
     return "expired";
   }
 
-  if (subscription.status === "active" && subscription.endDate && new Date(subscription.endDate) < new Date()) {
+  if (subscription.status === "active" && !isSubscriptionActiveNow(subscription)) {
     return "expired";
   }
 
@@ -104,6 +109,19 @@ const getWeekStartMonday = (inputDate = new Date()) => {
   date.setDate(date.getDate() - diffToMonday);
 
   return date;
+};
+
+const getWeekRangeFilter = (weekStartDate) => {
+  const weekStart = new Date(weekStartDate);
+  const nextWeekStart = new Date(weekStartDate);
+  nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+
+  return {
+    weekStart: {
+      $gte: weekStart,
+      $lt: nextWeekStart,
+    },
+  };
 };
 
 const createEmptyWeekMenu = () => {
@@ -2256,43 +2274,101 @@ export const requestRefund = async (req, res) => {
 export const cancelSubscription = requestRefund;
 
 export const getMenu = asyncHandler(async (req, res) => {
+  await expireSubscriptionsAndNotify();
+
   const dateQuery = req.query.date;
   const weekStart = getWeekStartMonday(dateQuery || new Date());
+  const weekFilter = getWeekRangeFilter(weekStart);
 
-  const menu = await MessMenu.findOne({ weekStart }).lean();
-  const payload = menu || {
-    weekStart,
-    menu: createEmptyWeekMenu(),
+  const menu = await MessMenu.findOne(weekFilter)
+    .sort({ weekStart: 1, updatedAt: -1 })
+    .lean();
+
+  if (req.user.role !== "student") {
+    console.log("[mess:getMenu:admin-view]", {
+      role: req.user.role,
+      weekStart: weekStart.toISOString(),
+      foundMenu: Boolean(menu),
+    });
+
+    return sendSuccess(res, 200, "Menu fetched successfully", {
+      weekStart: menu?.weekStart || weekStart,
+      menu: menu?.menu || createEmptyWeekMenu(),
+      allowedMeals: MENU_MEALS,
+      plan: null,
+      hasActivePlan: true,
+      notice: null,
+    });
+  }
+
+  const latestSubscription = await MessSubscription.findOne({ studentId: req.user._id })
+    .sort({ createdAt: -1 })
+    .populate("planId");
+  const subscriptionStatus = getSubscriptionCurrentStatus(latestSubscription);
+  const activeSubscription = subscriptionStatus === "active" ? latestSubscription : null;
+
+  const allowedMeals = getAllowedMealsForPlan(activeSubscription?.planId || {});
+  console.log("[mess:getMenu]", {
+    studentId: String(req.user._id),
+    weekStart: weekStart.toISOString(),
+    foundMenu: Boolean(menu),
+    subscriptionStatus,
+    allowedMeals,
+  });
+  const payload = {
+    weekStart: menu?.weekStart || weekStart,
+    menu: filterMenuByAllowedMeals(menu?.menu || createEmptyWeekMenu(), allowedMeals),
+    allowedMeals,
+    plan: activeSubscription?.planId
+      ? {
+          _id: activeSubscription.planId._id,
+          name: activeSubscription.planId.name,
+        }
+      : null,
+    hasActivePlan: allowedMeals.length > 0,
+    notice: allowedMeals.length > 0 ? null : "No active plan",
   };
 
-  return sendSuccess(res, 200, "Menu fetched successfully", payload);
+  return sendSuccess(
+    res,
+    200,
+    allowedMeals.length > 0 ? "Menu fetched successfully" : "No active plan",
+    payload
+  );
 });
 
 export const updateMenu = asyncHandler(async (req, res) => {
   const dateInput = req.body.weekStart || req.body.date || new Date();
   const weekStart = getWeekStartMonday(dateInput);
+  const weekFilter = getWeekRangeFilter(weekStart);
   const menu = req.body.menu || {};
 
   const menuUpdates = buildMenuUpdatePayload(menu);
+  const existingMenu = await MessMenu.findOne(weekFilter).select("_id").lean();
+
+  console.log("[mess:updateMenu]", {
+    weekStart: weekStart.toISOString(),
+    existingMenuId: existingMenu?._id ? String(existingMenu._id) : null,
+    menu,
+    menuUpdates,
+  });
 
   const updateOperation = {
-    $setOnInsert: {
+    $set: {
       weekStart,
+      ...menuUpdates,
     },
   };
 
-  if (Object.keys(menuUpdates).length > 0) {
-    updateOperation.$set = menuUpdates;
+  if (existingMenu?._id) {
+    await MessMenu.collection.updateOne({ _id: existingMenu._id }, updateOperation, { upsert: false });
+  } else {
+    await MessMenu.collection.updateOne({ weekStart }, updateOperation, { upsert: true });
   }
 
-  // Use native collection update for strict control while preserving existing day/meal entries.
-  await MessMenu.collection.updateOne(
-    { weekStart },
-    updateOperation,
-    { upsert: true }
-  );
-
-  const updatedMenu = await MessMenu.findOne({ weekStart }).lean();
+  const updatedMenu = await MessMenu.findOne(weekFilter)
+    .sort({ weekStart: 1, updatedAt: -1 })
+    .lean();
 
   return sendSuccess(res, 200, "Menu saved successfully", updatedMenu);
 });
