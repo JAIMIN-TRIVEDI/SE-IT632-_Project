@@ -6,7 +6,7 @@ import {
   NotificationsActive, Restaurant as RestaurantIcon, CheckCircle, Warning,
 } from '@mui/icons-material'
 import api from '../api/api'
-import { MEAL_TYPES, getAllowedMealKeys } from '../constants/messMenu'
+import { MEAL_TYPES } from '../constants/messMenu'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const DAYS_IN_WEEK = 7
@@ -74,23 +74,15 @@ function MealCell({ content, isToday }) {
 export default function MessMenu() {
   const [loading, setLoading] = useState(true)
   const [menu, setMenu] = useState(null)
-  const [subscription, setSubscription] = useState(null)
-  const [subscriptionStatus, setSubscriptionStatus] = useState('none')
   const [error, setError] = useState(null)
 
   const load = async () => {
     try {
       setError(null)
       setLoading(true)
-      const [menuRes, subRes] = await Promise.all([
-        api.get('/mess/menu'),
-        api.get('/mess/subscription/me').catch(() => ({ data: { data: null } })),
-      ])
+      const menuRes = await api.get('/mess/menu')
       console.log('[MessMenu] menu response', menuRes.data)
-      console.log('[MessMenu] subscription response', subRes.data)
       setMenu(menuRes.data.data)
-      setSubscription(subRes.data.data)
-      setSubscriptionStatus(subRes.data.currentStatus || 'none')
     } catch (err) {
       setError(err.response?.data?.message || err.message)
     } finally {
@@ -134,15 +126,11 @@ export default function MessMenu() {
     }))
   }, [menu?.menu, weekColumns])
 
-  const allowedMealKeys = Array.isArray(menu?.allowedMeals) && menu.allowedMeals.length > 0
-    ? menu.allowedMeals
-    : subscriptionStatus === 'active'
-      ? getAllowedMealKeys(subscription?.planId || {})
-      : []
+  const allowedMealKeys = Array.isArray(menu?.allowedMeals) ? menu.allowedMeals : []
 
   const visibleMealTypes = MEAL_TYPES.filter((meal) => allowedMealKeys.includes(meal.key))
 
-  const hasActivePlan = subscriptionStatus === 'active' && visibleMealTypes.length > 0
+  const hasActivePlan = Boolean(menu?.hasActivePlan) && visibleMealTypes.length > 0
   const hasHiddenMeals = hasActivePlan && visibleMealTypes.length < MEAL_TYPES.length
   const hasMenuItems = orderedDays.some(({ meals }) => {
     return visibleMealTypes.some((meal) => String(meals?.[meal.key] || '').trim().length > 0)
