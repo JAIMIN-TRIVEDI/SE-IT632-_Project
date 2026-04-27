@@ -45,27 +45,6 @@ const getSubscriptionCurrentStatus = (subscription) => {
   return subscription.status;
 };
 
-const findLatestStudentSubscription = (studentId) => {
-  return MessSubscription.findOne({ studentId })
-    .sort({ createdAt: -1 })
-    .populate("planId");
-};
-
-const findCurrentStudentSubscription = async (studentId) => {
-  const activeSubscription = await MessSubscription.findOne({
-    studentId,
-    status: "active",
-  })
-    .sort({ endDate: -1, createdAt: -1 })
-    .populate("planId");
-
-  if (activeSubscription && isSubscriptionActiveNow(activeSubscription)) {
-    return activeSubscription;
-  }
-
-  return findLatestStudentSubscription(studentId);
-};
-
 const MENU_DAYS = [
   "monday",
   "tuesday",
@@ -393,40 +372,13 @@ export const verifyMessPayment = async (req, res) => {
     }
 
     // Mark Payment as success
-    const payment = await Payment.findOne({
-      orderId: razorpay_order_id,
-      userId: req.user._id,
-    });
+    const payment = await Payment.findOne({ orderId: razorpay_order_id });
     if (!payment) {
       return res.status(404).json({ message: "Payment record not found." });
     }
 
-    if (payment.status === "success") {
-      return res.status(409).json({ message: "Payment has already been verified." });
-    }
-
-    const paidPlanId = payment.subscriptionId ? String(payment.subscriptionId) : "";
-
-    if (!paidPlanId) {
-      await markMessPaymentFailed({
-        orderId: razorpay_order_id,
-        paymentId: razorpay_payment_id,
-        reason: "Missing plan reference for mess payment",
-      });
-      return res.status(400).json({ message: "Invalid payment metadata." });
-    }
-
-    if (planId && String(planId) !== paidPlanId) {
-      await markMessPaymentFailed({
-        orderId: razorpay_order_id,
-        paymentId: razorpay_payment_id,
-        reason: "Plan mismatch during payment verification",
-      });
-      return res.status(400).json({ message: "Plan mismatch for this payment." });
-    }
-
-    // Fetch plan tied to created payment order
-    const plan = await MessPlan.findById(paidPlanId);
+    // Fetch plan to calculate dates
+    const plan = await MessPlan.findById(planId);
     if (!plan) {
       return res.status(404).json({ message: "Mess plan not found." });
     }
@@ -514,7 +466,11 @@ export const subscribePlan = async (req, res) => {
 export const getMySubscription = async (req, res) => {
   await expireSubscriptionsAndNotify();
 
-  const subscription = await findCurrentStudentSubscription(req.user._id);
+  const subscription = await MessSubscription.findOne({
+    studentId: req.user._id,
+  })
+    .sort({ createdAt: -1 })
+    .populate("planId");
 
   res.json({
     success: true,
@@ -2345,7 +2301,9 @@ export const getMenu = asyncHandler(async (req, res) => {
     });
   }
 
-  const latestSubscription = await findCurrentStudentSubscription(req.user._id);
+  const latestSubscription = await MessSubscription.findOne({ studentId: req.user._id })
+    .sort({ createdAt: -1 })
+    .populate("planId");
   const subscriptionStatus = getSubscriptionCurrentStatus(latestSubscription);
   const activeSubscription = subscriptionStatus === "active" ? latestSubscription : null;
 
