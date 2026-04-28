@@ -45,7 +45,7 @@ const getAdminSectionFromPath = (pathname) => {
   return ADMIN_PATH_TO_SECTION[segment] || "Hostels";
 };
 
-function AdminDashboard() {
+function AdminDashboard({ mode, onToggleTheme }) {
   const navigate = useNavigate();
   const location = useLocation();
   const activeNav = getAdminSectionFromPath(location.pathname);
@@ -192,7 +192,7 @@ function AdminDashboard() {
       />
 
       <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
-        <TopBar onMobileMenuOpen={() => setMobileNavOpen(true)} />
+        <TopBar onMobileMenuOpen={() => setMobileNavOpen(true)} mode={mode} onToggleTheme={onToggleTheme} onProfileClick={() => navigate(`${ADMIN_BASE_PATH}/profile`)} />
 
         <Box sx={{ p: { xs: 2, sm: 3 }, flexGrow: 1 }}>{renderContent()}</Box>
       </Box>

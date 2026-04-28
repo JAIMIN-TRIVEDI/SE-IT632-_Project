@@ -1,10 +1,6 @@
-import { Box, IconButton, InputBase, Typography } from "@mui/material";
-import { alpha } from "@mui/material/styles";
-import { LocationOn, Menu, Search, Tune } from "@mui/icons-material";
-import Brightness4RoundedIcon from "@mui/icons-material/Brightness4Rounded";
-import Brightness7RoundedIcon from "@mui/icons-material/Brightness7Rounded";
-import Tooltip from "@mui/material/Tooltip";
-import LogoutButton from "../../LogoutButton.jsx";
+import { Box, IconButton, Typography } from "@mui/material";
+import { LocationOn, Menu } from "@mui/icons-material";
+import DashboardNavbar from '../DashboardNavbar.jsx'
 
 function WardenTopBar({
   activeNav,
@@ -52,77 +48,8 @@ function WardenTopBar({
           </Typography>
         </Box>
       </Box>
-      <Box display="flex" alignItems="center" gap={1.25} flexWrap="wrap" width={{ xs: '100%', md: 'auto' }} justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            bgcolor: (theme) =>
-              theme.palette.mode === "dark"
-                ? alpha(theme.palette.common.white, 0.08)
-                : theme.palette.common.white,
-            border: "1px solid",
-            borderColor: "divider",
-            borderRadius: 10,
-            px: 2,
-            py: 0.8,
-            minWidth: { xs: '100%', sm: 280 },
-            width: { xs: '100%', sm: 'auto' },
-          }}
-        >
-          <Search sx={{ color: "text.secondary", fontSize: 18 }} />
-          <InputBase
-            placeholder={placeholder || "Search student or room..."}
-            value={searchQuery}
-            onChange={(e) => onSearchChange?.(e.target.value)}
-            sx={{ fontSize: 13, color: "text.secondary", flex: 1 }}
-          />
-        </Box>
-        <IconButton
-          sx={{
-            bgcolor: (theme) =>
-              theme.palette.mode === "dark"
-                ? alpha(theme.palette.common.white, 0.08)
-                : theme.palette.common.white,
-            border: "1px solid",
-            borderColor: "divider",
-            borderRadius: 2,
-            width: 40,
-            height: 40,
-          }}
-        >
-          <Tune sx={{ fontSize: 18, color: "text.secondary" }} />
-        </IconButton>
-        <Tooltip
-          title={`Switch to ${mode === "light" ? "dark" : "light"} mode`}
-        >
-          <IconButton
-            onClick={onToggleTheme}
-            sx={{
-              bgcolor: (theme) =>
-                theme.palette.mode === "dark"
-                  ? alpha(theme.palette.common.white, 0.08)
-                  : theme.palette.common.white,
-              border: "1px solid",
-              borderColor: "divider",
-              borderRadius: 2,
-              width: 40,
-              height: 40,
-            }}
-          >
-            {mode === "light" ? (
-              <Brightness4RoundedIcon
-                sx={{ fontSize: 18, color: "text.secondary" }}
-              />
-            ) : (
-              <Brightness7RoundedIcon
-                sx={{ fontSize: 18, color: "text.secondary" }}
-              />
-            )}
-          </IconButton>
-        </Tooltip>
-        <LogoutButton />
+      <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap" width={{ xs: '100%', md: 'auto' }} justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}>
+        <DashboardNavbar mode={mode} onToggleTheme={onToggleTheme} />
       </Box>
     </Box>
   );

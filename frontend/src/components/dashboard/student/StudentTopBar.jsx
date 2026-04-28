@@ -1,9 +1,6 @@
-import { Avatar, Box, IconButton, InputBase, Tooltip, Typography } from '@mui/material'
-import { alpha } from '@mui/material/styles'
-import { Menu, Notifications, Search } from '@mui/icons-material'
-import Brightness4RoundedIcon from '@mui/icons-material/Brightness4Rounded'
-import Brightness7RoundedIcon from '@mui/icons-material/Brightness7Rounded'
-import LogoutButton from '../../LogoutButton.jsx'
+import { IconButton, Typography, Box } from '@mui/material'
+import { Menu } from '@mui/icons-material'
+import DashboardNavbar from '../DashboardNavbar.jsx'
 
 function StudentTopBar({
   activeNav = 'Dashboard',
@@ -100,96 +97,13 @@ function StudentTopBar({
       <Box
         display="flex"
         alignItems="center"
-        gap={1.25}
+        gap={1.5}
         mt={0.5}
         flexWrap="wrap"
         justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}
         width={{ xs: '100%', md: 'auto' }}
       >
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            bgcolor: (theme) =>
-              theme.palette.mode === 'dark'
-                ? alpha(theme.palette.common.white, 0.08)
-                : theme.palette.common.white,
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 10,
-            px: 2,
-            py: 0.8,
-            minWidth: { xs: '100%', sm: 240 },
-            width: { xs: '100%', sm: 'auto' },
-          }}
-        >
-          <Search sx={{ color: 'text.secondary', fontSize: 18 }} />
-          <InputBase
-            placeholder={searchPlaceholder}
-            value={searchQuery}
-            onChange={(event) => onSearchChange?.(event.target.value)}
-            sx={{ fontSize: 13, color: 'text.secondary', flex: 1 }}
-          />
-        </Box>
-        <IconButton
-          sx={{
-            bgcolor: (theme) =>
-              theme.palette.mode === 'dark'
-                ? alpha(theme.palette.common.white, 0.08)
-                : theme.palette.common.white,
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-            width: 40,
-            height: 40,
-          }}
-        >
-          {/* <Badge
-            badgeContent={1}
-            color="error"
-            sx={{ '& .MuiBadge-badge': { fontSize: 10 } }}
-          > */}
-            <Notifications sx={{ fontSize: 18, color: 'text.secondary' }} />
-          {/* </Badge> */}
-        </IconButton>
-        <Tooltip title={mode === 'dark' ? 'Switch to light' : 'Switch to dark'}>
-          <IconButton
-            onClick={onToggleTheme}
-            sx={{
-              bgcolor: (theme) =>
-                theme.palette.mode === 'dark'
-                  ? alpha(theme.palette.common.white, 0.08)
-                  : theme.palette.common.white,
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 2,
-              width: 40,
-              height: 40,
-            }}
-          >
-            {mode === 'dark'
-              ? <Brightness7RoundedIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-              : <Brightness4RoundedIcon sx={{ fontSize: 18, color: 'text.secondary' }} />}
-          </IconButton>
-        </Tooltip>
-        <Tooltip title='My Profile'>
-          <IconButton onClick={onProfileClick} sx={{ p: 0 }}>
-            <Avatar
-              sx={{
-                width: 38,
-                height: 38,
-                bgcolor: 'primary.main',
-                fontSize: 14,
-                fontWeight: 800,
-                cursor: 'pointer',
-              }}
-            >
-              {initials}
-            </Avatar>
-          </IconButton>
-        </Tooltip>
-        <LogoutButton />
+        <DashboardNavbar mode={mode} onToggleTheme={onToggleTheme} onProfileClick={onProfileClick} />
       </Box>
     </Box>
   )

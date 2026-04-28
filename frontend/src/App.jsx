@@ -202,7 +202,7 @@ function App() {
               path="/hostel-admin/dashboard/*"
               element={
                 <ProtectedRoute allowedRoles={["hostel_admin"]}>
-                  <AdminDashboard />
+                  <AdminDashboard mode={mode} onToggleTheme={handleToggleTheme} />
                 </ProtectedRoute>
               }
             />

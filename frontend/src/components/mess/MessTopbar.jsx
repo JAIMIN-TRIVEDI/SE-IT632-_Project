@@ -1,8 +1,10 @@
-import { Box, InputBase, Avatar, IconButton, Tooltip } from '@mui/material'
+import { Box, InputBase, Avatar, IconButton, Tooltip, Typography } from '@mui/material'
 import { Menu } from '@mui/icons-material'
 import Brightness4RoundedIcon from '@mui/icons-material/Brightness4Rounded'
 import Brightness7RoundedIcon from '@mui/icons-material/Brightness7Rounded'
 import LogoutButton from '../LogoutButton.jsx'
+import DashboardNavbar from '../dashboard/DashboardNavbar.jsx'
+
 
 function MessTopbar({ mode, onToggleTheme, onMobileMenuOpen }) {
   return (
@@ -26,7 +28,7 @@ function MessTopbar({ mode, onToggleTheme, onMobileMenuOpen }) {
         <Menu />
       </IconButton>
 
-      <InputBase
+      {/* <InputBase
         placeholder="Search for students, subscriptions..."
         sx={{
           bgcolor: 'action.hover',
@@ -36,16 +38,19 @@ function MessTopbar({ mode, onToggleTheme, onMobileMenuOpen }) {
           width: { xs: '100%', sm: 'auto' },
           flex: { xs: '1 1 100%', sm: '0 1 350px' }
         }}
-      />
+      /> */}
+       <Typography
+          variant="h4"
+          fontWeight={800}
+          color="text.primary"
+          lineHeight={1.2}
+        >
+          Mess Management
+        </Typography>
+
 
       <Box display="flex" alignItems="center" gap={1.5} ml="auto">
-        <Tooltip title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}>
-          <IconButton onClick={onToggleTheme} color="inherit">
-            {mode === 'light' ? <Brightness4RoundedIcon /> : <Brightness7RoundedIcon />}
-          </IconButton>
-        </Tooltip>
-        <Avatar />
-        <LogoutButton />
+        <DashboardNavbar mode={mode} onToggleTheme={onToggleTheme} />
       </Box>
     </Box>
   )
